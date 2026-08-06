@@ -37,21 +37,17 @@
   <div class="header">เพิ่มรายการใหม่</div>
   <div class="content">
     
-    <!-- แสดงรูปพรีวิว -->
     <div class="preview-box" id="previewBox">
       <div class="preview-placeholder" id="placeholder">📷 แสดงรูปภาพที่ถ่าย/เลือก</div>
       <img id="imgPreview" style="display:none;" />
     </div>
 
-    <!-- 1. ปุ่มเลือกรูป -->
     <button class="btn btn-outline" id="btnGallery" onclick="document.getElementById('fileGallery').click()">📁 เลือกรูป</button>
     <input type="file" id="fileGallery" accept="image/*" style="display:none;" onchange="handleImageSelect(event)">
 
-    <!-- 2. ปุ่มถ่ายรูป -->
     <button class="btn btn-primary" id="btnCamera" onclick="document.getElementById('fileCamera').click()">📷 ถ่ายรูป (สแกนรุ่นอัตโนมัติ)</button>
     <input type="file" id="fileCamera" accept="image/*" capture="environment" style="display:none;" onchange="handleImageSelect(event)">
 
-    <!-- ฟอร์มกรอกข้อมูล -->
     <div class="form-group">
       <label>ชื่อ/รุ่น <span class="status-tag" id="statusTag"></span></label>
       <input type="text" id="modelInput" class="form-control" placeholder="ตัวอย่าง: TCL 32D3000">
@@ -67,8 +63,8 @@
 </div>
 
 <script>
-  // 🌐 URL Backend แก้ไข H ตัวใหญ่ตรง Houngronphiboon แล้ว
-  const BACKEND_URL = 'https://Houngronphiboon.pythonanywhere.com/extract-model';
+  // 🌐 URL ตัวพิมพ์เล็กทั้งหมดเพื่อป้องกันปัญหา Case Sensitivity
+  const BACKEND_URL = 'https://houngronphiboon.pythonanywhere.com/extract-model';
 
   async function handleImageSelect(event) {
     const file = event.target.files[0];
@@ -102,6 +98,10 @@
         method: 'POST',
         body: formData
       });
+
+      if (!response.ok) {
+        throw new Error(`Server status: ${response.status}`);
+      }
 
       const data = await response.json();
 
