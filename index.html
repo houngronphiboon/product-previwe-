@@ -1,136 +1,23 @@
-<!DOCTYPE html>
-<html lang="th">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>เพิ่มรายการใหม่ - TV Scanner App</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Thonburi', -apple-system, sans-serif; }
-    body { background-color: #f1f5f9; display: flex; justify-content: center; padding: 20px; }
-    .card { background: #fff; width: 100%; max-width: 420px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); overflow: hidden; }
-    .header { padding: 18px; text-align: center; border-bottom: 1px solid #e2e8f0; font-size: 18px; font-weight: bold; background: #f8fafc; color: #0f172a; }
-    .content { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
-    
-    .preview-box { width: 100%; height: 180px; border: 2px dashed #cbd5e1; border-radius: 12px; display: flex; justify-content: center; align-items: center; background: #f8fafc; overflow: hidden; position: relative; }
-    .preview-box img { width: 100%; height: 100%; object-fit: cover; }
-    .preview-placeholder { text-align: center; color: #94a3b8; font-size: 14px; }
-    
-    .btn { width: 100%; padding: 12px; border-radius: 8px; border: none; font-size: 15px; font-weight: 600; cursor: pointer; transition: 0.2s; display: flex; justify-content: center; align-items: center; gap: 8px; }
-    .btn-outline { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; }
-    .btn-primary { background: #475569; color: #fff; }
-    .btn-primary:hover { background: #334155; }
-    .btn:active { opacity: 0.8; }
-    .btn:disabled { background: #94a3b8; cursor: not-allowed; }
-    
-    .form-group { display: flex; flex-direction: column; gap: 6px; }
-    .form-group label { font-size: 14px; font-weight: bold; color: #1e293b; }
-    .form-control { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; outline: none; }
-    .form-control:focus { border-color: #475569; box-shadow: 0 0 0 2px rgba(71,85,105,0.2); }
-    textarea.form-control { resize: vertical; min-height: 80px; }
-    
-    .status-tag { font-size: 11px; font-weight: bold; margin-left: 6px; display: none; }
-  </style>
-</head>
-<body>
-
-<div class="card">
-  <div class="header">เพิ่มรายการใหม่</div>
-  <div class="content">
-    
-    <div class="preview-box" id="previewBox">
-      <div class="preview-placeholder" id="placeholder">📷 แสดงรูปภาพที่ถ่าย/เลือก</div>
-      <img id="imgPreview" style="display:none;" />
-    </div>
-
-    <button class="btn btn-outline" id="btnGallery" onclick="document.getElementById('fileGallery').click()">📁 เลือกรูป</button>
-    <input type="file" id="fileGallery" accept="image/*" style="display:none;" onchange="handleImageSelect(event)">
-
-    <button class="btn btn-primary" id="btnCamera" onclick="document.getElementById('fileCamera').click()">📷 ถ่ายรูป (สแกนรุ่นอัตโนมัติ)</button>
-    <input type="file" id="fileCamera" accept="image/*" capture="environment" style="display:none;" onchange="handleImageSelect(event)">
-
-    <div class="form-group">
-      <label>ชื่อ/รุ่น <span class="status-tag" id="statusTag"></span></label>
-      <input type="text" id="modelInput" class="form-control" placeholder="ตัวอย่าง: TCL 32D3000">
-    </div>
-
-    <div class="form-group">
-      <label>รายละเอียด</label>
-      <textarea id="descInput" class="form-control" placeholder="ตัวอย่าง: สภาพเครื่อง 95%, อุปกรณ์ครบ..."></textarea>
-    </div>
-
-    <button class="btn btn-primary" style="margin-top: 10px;" onclick="saveData()">เพิ่มรายการ</button>
-  </div>
-</div>
+<button onclick="checkConnection()">ทดสอบการเชื่อมต่อ</button>
+<p id="connection-result">สถานะ: รอการทดสอบ...</p>
 
 <script>
-  // 🌐 URL ตัวพิมพ์เล็กทั้งหมดเพื่อป้องกันปัญหา Case Sensitivity
-  const BACKEND_URL = 'https://houngronphiboon.pythonanywhere.com/extract-model';
-
-  async function handleImageSelect(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const imgPreview = document.getElementById('imgPreview');
-    const placeholder = document.getElementById('placeholder');
-    imgPreview.src = URL.createObjectURL(file);
-    imgPreview.style.display = 'block';
-    placeholder.style.display = 'none';
-
-    const modelInput = document.getElementById('modelInput');
-    const statusTag = document.getElementById('statusTag');
-    const btnCamera = document.getElementById('btnCamera');
-    const btnGallery = document.getElementById('btnGallery');
+async function checkConnection() {
+  const resultElement = document.getElementById('connection-result');
+  resultElement.innerText = "กำลังเชื่อมต่อ...";
+  
+  try {
+    const response = await fetch('https://Houngronphiboon.pythonanywhere.com/api/check-status');
+    const data = await response.json();
     
-    modelInput.value = "";
-    modelInput.placeholder = "กำลังส่งรูปให้ Gemini สแกน...";
-    statusTag.innerText = "⏳ กำลังวิเคราะห์...";
-    statusTag.style.color = "#d97706";
-    statusTag.style.display = 'inline';
-    
-    btnCamera.disabled = true;
-    btnGallery.disabled = true;
-
-    const formData = new FormData();
-    formData.append('image', file);
-
-    try {
-      const response = await fetch(BACKEND_URL, {
-        method: 'POST',
-        body: formData
-      });
-
-      if (!response.ok) {
-        throw new Error(`Server status: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (data.model && data.model.trim() !== "") {
-        modelInput.value = data.model.trim();
-        statusTag.innerText = "✓ Gemini ดึงชื่อรุ่นสำเร็จ";
-        statusTag.style.color = "#059669";
-      } else {
-        modelInput.placeholder = "ตัวอย่าง: TCL 32D3000";
-        statusTag.innerText = "✕ ไม่พบชื่อรุ่นในภาพ";
-        statusTag.style.color = "#dc2626";
-      }
-    } catch (err) {
-      console.error("Fetch Error:", err);
-      modelInput.placeholder = "ตัวอย่าง: TCL 32D3000";
-      statusTag.innerText = "✕ เชื่อมต่อเซิร์ฟเวอร์ไม่ได้";
-      statusTag.style.color = "#dc2626";
-    } finally {
-      btnCamera.disabled = false;
-      btnGallery.disabled = false;
+    if (data.status === "online") {
+      resultElement.style.color = "green";
+      resultElement.innerText = "✅ " + data.message;
     }
+  } catch (error) {
+    resultElement.style.color = "red";
+    resultElement.innerText = "❌ ไม่สามารถเชื่อมต่อกับ PythonAnywhere ได้";
+    console.error("Connection error:", error);
   }
-
-  function saveData() {
-    const model = document.getElementById('modelInput').value;
-    if (!model) { alert("กรุณากรอกชื่อ/รุ่น"); return; }
-    alert("บันทึกข้อมูลสำเร็จ: " + model);
-  }
+}
 </script>
-
-</body>
-</html>
