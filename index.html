@@ -54,7 +54,7 @@
     <!-- ฟอร์มกรอกข้อมูล -->
     <div class="form-group">
       <label>ชื่อ/รุ่น <span class="status-tag" id="statusTag"></span></label>
-      <input type="text" id="modelInput" class="form-control" placeholder="ตัวอย่าง: 50A6500G หรือ TCL 32D3000">
+      <input type="text" id="modelInput" class="form-control" placeholder="ตัวอย่าง: TCL 32D3000">
     </div>
 
     <div class="form-group">
@@ -67,14 +67,13 @@
 </div>
 
 <script>
-  // 🌐 URL Backend บน PythonAnywhere
+  // 🌐 URL Backend แก้ไข H ตัวใหญ่ตรง Houngronphiboon แล้ว
   const BACKEND_URL = 'https://Houngronphiboon.pythonanywhere.com/extract-model';
 
   async function handleImageSelect(event) {
     const file = event.target.files[0];
     if (!file) return;
 
-    // แสดงรูปพรีวิว
     const imgPreview = document.getElementById('imgPreview');
     const placeholder = document.getElementById('placeholder');
     imgPreview.src = URL.createObjectURL(file);
@@ -86,7 +85,6 @@
     const btnCamera = document.getElementById('btnCamera');
     const btnGallery = document.getElementById('btnGallery');
     
-    // สถานะระหว่างรอสแกน
     modelInput.value = "";
     modelInput.placeholder = "กำลังส่งรูปให้ Gemini สแกน...";
     statusTag.innerText = "⏳ กำลังวิเคราะห์...";
@@ -96,7 +94,6 @@
     btnCamera.disabled = true;
     btnGallery.disabled = true;
 
-    // จัดส่งไฟล์รูปภาพไปยัง PythonAnywhere
     const formData = new FormData();
     formData.append('image', file);
 
@@ -108,19 +105,18 @@
 
       const data = await response.json();
 
-      // เช็คว่ามีข้อความตอบกลับมาและไม่เป็นค่าว่าง
       if (data.model && data.model.trim() !== "") {
         modelInput.value = data.model.trim();
         statusTag.innerText = "✓ Gemini ดึงชื่อรุ่นสำเร็จ";
         statusTag.style.color = "#059669";
       } else {
-        modelInput.placeholder = "ตัวอย่าง: 50A6500G";
+        modelInput.placeholder = "ตัวอย่าง: TCL 32D3000";
         statusTag.innerText = "✕ ไม่พบชื่อรุ่นในภาพ";
         statusTag.style.color = "#dc2626";
       }
     } catch (err) {
       console.error("Fetch Error:", err);
-      modelInput.placeholder = "ตัวอย่าง: 50A6500G";
+      modelInput.placeholder = "ตัวอย่าง: TCL 32D3000";
       statusTag.innerText = "✕ เชื่อมต่อเซิร์ฟเวอร์ไม่ได้";
       statusTag.style.color = "#dc2626";
     } finally {
