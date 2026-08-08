@@ -3,94 +3,161 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ระบบวิเคราะห์สินค้าด้วย AI</title>
+  <title>ระบบบันทึกข้อมูลสินค้า & วิเคราะห์ AI</title>
   <style>
+    * { box-sizing: border-box; }
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      max-width: 600px;
-      margin: 20px auto;
-      padding: 20px;
+      max-width: 800px;
+      margin: 10px auto;
+      padding: 15px;
       background-color: #f4f7f6;
+      color: #333;
     }
     .card {
       background: #ffffff;
-      padding: 24px;
+      padding: 20px;
       border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      margin-bottom: 20px;
     }
-    h2 {
-      margin-top: 0;
-      color: #333;
-    }
-    .form-group {
-      margin-bottom: 16px;
-    }
-    label {
-      display: block;
-      margin-bottom: 8px;
-      font-weight: bold;
-    }
-    input[type="file"] {
+    h2, h3 { margin-top: 0; color: #2c3e50; }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 6px; font-weight: bold; }
+    input[type="text"], input[type="number"], select, textarea {
       width: 100%;
-      padding: 8px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 15px;
     }
     button {
       width: 100%;
       padding: 12px;
-      background-color: #007bff;
-      color: white;
       border: none;
       border-radius: 6px;
       font-size: 16px;
       cursor: pointer;
+      font-weight: bold;
+      transition: 0.2s;
     }
-    button:disabled {
-      background-color: #cccccc;
-    }
+    .btn-ai { background-color: #17a2b8; color: white; margin-top: 8px; }
+    .btn-ai:hover { background-color: #138496; }
+    .btn-save { background-color: #28a745; color: white; margin-top: 15px; }
+    .btn-save:hover { background-color: #218838; }
+    button:disabled { background-color: #cccccc !important; cursor: not-allowed; }
+    
     #previewImg {
       max-width: 100%;
-      margin-top: 12px;
+      max-height: 250px;
+      margin-top: 10px;
       border-radius: 8px;
       display: none;
+      object-fit: contain;
     }
-    #result {
-      margin-top: 20px;
-      padding: 16px;
-      background: #e9ecef;
+    #aiStatus {
+      margin-top: 10px;
+      padding: 10px;
       border-radius: 6px;
-      white-space: pre-wrap;
+      font-size: 14px;
       display: none;
     }
+    .loading { background: #e2e3e5; color: #383d41; }
+    .success { background: #d4edda; color: #155724; }
+    .error { background: #f8d7da; color: #721c24; }
+
+    /* Table Style */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      padding: 10px;
+      border: 1px solid #ddd;
+      text-align: left;
+      font-size: 14px;
+    }
+    th { background-color: #007bff; color: white; }
+    tr:nth-child(even) { background-color: #f9f9f9; }
+    .img-thumb { width: 50px; height: 50px; object-fit: cover; border-radius: 4px; }
   </style>
 </head>
 <body>
 
+  <!-- ฟอร์มรับข้อมูลและวิเคราะห์ด้วย AI -->
   <div class="card">
-    <h2>วิเคราะห์รูปภาพสินค้า (Gemini AI)</h2>
+    <h2>📦 บันทึกข้อมูลสินค้า</h2>
     
     <div class="form-group">
-      <label>เลือกหรือถ่ายรูปสินค้า:</label>
+      <label>รูปภาพสินค้า:</label>
       <input type="file" id="imageInput" accept="image/*">
       <img id="previewImg" alt="Preview Image">
+      <button id="aiBtn" class="btn-ai" onclick="analyzeWithAI()" disabled>✨ ถ่าย/เลือกรูป แล้วกดวิเคราะห์ด้วย AI</button>
+      <div id="aiStatus"></div>
     </div>
 
-    <button id="analyzeBtn" onclick="processAndAnalyze()" disabled>วิเคราะห์รูปภาพ</button>
+    <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
 
-    <div id="result"></div>
+    <div class="form-group">
+      <label>ชื่อสินค้า:</label>
+      <input type="text" id="prodName" placeholder="เช่น อะไหล่บอร์ด TV LG 43 นิ้ว">
+    </div>
+
+    <div class="form-group">
+      <label>หมวดหมู่ / รายละเอียด:</label>
+      <textarea id="prodDesc" rows="3" placeholder="รายละเอียดสินค้า..."></textarea>
+    </div>
+
+    <div style="display: flex; gap: 10px;">
+      <div class="form-group" style="flex: 1;">
+        <label>ราคา (บาท):</label>
+        <input type="number" id="prodPrice" placeholder="0.00">
+      </div>
+      <div class="form-group" style="flex: 1;">
+        <label>จำนวนสต็อก:</label>
+        <input type="number" id="prodQty" value="1">
+      </div>
+    </div>
+
+    <button class="btn-save" onclick="saveProduct()">💾 บันทึกสินค้าลงตาราง</button>
+  </div>
+
+  <!-- ตารางแสดงรายการสินค้าที่บันทึก -->
+  <div class="card">
+    <h3>📋 รายการสินค้าที่บันทึกแล้ว</h3>
+    <div style="overflow-x: auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>รูปภาพ</th>
+            <th>ชื่อสินค้า</th>
+            <th>รายละเอียด</th>
+            <th>ราคา</th>
+            <th>จำนวน</th>
+          </tr>
+        </thead>
+        <tbody id="productTableBody">
+          <tr>
+            <td colspan="5" style="text-align: center; color: #888;">ยังไม่มีข้อมูลสินค้า</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
   <script>
-    // URL ของ Cloudflare Worker ที่สร้างไว้
     const WORKER_URL = "https://red-forest-388c.narakonone.workers.dev";
 
     const imageInput = document.getElementById("imageInput");
     const previewImg = document.getElementById("previewImg");
-    const analyzeBtn = document.getElementById("analyzeBtn");
-    const resultDiv = document.getElementById("result");
+    const aiBtn = document.getElementById("aiBtn");
+    const aiStatus = document.getElementById("aiStatus");
 
     let base64Image = "";
+    let productsList = [];
 
-    // แสดงรูปตัวอย่างเมื่อเลือกไฟล์
+    // เมื่อเลือกรูปภาพ
     imageInput.addEventListener("change", function(e) {
       const file = e.target.files[0];
       if (file) {
@@ -98,35 +165,28 @@
         reader.onload = function(evt) {
           previewImg.src = evt.target.result;
           previewImg.style.display = "block";
-          
-          // สกัดเอาเฉพาะข้อมูล Base64 (ตัด prefix data:image/...;base64, ออก)
           base64Image = evt.target.result.split(',')[1];
-          analyzeBtn.disabled = false;
+          aiBtn.disabled = false;
         };
         reader.readAsDataURL(file);
       }
     });
 
-    // ส่งข้อมูลภาพไปยัง Cloudflare Worker
-    async function processAndAnalyze() {
+    // เรียก AI วิเคราะห์ภาพ
+    async function analyzeWithAI() {
       if (!base64Image) return;
 
-      analyzeBtn.disabled = true;
-      analyzeBtn.innerText = "กำลังวิเคราะห์ข้อมูล...";
-      resultDiv.style.display = "block";
-      resultDiv.innerText = "กำลังประมวลผล กรุณารอสักครู่...";
+      aiBtn.disabled = true;
+      showStatus("กำลังประมวลผลและวิเคราะห์รูปภาพ...", "loading");
+
+      const prompt = "วิเคราะห์รูปภาพสินค้านี้ ตอบกลับเป็นข้อความสั้นๆ: 1. ชื่อสินค้า 2. หมวดหมู่และรายละเอียดสั้นๆ โดยเน้นภาษาไทย";
 
       const payload = {
         contents: [
           {
             parts: [
-              { text: "ช่วยวิเคราะห์รูปภาพนี้ ระบุชื่อสินค้า รายละเอียด และหมวดหมู่ให้หน่อย" },
-              {
-                inline_data: {
-                  mime_type: "image/jpeg",
-                  data: base64Image
-                }
-              }
+              { text: prompt },
+              { inline_data: { mime_type: "image/jpeg", data: base64Image } }
             ]
           }
         ]
@@ -142,17 +202,79 @@
         const data = await response.json();
 
         if (data.candidates && data.candidates[0].content.parts[0].text) {
-          resultDiv.innerText = data.candidates[0].content.parts[0].text;
+          const aiText = data.candidates[0].content.parts[0].text;
+          
+          // แยกข้อความเอามาเติมลงฟอร์มอัตโนมัติ
+          document.getElementById("prodDesc").value = aiText;
+          
+          // ดึงบรรทัดแรกมาตั้งเป็นชื่อสินค้า
+          const lines = aiText.split('\n').filter(l => l.trim() !== '');
+          if (lines.length > 0) {
+            document.getElementById("prodName").value = lines[0].replace(/^[0-9.\-* ]+/, '');
+          }
+
+          showStatus("วิเคราะห์สำเร็จ! เติมข้อมูลลงฟอร์มเรียบร้อย", "success");
         } else {
-          resultDiv.innerText = "ไม่สามารถวิเคราะห์รูปภาพได้ กรุณาลองใหม่อีกครั้ง";
+          showStatus("ไม่สามารถวิเคราะห์รูปภาพได้ กรุณากรอกข้อมูลเอง", "error");
         }
       } catch (error) {
-        console.error("Error:", error);
-        resultDiv.innerText = "เกิดข้อผิดพลาดในการเชื่อมต่อ: " + error.message;
+        console.error(error);
+        showStatus("เกิดข้อผิดพลาดในการเชื่อมต่อ AI: " + error.message, "error");
       } finally {
-        analyzeBtn.disabled = false;
-        analyzeBtn.innerText = "วิเคราะห์รูปภาพ";
+        aiBtn.disabled = false;
       }
+    }
+
+    function showStatus(msg, type) {
+      aiStatus.innerText = msg;
+      aiStatus.className = type;
+      aiStatus.style.display = "block";
+    }
+
+    // บันทึกข้อมูลเข้าตาราง
+    function saveProduct() {
+      const name = document.getElementById("prodName").value;
+      const desc = document.getElementById("prodDesc").value;
+      const price = document.getElementById("prodPrice").value || "0";
+      const qty = document.getElementById("prodQty").value || "1";
+      const imgSrc = previewImg.src;
+
+      if (!name) {
+        alert("กรุณากรอกชื่อสินค้า");
+        return;
+      }
+
+      productsList.push({ name, desc, price, qty, imgSrc });
+      renderTable();
+
+      // ล้างฟอร์ม
+      document.getElementById("prodName").value = "";
+      document.getElementById("prodDesc").value = "";
+      document.getElementById("prodPrice").value = "";
+      document.getElementById("prodQty").value = "1";
+      document.getElementById("imageInput").value = "";
+      previewImg.style.display = "none";
+      aiStatus.style.display = "none";
+      base64Image = "";
+      aiBtn.disabled = true;
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById("productTableBody");
+      if (productsList.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #888;">ยังไม่มีข้อมูลสินค้า</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = productsList.map(item => `
+        <tr>
+          <td>${item.imgSrc ? `<img src="${item.imgSrc}" class="img-thumb">` : '-'}</td>
+          <td><b>${item.name}</b></td>
+          <td>${item.desc.replace(/\n/g, '<br>')}</td>
+          <td>${Number(item.price).toLocaleString()} ฿</td>
+          <td>${item.qty}</td>
+        </tr>
+      `).join('');
     }
   </script>
 
