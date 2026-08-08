@@ -158,7 +158,8 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    const WORKER_URL = "https://script.google.com/macros/s/AKfycbyqN9cDqO85g_zBGo0QeefDy957YnnvzssmpoZ4jhS9Ll16o5vxUq8mG9eg7AecsFYQ/exec";
+    // *** วาง URL ของ Google Apps Script ที่ได้จากการ Deploy (ลงท้ายด้วย /exec) ที่นี่ ***
+    const WORKER_URL = "https://script.google.com/macros/s/นำURLจากAppsScriptมาวางตรงนี้/exec";
 
     let selectedFile = null;
     let currentMedia = { type: null, url: null };
@@ -262,9 +263,11 @@
                 });
             }
 
+            // ยิงไปที่ Google Apps Script
             const response = await fetch(WORKER_URL, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                redirect: 'follow',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify({ contents: [{ parts: contentsParts }] })
             });
 
@@ -283,7 +286,7 @@
 
         } catch (error) {
             console.error("Fetch Error:", error);
-            detailInput.value = "เกิดข้อผิดพลาดในการเชื่อมต่อกับ Cloud Worker";
+            detailInput.value = "เกิดข้อผิดพลาดในการเชื่อมต่อกับ Google Apps Script";
             showToast("เชื่อมต่อ AI ล้มเหลว", "error");
         } finally {
             aiBtn.disabled = false;
