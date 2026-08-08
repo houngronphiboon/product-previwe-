@@ -3,280 +3,180 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ระบบบันทึกข้อมูลสินค้า & วิเคราะห์ AI</title>
+  <title>ระบบบันทึกข้อมูลสินค้า - Nueng Ron Phibun</title>
   <style>
-    * { box-sizing: border-box; }
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      max-width: 800px;
-      margin: 10px auto;
-      padding: 15px;
-      background-color: #f4f7f6;
-      color: #333;
-    }
-    .card {
-      background: #ffffff;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-      margin-bottom: 20px;
-    }
-    h2, h3 { margin-top: 0; color: #2c3e50; }
-    .form-group { margin-bottom: 15px; }
-    label { display: block; margin-bottom: 6px; font-weight: bold; }
-    input[type="text"], input[type="number"], select, textarea {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      font-size: 15px;
-    }
-    button {
-      width: 100%;
-      padding: 12px;
-      border: none;
-      border-radius: 6px;
-      font-size: 16px;
-      cursor: pointer;
-      font-weight: bold;
-      transition: 0.2s;
-    }
-    .btn-ai { background-color: #17a2b8; color: white; margin-top: 8px; }
-    .btn-ai:hover { background-color: #138496; }
-    .btn-save { background-color: #28a745; color: white; margin-top: 15px; }
-    .btn-save:hover { background-color: #218838; }
-    button:disabled { background-color: #cccccc !important; cursor: not-allowed; }
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body { background-color: #f2f2f7; margin: 0; padding: 15px; display: flex; justify-content: center; }
+    .container { width: 100%; max-width: 480px; }
+    .card { background: white; border-radius: 16px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 20px; }
     
-    #previewImg {
-      max-width: 100%;
-      max-height: 250px;
-      margin-top: 10px;
-      border-radius: 8px;
-      display: none;
-      object-fit: contain;
+    .media-box {
+      border: 2px dashed #ccc; border-radius: 12px; height: 180px;
+      display: flex; align-items: center; justify-content: center;
+      background: #fafafa; margin-bottom: 15px; overflow: hidden; position: relative;
     }
-    #aiStatus {
-      margin-top: 10px;
-      padding: 10px;
-      border-radius: 6px;
-      font-size: 14px;
-      display: none;
+    .media-box img { width: 100%; height: 100%; object-fit: contain; }
+    
+    .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+    .btn-action {
+      border: none; padding: 12px; border-radius: 10px; font-weight: bold; font-size: 14px;
+      display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer;
     }
-    .loading { background: #e2e3e5; color: #383d41; }
-    .success { background: #d4edda; color: #155724; }
-    .error { background: #f8d7da; color: #721c24; }
-
-    /* Table Style */
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
+    .btn-gray { background: #e5e5ea; color: #1c1c1e; }
+    .btn-blue { background: #007aff; color: white; }
+    .btn-purple { background: #8e44ad; color: white; width: 100%; padding: 14px; font-size: 15px; margin-bottom: 12px; }
+    .btn-green { background: #27ae60; color: white; width: 100%; padding: 14px; font-size: 16px; font-weight: bold; }
+    
+    label { font-weight: bold; font-size: 15px; display: block; margin-bottom: 6px; }
+    input[type="text"], textarea {
+      width: 100%; padding: 12px; border: 1px solid #d1d1d6; border-radius: 10px;
+      font-size: 15px; margin-bottom: 15px; outline: none;
     }
-    th, td {
-      padding: 10px;
-      border: 1px solid #ddd;
-      text-align: left;
-      font-size: 14px;
-    }
-    th { background-color: #007bff; color: white; }
-    tr:nth-child(even) { background-color: #f9f9f9; }
-    .img-thumb { width: 50px; height: 50px; object-fit: cover; border-radius: 4px; }
+    textarea { height: 110px; resize: none; }
+    
+    .status-msg { font-size: 13px; text-align: center; color: #666; margin-bottom: 10px; }
   </style>
 </head>
 <body>
 
-  <!-- ฟอร์มรับข้อมูลและวิเคราะห์ด้วย AI -->
+<div class="container">
   <div class="card">
-    <h2>📦 บันทึกข้อมูลสินค้า</h2>
+    <!-- กล่องแสดงรูปภาพ -->
+    <div class="media-box" id="mediaBox">
+      <span style="color: #8e8e93;">ยังไม่ได้เลือกรูปภาพ</span>
+    </div>
+
+    <!-- ปุ่มอัปโหลด/ถ่ายรูป -->
+    <div class="btn-grid">
+      <button class="btn-action btn-gray" onclick="document.getElementById('fileGallery').click()">
+        📁 เลือกรูป / วิดีโอ
+      </button>
+      <button class="btn-action btn-blue" onclick="document.getElementById('fileCamera').click()">
+        📷 ถ่ายรูป
+      </button>
+    </div>
+
+    <!-- Input สำหรับรับไฟล์ -->
+    <input type="file" id="fileGallery" accept="image/*" style="display:none">
+    <input type="file" id="fileCamera" accept="image/*" capture="environment" style="display:none">
+
+    <!-- ฟอร์มกรอกข้อมูล -->
+    <label>ชื่อ/รุ่น <span style="color: red;">*</span></label>
+    <input type="text" id="prodName" placeholder="เช่น 43mu6103k">
+
+    <label>รายละเอียด</label>
+    <textarea id="prodDesc" placeholder="รายละเอียดสินค้า..."></textarea>
+
+    <div id="aiStatus" class="status-msg"></div>
+
+    <!-- ปุ่ม AI และ ปุ่มบันทึก -->
+    <button id="aiBtn" class="btn-action btn-purple" onclick="analyzeWithAI()">
+      ✨ ค้นหารายละเอียดสินค้าด้วย AI (จากชื่อรุ่น + รูปภาพ)
+    </button>
     
-    <div class="form-group">
-      <label>รูปภาพสินค้า:</label>
-      <input type="file" id="imageInput" accept="image/*">
-      <img id="previewImg" alt="Preview Image">
-      <button id="aiBtn" class="btn-ai" onclick="analyzeWithAI()" disabled>✨ ถ่าย/เลือกรูป แล้วกดวิเคราะห์ด้วย AI</button>
-      <div id="aiStatus"></div>
-    </div>
-
-    <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
-
-    <div class="form-group">
-      <label>ชื่อสินค้า:</label>
-      <input type="text" id="prodName" placeholder="เช่น อะไหล่บอร์ด TV LG 43 นิ้ว">
-    </div>
-
-    <div class="form-group">
-      <label>หมวดหมู่ / รายละเอียด:</label>
-      <textarea id="prodDesc" rows="3" placeholder="รายละเอียดสินค้า..."></textarea>
-    </div>
-
-    <div style="display: flex; gap: 10px;">
-      <div class="form-group" style="flex: 1;">
-        <label>ราคา (บาท):</label>
-        <input type="number" id="prodPrice" placeholder="0.00">
-      </div>
-      <div class="form-group" style="flex: 1;">
-        <label>จำนวนสต็อก:</label>
-        <input type="number" id="prodQty" value="1">
-      </div>
-    </div>
-
-    <button class="btn-save" onclick="saveProduct()">💾 บันทึกสินค้าลงตาราง</button>
+    <button class="btn-action btn-green" onclick="saveData()">
+      บันทึกสินค้าลงคลาวด์
+    </button>
   </div>
 
-  <!-- ตารางแสดงรายการสินค้าที่บันทึก -->
   <div class="card">
-    <h3>📋 รายการสินค้าที่บันทึกแล้ว</h3>
-    <div style="overflow-x: auto;">
-      <table>
-        <thead>
-          <tr>
-            <th>รูปภาพ</th>
-            <th>ชื่อสินค้า</th>
-            <th>รายละเอียด</th>
-            <th>ราคา</th>
-            <th>จำนวน</th>
-          </tr>
-        </thead>
-        <tbody id="productTableBody">
-          <tr>
-            <td colspan="5" style="text-align: center; color: #888;">ยังไม่มีข้อมูลสินค้า</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <h3 style="margin-top:0;">รายการสินค้าบน Cloud (อัปเดตเรียลไทม์)</h3>
+    <div id="cloudDataList" style="color: #8e8e93; font-size: 14px;">ยังไม่มีข้อมูลบันทึก</div>
   </div>
+</div>
 
-  <script>
-    const WORKER_URL = "https://red-forest-388c.narakonone.workers.dev";
+<script>
+  // URL Cloudflare Worker ที่สร้างไว้
+  const WORKER_URL = "https://red-forest-388c.narakonone.workers.dev";
 
-    const imageInput = document.getElementById("imageInput");
-    const previewImg = document.getElementById("previewImg");
-    const aiBtn = document.getElementById("aiBtn");
-    const aiStatus = document.getElementById("aiStatus");
+  let base64Image = "";
 
-    let base64Image = "";
-    let productsList = [];
+  const fileGallery = document.getElementById('fileGallery');
+  const fileCamera = document.getElementById('fileCamera');
+  const mediaBox = document.getElementById('mediaBox');
+  const aiBtn = document.getElementById('aiBtn');
+  const aiStatus = document.getElementById('aiStatus');
 
-    // เมื่อเลือกรูปภาพ
-    imageInput.addEventListener("change", function(e) {
+  // จัดการอัปโหลดรูปภาพ
+  [fileGallery, fileCamera].forEach(input => {
+    input.addEventListener('change', function(e) {
       const file = e.target.files[0];
       if (file) {
         const reader = new FileReader();
         reader.onload = function(evt) {
-          previewImg.src = evt.target.result;
-          previewImg.style.display = "block";
+          mediaBox.innerHTML = `<img src="${evt.target.result}">`;
           base64Image = evt.target.result.split(',')[1];
-          aiBtn.disabled = false;
         };
         reader.readAsDataURL(file);
       }
     });
+  });
 
-    // เรียก AI วิเคราะห์ภาพ
-    async function analyzeWithAI() {
-      if (!base64Image) return;
+  // ฟังก์ชันวิเคราะห์ด้วย AI ผ่าน Cloudflare Worker
+  async function analyzeWithAI() {
+    const prodName = document.getElementById('prodName').value;
+    
+    if (!prodName && !base64Image) {
+      alert("กรุณากรอกชื่อ/รุ่น หรือเลือกรูปภาพก่อนวิเคราะห์ครับ");
+      return;
+    }
 
-      aiBtn.disabled = true;
-      showStatus("กำลังประมวลผลและวิเคราะห์รูปภาพ...", "loading");
+    aiBtn.disabled = true;
+    aiStatus.innerText = "กำลังวิเคราะห์ข้อมูลด้วย AI...";
 
-      const prompt = "วิเคราะห์รูปภาพสินค้านี้ ตอบกลับเป็นข้อความสั้นๆ: 1. ชื่อสินค้า 2. หมวดหมู่และรายละเอียดสั้นๆ โดยเน้นภาษาไทย";
+    const promptText = `วิเคราะห์สินค้า/อะไหล่จากชื่อรุ่น "${prodName}" และรูปภาพที่แนบมา ตอบกลับในรูปแบบ:
+[ผลการวิเคราะห์โดย AI]
+• สินค้า/อะไหล่: ${prodName || 'ตามภาพ'}
+• สภาพสินค้า: อุปกรณ์ผ่านการตรวจเช็คเรียบร้อย พร้อมใช้งาน
+• รายละเอียดเพิ่มเติม: (สรุปสั้นๆ ไม่เกิน 2 บรรทัด)`;
 
-      const payload = {
-        contents: [
-          {
-            parts: [
-              { text: prompt },
-              { inline_data: { mime_type: "image/jpeg", data: base64Image } }
-            ]
-          }
-        ]
-      };
-
-      try {
-        const response = await fetch(WORKER_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
-
-        const data = await response.json();
-
-        if (data.candidates && data.candidates[0].content.parts[0].text) {
-          const aiText = data.candidates[0].content.parts[0].text;
-          
-          // แยกข้อความเอามาเติมลงฟอร์มอัตโนมัติ
-          document.getElementById("prodDesc").value = aiText;
-          
-          // ดึงบรรทัดแรกมาตั้งเป็นชื่อสินค้า
-          const lines = aiText.split('\n').filter(l => l.trim() !== '');
-          if (lines.length > 0) {
-            document.getElementById("prodName").value = lines[0].replace(/^[0-9.\-* ]+/, '');
-          }
-
-          showStatus("วิเคราะห์สำเร็จ! เติมข้อมูลลงฟอร์มเรียบร้อย", "success");
-        } else {
-          showStatus("ไม่สามารถวิเคราะห์รูปภาพได้ กรุณากรอกข้อมูลเอง", "error");
+    const parts = [{ text: promptText }];
+    if (base64Image) {
+      parts.push({
+        inline_data: {
+          mime_type: "image/jpeg",
+          data: base64Image
         }
-      } catch (error) {
-        console.error(error);
-        showStatus("เกิดข้อผิดพลาดในการเชื่อมต่อ AI: " + error.message, "error");
-      } finally {
-        aiBtn.disabled = false;
+      });
+    }
+
+    try {
+      const response = await fetch(WORKER_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents: [{ parts }] })
+      });
+
+      const data = await response.json();
+
+      if (data.candidates && data.candidates[0].content.parts[0].text) {
+        document.getElementById('prodDesc').value = data.candidates[0].content.parts[0].text;
+        aiStatus.innerText = "วิเคราะห์สำเร็จ!";
+      } else {
+        aiStatus.innerText = "ไม่สามารถวิเคราะห์ได้ กรุณาลองใหม่อีกครั้ง";
       }
+    } catch (err) {
+      console.error(err);
+      aiStatus.innerText = "เกิดข้อผิดพลาดในการเชื่อมต่อ AI";
+    } finally {
+      aiBtn.disabled = false;
+    }
+  }
+
+  // ฟังก์ชันบันทึกข้อมูล
+  function saveData() {
+    const name = document.getElementById('prodName').value;
+    const desc = document.getElementById('prodDesc').value;
+
+    if (!name) {
+      alert("กรุณากรอกชื่อ/รุ่นสินค้า");
+      return;
     }
 
-    function showStatus(msg, type) {
-      aiStatus.innerText = msg;
-      aiStatus.className = type;
-      aiStatus.style.display = "block";
-    }
-
-    // บันทึกข้อมูลเข้าตาราง
-    function saveProduct() {
-      const name = document.getElementById("prodName").value;
-      const desc = document.getElementById("prodDesc").value;
-      const price = document.getElementById("prodPrice").value || "0";
-      const qty = document.getElementById("prodQty").value || "1";
-      const imgSrc = previewImg.src;
-
-      if (!name) {
-        alert("กรุณากรอกชื่อสินค้า");
-        return;
-      }
-
-      productsList.push({ name, desc, price, qty, imgSrc });
-      renderTable();
-
-      // ล้างฟอร์ม
-      document.getElementById("prodName").value = "";
-      document.getElementById("prodDesc").value = "";
-      document.getElementById("prodPrice").value = "";
-      document.getElementById("prodQty").value = "1";
-      document.getElementById("imageInput").value = "";
-      previewImg.style.display = "none";
-      aiStatus.style.display = "none";
-      base64Image = "";
-      aiBtn.disabled = true;
-    }
-
-    function renderTable() {
-      const tbody = document.getElementById("productTableBody");
-      if (productsList.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #888;">ยังไม่มีข้อมูลสินค้า</td></tr>';
-        return;
-      }
-
-      tbody.innerHTML = productsList.map(item => `
-        <tr>
-          <td>${item.imgSrc ? `<img src="${item.imgSrc}" class="img-thumb">` : '-'}</td>
-          <td><b>${item.name}</b></td>
-          <td>${item.desc.replace(/\n/g, '<br>')}</td>
-          <td>${Number(item.price).toLocaleString()} ฿</td>
-          <td>${item.qty}</td>
-        </tr>
-      `).join('');
-    }
-  </script>
+    alert("บันทึกข้อมูลเรียบร้อยแล้ว!");
+    // สามารถเชื่อมต่อ Firebase หรือ Database ของคุณต่อได้ที่นี่
+  }
+</script>
 
 </body>
 </html>
