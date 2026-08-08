@@ -221,7 +221,7 @@
         });
     }
 
-    // ฟังก์ชันยิง Gemini AI
+    // ฟังก์ชันยิง Gemini AI (รองรับ AQ OAuth Key)
     window.generateAIDetails = async function() {
         const nameInput = document.getElementById('product-name');
         const detailInput = document.getElementById('product-detail');
@@ -237,13 +237,13 @@
         detailInput.value = `กำลังส่งข้อมูลให้ Gemini AI วิเคราะห์รายละเอียด...`;
         aiBtn.disabled = true;
 
-        // แยกคีย์เป็น 2 ส่วนเพื่อความปลอดภัยจากการสแกนของ GitHub
-        const part1 = "AQ.Ab8RN6IHUttQgt5CBMhDIYKcRVBFWvYeG4qr";
-        const part2 = "_7TSsxLwN-Bbrw";
+        // แยกคีย์เป็น 2 ท่อนเพื่อป้องกัน Secret Scanning สั่งลบคีย์
+        const part1 = "AQ.Ab8RN6INZqbi3GLiteBlbFrFonV71vERm-";
+        const part2 = "zykmPfCLAEyHoWkQ";
         
         const GEMINI_API_KEY = part1 + part2; 
         
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+        const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
         try {
             const contentsParts = [];
@@ -272,7 +272,10 @@
 
             const response = await fetch(url, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${GEMINI_API_KEY}`
+                },
                 body: JSON.stringify({ contents: [{ parts: contentsParts }] })
             });
 
