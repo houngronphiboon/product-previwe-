@@ -221,7 +221,7 @@
         });
     }
 
-    // ฟังก์ชันยิง Gemini AI จริง
+    // ฟังก์ชันยิง Gemini AI
     window.generateAIDetails = async function() {
         const nameInput = document.getElementById('product-name');
         const detailInput = document.getElementById('product-detail');
@@ -237,8 +237,8 @@
         detailInput.value = `กำลังส่งข้อมูลให้ Gemini AI วิเคราะห์รายละเอียด...`;
         aiBtn.disabled = true;
 
-        const GEMINI_API_KEY = "AQ.Ab8RN6INNK3pWIK9v1r962gNymlhfIvII8M0z001C9QyNPehYA"; 
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+        const GEMINI_API_KEY = "AQ.Ab8RN6LR0Q4t2nn_rA4-yNbayQ6Ov39VfxuQI62Gn73yHiDHtA"; 
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
         try {
             const contentsParts = [];
@@ -273,16 +273,20 @@
 
             const data = await response.json();
 
-            if (data.candidates && data.candidates[0].content.parts[0].text) {
+            if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
                 detailInput.value = data.candidates[0].content.parts[0].text;
                 showToast("Gemini AI วิเคราะห์ข้อมูลสำเร็จ", "success");
+            } else if (data.error) {
+                console.error("API Error:", data.error);
+                detailInput.value = `ข้อผิดพลาดจาก API: ${data.error.message || 'ไม่สามารถประมวลผลได้'}`;
+                showToast("การเรียกใช้งาน API มีปัญหา", "error");
             } else {
                 detailInput.value = "ไม่สามารถวิเคราะห์ข้อมูลได้ กรุณาลองใหม่อีกครั้ง";
                 showToast("ไม่พบข้อมูลตอบกลับจาก AI", "error");
             }
 
         } catch (error) {
-            console.error(error);
+            console.error("Fetch Error:", error);
             detailInput.value = "เกิดข้อผิดพลาดในการเชื่อมต่อกับ Gemini API";
             showToast("เชื่อมต่อ AI ล้มเหลว", "error");
         } finally {
