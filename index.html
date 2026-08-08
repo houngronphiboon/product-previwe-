@@ -274,8 +274,8 @@
                 detailInput.value = data.candidates[0].content.parts[0].text;
                 showToast("Gemini AI วิเคราะห์ข้อมูลสำเร็จ", "success");
             } else if (data.error) {
-                detailInput.value = `เกิดข้อผิดพลาดจาก Gemini API: ${data.error.message || JSON.stringify(data.error)}`;
-                showToast("API มีข้อผิดพลาด", "error");
+                detailInput.value = `เกิดข้อผิดพลาดจาก API: ${data.error.message || JSON.stringify(data.error)}`;
+                showToast("API ตอบกลับผิดพลาด", "error");
             } else {
                 detailInput.value = "ไม่สามารถวิเคราะห์ข้อมูลได้ กรุณาลองใหม่อีกครั้ง";
                 showToast("ไม่พบข้อมูลตอบกลับจาก AI", "error");
