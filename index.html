@@ -145,7 +145,6 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // Firebase Config เดิมของคุณ
     const firebaseConfig = {
         apiKey: "AIzaSyAa1ueFx6m_unLe4k4IGF8BTzwFr5pkeiY",
         authDomain: "ai-note-acedb.firebaseapp.com",
@@ -159,7 +158,6 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // **เชื่อมต่อผ่าน Cloudflare Worker ที่คุณตั้งค่าเรียบร้อยแล้ว**
     const WORKER_URL = "https://red-forest-388c.narakonone.workers.dev";
 
     let selectedFile = null;
@@ -167,7 +165,6 @@
     let activeProductId = null;
     let productsDB = [];
 
-    // โหลดข้อมูลจาก Firebase แบบ Realtime
     const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
     onSnapshot(q, (snapshot) => {
         productsDB = snapshot.docs.map(doc => ({
@@ -224,7 +221,6 @@
         });
     }
 
-    // ฟังก์ชันยิง AI ผ่าน Cloudflare Worker Proxy
     window.generateAIDetails = async function() {
         const nameInput = document.getElementById('product-name');
         const detailInput = document.getElementById('product-detail');
@@ -277,6 +273,9 @@
             if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
                 detailInput.value = data.candidates[0].content.parts[0].text;
                 showToast("Gemini AI วิเคราะห์ข้อมูลสำเร็จ", "success");
+            } else if (data.error) {
+                detailInput.value = `เกิดข้อผิดพลาดจาก Gemini API: ${data.error.message || JSON.stringify(data.error)}`;
+                showToast("API มีข้อผิดพลาด", "error");
             } else {
                 detailInput.value = "ไม่สามารถวิเคราะห์ข้อมูลได้ กรุณาลองใหม่อีกครั้ง";
                 showToast("ไม่พบข้อมูลตอบกลับจาก AI", "error");
@@ -284,7 +283,7 @@
 
         } catch (error) {
             console.error("Fetch Error:", error);
-            detailInput.value = "เกิดข้อผิดพลาดในการเชื่อมต่อกับ Cloud Proxy";
+            detailInput.value = "เกิดข้อผิดพลาดในการเชื่อมต่อกับ Cloud Worker";
             showToast("เชื่อมต่อ AI ล้มเหลว", "error");
         } finally {
             aiBtn.disabled = false;
