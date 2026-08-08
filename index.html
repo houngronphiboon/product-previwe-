@@ -27,7 +27,7 @@
         input[type="text"], textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; }
         input.input-error { border-color: #dc3545 !important; background-color: #fff8f8; }
         .error-msg { color: #dc3545; font-size: 13px; margin-top: 4px; display: none; }
-        textarea { height: 110px; resize: vertical; }
+        textarea { height: 120px; resize: vertical; }
         
         .list-container { background-color: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); width: 100%; max-width: 800px; }
         .search-box { margin-bottom: 15px; position: relative; }
@@ -73,14 +73,14 @@
 
     <div class="input-group">
         <label for="product-name">ชื่อ/รุ่น <span style="color:red;">*</span></label>
-        <input type="text" id="product-name" placeholder="ระบุชื่อหรือรุ่นสินค้า เช่น 32HS400AN หรือ ใบพัดLG 37เซน" oninput="clearValidationError()">
+        <input type="text" id="product-name" placeholder="ระบุชื่อหรือรุ่น เช่น 43mu6103k" oninput="clearValidationError()">
         <div class="error-msg" id="name-error-msg">กรุณากรอกชื่อหรือรุ่นสินค้า</div>
     </div>
 
     <div class="input-group">
         <label for="product-detail">รายละเอียด</label>
-        <textarea id="product-detail" placeholder="กรอกรายละเอียด หรือใช้ AI ช่วยค้นหา"></textarea>
-        <button class="btn btn-ai" id="btn-ai-search" onclick="generateAIDetails()">✨ ค้นหารายละเอียดสินค้าด้วย AI (จากชื่อรุ่น + รูปภาพ)</button>
+        <textarea id="product-detail" placeholder="กรอกรายละเอียด หรือกดปุ่มด้านล่างให้ Gemini AI ค้นหาและแกะข้อมูลให้"></textarea>
+        <button class="btn btn-ai" id="btn-ai-search" onclick="generateAIDetails()">✨ ค้นหารายละเอียดสินค้าด้วย AI (แกะรูปภาพ + ชื่อรุ่น)</button>
     </div>
 
     <button class="btn btn-save" id="btn-save" onclick="addProduct()">บันทึกสินค้าลงคลาวด์</button>
@@ -145,7 +145,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // ข้อมูลเชื่อมต่อ Firebase ของคุณ
+    // Firebase Config
     const firebaseConfig = {
         apiKey: "AIzaSyAa1ueFx6m_unLe4k4IGF8BTzwFr5pkeiY",
         authDomain: "ai-note-acedb.firebaseapp.com",
@@ -156,7 +156,6 @@
         measurementId: "G-V45Q6BXMDH"
     };
 
-    // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
@@ -165,7 +164,7 @@
     let activeProductId = null;
     let productsDB = [];
 
-    // ดึงข้อมูลจาก Cloud แบบ Real-time
+    // โหลดข้อมูลแบบ Realtime
     const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
     onSnapshot(q, (snapshot) => {
         productsDB = snapshot.docs.map(doc => ({
@@ -222,26 +221,73 @@
         });
     }
 
-    window.generateAIDetails = function() {
+    // ฟังก์ชันยิง Gemini AI จริง
+    window.generateAIDetails = async function() {
         const nameInput = document.getElementById('product-name');
         const detailInput = document.getElementById('product-detail');
         const aiBtn = document.getElementById('btn-ai-search');
         const name = nameInput.value.trim();
 
-        if (!name) {
+        if (!name && !currentMedia.url) {
             triggerValidationError();
-            showToast("กรุณากรอกชื่อ/รุ่น สินค้าก่อนกดค้นหา", "error");
+            showToast("กรุณากรอกชื่อ/รุ่น หรือแนบรูปภาพก่อนกดวิเคราะห์", "error");
             return;
         }
 
-        detailInput.value = `กำลังส่งข้อมูลให้ AI วิเคราะห์...`;
+        detailInput.value = `กำลังส่งข้อมูลให้ Gemini AI วิเคราะห์รายละเอียด...`;
         aiBtn.disabled = true;
 
-        setTimeout(() => {
-            detailInput.value = `[ผลการวิเคราะห์โดย AI]\n• สินค้า/อะไหล่: ${name}\n• สภาพสินค้า: อุปกรณ์ผ่านการตรวจเช็คเรียบร้อย พร้อมใช้งาน`;
-            showToast("AI วิเคราะห์ข้อมูลเรียบร้อยแล้ว", "success");
+        const GEMINI_API_KEY = "AQ.Ab8RN6INNK3pWIK9v1r962gNymlhfIvII8M0z001C9QyNPehYA"; 
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+
+        try {
+            const contentsParts = [];
+            
+            let promptText = `คุณคือผู้เชี่ยวชาญด้านอะไหล่อิเล็กทรอนิกส์และอุปกรณ์ไฟฟ้า โปรดวิเคราะห์ข้อมูลสินค้าต่อไปนี้:
+1. แกะข้อความ สเปก รหัสพาร์ท (Part Number / Board Code) หรือตัวเลขราคาที่ปรากฏจากรูปภาพหรือชื่อรุ่น
+2. ระบุประเภทสินค้า (เช่น เมนบอร์ดทีวี, บอร์ดซัพพลาย, T-Con board) ยี่ห้อ และรุ่นทีวี/อุปกรณ์
+3. สรุปรายละเอียดสั้น กระชับ เป็นหัวข้อ ชัดเจน สำหรับลงบันทึกระบบสต็อกสินค้าร้านซ่อม`;
+
+            if (name) {
+                promptText += `\nข้อมูลชื่อ/รุ่นที่ป้อนมา: ${name}`;
+            }
+
+            contentsParts.push({ text: promptText });
+
+            if (currentMedia.type === 'image' && currentMedia.url) {
+                const base64Data = currentMedia.url.split(',')[1];
+                const mimeType = currentMedia.url.split(';')[0].split(':')[1];
+                contentsParts.push({
+                    inline_data: {
+                        mime_type: mimeType,
+                        data: base64Data
+                    }
+                });
+            }
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: contentsParts }] })
+            });
+
+            const data = await response.json();
+
+            if (data.candidates && data.candidates[0].content.parts[0].text) {
+                detailInput.value = data.candidates[0].content.parts[0].text;
+                showToast("Gemini AI วิเคราะห์ข้อมูลสำเร็จ", "success");
+            } else {
+                detailInput.value = "ไม่สามารถวิเคราะห์ข้อมูลได้ กรุณาลองใหม่อีกครั้ง";
+                showToast("ไม่พบข้อมูลตอบกลับจาก AI", "error");
+            }
+
+        } catch (error) {
+            console.error(error);
+            detailInput.value = "เกิดข้อผิดพลาดในการเชื่อมต่อกับ Gemini API";
+            showToast("เชื่อมต่อ AI ล้มเหลว", "error");
+        } finally {
             aiBtn.disabled = false;
-        }, 1200);
+        }
     }
 
     window.addProduct = async function() {
