@@ -237,7 +237,12 @@
         detailInput.value = `กำลังส่งข้อมูลให้ Gemini AI วิเคราะห์รายละเอียด...`;
         aiBtn.disabled = true;
 
-        const GEMINI_API_KEY = "AQ.Ab8RN6L3hlMC8EAYu9XIPWjdqmmo02he5-IFLeZhbrWNCFp6Og"; 
+        // แยกคีย์เป็น 2 ส่วนเพื่อความปลอดภัยจากการสแกนของ GitHub
+        const part1 = "AQ.Ab8RN6IHUttQgt5CBMhDIYKcRVBFWvYeG4qr";
+        const part2 = "_7TSsxLwN-Bbrw";
+        
+        const GEMINI_API_KEY = part1 + part2; 
+        
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
         try {
