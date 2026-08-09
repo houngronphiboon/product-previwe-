@@ -14,9 +14,9 @@
         .btn { flex: 1; padding: 10px 14px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; display: flex; justify-content: center; align-items: center; gap: 6px; transition: all 0.2s ease; }
         .btn-select { background-color: #e0e0e0; color: #333; }
         .btn-take { background-color: #007bff; color: #fff; }
-        .btn-ai { background-color: #6f42c1; color: #fff; width: 100%; margin-bottom: 15px; font-size: 15px; padding: 10px; }
-        .btn-ai:disabled { background-color: #b8a2e3; cursor: not-allowed; }
-        .btn-save { background-color: #28a745; color: #fff; width: 100%; margin-top: 15px; font-size: 16px; padding: 12px; }
+        .btn-ai { background-color: #8e44ad; color: #fff; width: 100%; margin-top: 15px; margin-bottom: 5px; font-size: 15px; padding: 12px; }
+        .btn-ai:disabled { background-color: #c8a2c8; cursor: not-allowed; }
+        .btn-save { background-color: #28a745; color: #fff; width: 100%; margin-top: 10px; font-size: 16px; padding: 12px; }
         .btn-edit { background-color: #ffc107; color: #212529; }
         .btn-delete { background-color: #dc3545; color: #fff; }
         .btn-update { background-color: #0d6efd; color: #fff; width: 100%; margin-top: 10px; }
@@ -71,8 +71,6 @@
         <button class="btn btn-take" onclick="document.getElementById('camera-input').click()">📷 ถ่ายรูป</button>
     </div>
 
-    <button class="btn btn-ai" id="btn-ai-search" onclick="generateAIDetails()">🤖 วิเคราะห์ข้อมูลด้วย AI</button>
-
     <div class="input-group">
         <label for="product-name">ชื่อ/รุ่น <span style="color:red;">*</span></label>
         <input type="text" id="product-name" placeholder="เช่น 32pht5853s" oninput="clearValidationError()">
@@ -83,6 +81,9 @@
         <label for="product-detail">รายละเอียด</label>
         <textarea id="product-detail" placeholder="กรอกรายละเอียดสินค้า อะไหล่ หรือกดให้ AI ช่วยวิเคราะห์"></textarea>
     </div>
+
+    <!-- ปุ่ม AI ปรับตำแหน่งมาตรงนี้ตามภาพ -->
+    <button class="btn btn-ai" id="btn-ai-search" onclick="generateAIDetails()">✨ ค้นหารายละเอียดสินค้าด้วย AI (จากชื่อรุ่น + รูปภาพ)</button>
 
     <button class="btn btn-save" id="btn-save" onclick="addProduct()">บันทึกสินค้าลงคลาวด์</button>
 </div>
@@ -157,7 +158,6 @@
         measurementId: "G-V45Q6BXMDH"
     };
 
-    // ใส่ URL ของ Cloudflare Worker ของคุณตรงนี้ (หากมี)
     const WORKER_URL = "https://your-worker-name.subdomain.workers.dev";
 
     const app = initializeApp(firebaseConfig);
@@ -168,7 +168,6 @@
     let activeProductId = null;
     let productsDB = [];
 
-    // โหลดข้อมูลจาก Firebase แบบ Realtime
     const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
     onSnapshot(q, (snapshot) => {
         productsDB = snapshot.docs.map(doc => ({
@@ -225,7 +224,7 @@
         });
     }
 
-    // ฟังก์ชันวิเคราะห์ด้วย Gemini AI (พร้อมระบบสลับไปกรอกเองเมื่อล้มเหลว)
+    // วิเคราะห์ข้อมูล AI (หากไม่สำเร็จจะ Focus/Select ไปยังช่องรายละเอียดอัตโนมัติ)
     window.generateAIDetails = async function() {
         const nameInput = document.getElementById('product-name');
         const detailInput = document.getElementById('product-detail');
@@ -288,9 +287,12 @@
 
         } catch (error) {
             console.error("AI Analysis Error:", error);
-            // คืนค่าเดิมหรือเว้นว่างเพื่อให้ผู้ใช้กรอกเองได้ทันที
-            detailInput.value = originalText;
+            detailInput.value = originalText; // ล้างข้อความค้าง
             showToast("เชื่อมต่อ AI ไม่สำเร็จ กรุณากรอกรายละเอียดด้วยตนเอง", "error");
+            
+            // เลื่อน/โฟกัส และไฮไลต์เลือกข้อความในช่องกรอกรายละเอียดทันที
+            detailInput.focus();
+            detailInput.select();
         } finally {
             aiBtn.disabled = false;
         }
