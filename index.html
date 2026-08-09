@@ -82,7 +82,7 @@
         <textarea id="product-detail" placeholder="กรอกรายละเอียดสินค้า อะไหล่ หรือกดให้ AI ช่วยวิเคราะห์"></textarea>
     </div>
 
-    <!-- ปุ่ม AI ปรับตำแหน่งมาตรงนี้ตามภาพ -->
+    <!-- ปุ่ม AI วางตำแหน่งไว้ใต้ช่องรายละเอียด -->
     <button class="btn btn-ai" id="btn-ai-search" onclick="generateAIDetails()">✨ ค้นหารายละเอียดสินค้าด้วย AI (จากชื่อรุ่น + รูปภาพ)</button>
 
     <button class="btn btn-save" id="btn-save" onclick="addProduct()">บันทึกสินค้าลงคลาวด์</button>
@@ -107,7 +107,6 @@
     </table>
 </div>
 
-<!-- Modal แสดงรายละเอียด/แก้ไข/ลบ -->
 <div class="modal" id="detail-modal">
     <div class="modal-content">
         <span class="close-btn" onclick="closeModal()">&times;</span>
@@ -142,12 +141,10 @@
 
 <div id="toast" class="toast"></div>
 
-<!-- Firebase SDK v9 -->
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // Firebase Config
     const firebaseConfig = {
         apiKey: "AIzaSyAa1ueFx6m_unLe4k4IGF8BTzwFr5pkeiY",
         authDomain: "ai-note-acedb.firebaseapp.com",
@@ -158,7 +155,8 @@
         measurementId: "G-V45Q6BXMDH"
     };
 
-    const WORKER_URL = "https://misty-frog-8bb9.narakonone.workers.dev/";
+    //ใส่ URL ของ Worker misty-frog-8bb9 ตรงนี้
+    const WORKER_URL = "https://misty-frog-8bb9.YOUR-SUBDOMAIN.workers.dev";
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
@@ -224,7 +222,7 @@
         });
     }
 
-    // วิเคราะห์ข้อมูล AI (หากไม่สำเร็จจะ Focus/Select ไปยังช่องรายละเอียดอัตโนมัติ)
+    // ฟังก์ชันวิเคราะห์ AI (หากล้มเหลวจะ Focus และ Select ช่องรายละเอียดให้อัตโนมัติ)
     window.generateAIDetails = async function() {
         const nameInput = document.getElementById('product-name');
         const detailInput = document.getElementById('product-detail');
@@ -287,10 +285,10 @@
 
         } catch (error) {
             console.error("AI Analysis Error:", error);
-            detailInput.value = originalText; // ล้างข้อความค้าง
+            detailInput.value = originalText;
             showToast("เชื่อมต่อ AI ไม่สำเร็จ กรุณากรอกรายละเอียดด้วยตนเอง", "error");
             
-            // เลื่อน/โฟกัส และไฮไลต์เลือกข้อความในช่องกรอกรายละเอียดทันที
+            // โฟกัส + ไฮไลต์ข้อความในช่องกรอกรายละเอียด
             detailInput.focus();
             detailInput.select();
         } finally {
