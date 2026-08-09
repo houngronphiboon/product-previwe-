@@ -10,10 +10,12 @@
         .container { background-color: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); width: 100%; max-width: 500px; margin-bottom: 25px; }
         .media-preview-box { width: 100%; height: 260px; background-color: #2b2b2b; border-radius: 8px; margin-bottom: 15px; display: flex; justify-content: center; align-items: center; color: #aaa; border: 2px dashed #ccc; overflow: hidden; position: relative; }
         .media-preview-box img, .media-preview-box video { max-width: 100%; max-height: 100%; object-fit: contain; }
-        .button-group { display: flex; gap: 10px; margin-bottom: 20px; }
+        .button-group { display: flex; gap: 10px; margin-bottom: 15px; }
         .btn { flex: 1; padding: 10px 14px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; display: flex; justify-content: center; align-items: center; gap: 6px; transition: all 0.2s ease; }
         .btn-select { background-color: #e0e0e0; color: #333; }
         .btn-take { background-color: #007bff; color: #fff; }
+        .btn-ai { background-color: #6f42c1; color: #fff; width: 100%; margin-bottom: 15px; font-size: 15px; padding: 10px; }
+        .btn-ai:disabled { background-color: #b8a2e3; cursor: not-allowed; }
         .btn-save { background-color: #28a745; color: #fff; width: 100%; margin-top: 15px; font-size: 16px; padding: 12px; }
         .btn-edit { background-color: #ffc107; color: #212529; }
         .btn-delete { background-color: #dc3545; color: #fff; }
@@ -69,6 +71,8 @@
         <button class="btn btn-take" onclick="document.getElementById('camera-input').click()">📷 ถ่ายรูป</button>
     </div>
 
+    <button class="btn btn-ai" id="btn-ai-search" onclick="generateAIDetails()">🤖 วิเคราะห์ข้อมูลด้วย AI</button>
+
     <div class="input-group">
         <label for="product-name">ชื่อ/รุ่น <span style="color:red;">*</span></label>
         <input type="text" id="product-name" placeholder="เช่น 32pht5853s" oninput="clearValidationError()">
@@ -77,7 +81,7 @@
 
     <div class="input-group">
         <label for="product-detail">รายละเอียด</label>
-        <textarea id="product-detail" placeholder="กรอกรายละเอียดสินค้า อะไหล่ หรือหมายเหตุเพิ่มเติม"></textarea>
+        <textarea id="product-detail" placeholder="กรอกรายละเอียดสินค้า อะไหล่ หรือกดให้ AI ช่วยวิเคราะห์"></textarea>
     </div>
 
     <button class="btn btn-save" id="btn-save" onclick="addProduct()">บันทึกสินค้าลงคลาวด์</button>
@@ -153,6 +157,9 @@
         measurementId: "G-V45Q6BXMDH"
     };
 
+    // ใส่ URL ของ Cloudflare Worker ของคุณตรงนี้ (หากมี)
+    const WORKER_URL = "https://your-worker-name.subdomain.workers.dev";
+
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
@@ -216,6 +223,77 @@
                 };
             };
         });
+    }
+
+    // ฟังก์ชันวิเคราะห์ด้วย Gemini AI (พร้อมระบบสลับไปกรอกเองเมื่อล้มเหลว)
+    window.generateAIDetails = async function() {
+        const nameInput = document.getElementById('product-name');
+        const detailInput = document.getElementById('product-detail');
+        const aiBtn = document.getElementById('btn-ai-search');
+        const name = nameInput.value.trim();
+
+        if (!name && !currentMedia.url) {
+            triggerValidationError();
+            showToast("กรุณากรอกชื่อ/รุ่น หรือแนบรูปภาพก่อนกดวิเคราะห์", "error");
+            return;
+        }
+
+        const originalText = detailInput.value;
+        detailInput.value = `กำลังส่งข้อมูลให้ Gemini AI วิเคราะห์รายละเอียด...`;
+        aiBtn.disabled = true;
+
+        try {
+            const contentsParts = [];
+            let promptText = `คุณคือผู้เชี่ยวชาญด้านอะไหล่อิเล็กทรอนิกส์และอุปกรณ์ไฟฟ้า โปรดวิเคราะห์ข้อมูลสินค้าต่อไปนี้:
+1. แกะข้อความ สเปก รหัสพาร์ท (Part Number / Board Code) หรือตัวเลขราคาที่ปรากฏจากรูปภาพหรือชื่อรุ่น
+2. ระบุประเภทสินค้า ยี่ห้อ และรุ่นอุปกรณ์
+3. ตอบกลับในรูปแบบสรุปสวยงามดังนี้:
+
+[ผลการวิเคราะห์โดย AI]
+• สินค้า/อะไหล่: ${name || 'ดูจากรูปภาพ'}
+• สภาพสินค้า: อุปกรณ์ผ่านการตรวจเช็คเรียบร้อย พร้อมใช้งาน
+• รายละเอียดเพิ่มเติม: (สรุปรายละเอียดสเปก/รหัสพาร์ท สั้นกระชับ 2-3 บรรทัด)`;
+
+            contentsParts.push({ text: promptText });
+
+            if (currentMedia.type === 'image' && currentMedia.url) {
+                const base64Data = currentMedia.url.split(',')[1];
+                const mimeType = currentMedia.url.split(';')[0].split(':')[1];
+                contentsParts.push({
+                    inline_data: {
+                        mime_type: mimeType,
+                        data: base64Data
+                    }
+                });
+            }
+
+            const response = await fetch(WORKER_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: contentsParts }] })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
+                detailInput.value = data.candidates[0].content.parts[0].text;
+                showToast("Gemini AI วิเคราะห์ข้อมูลสำเร็จ", "success");
+            } else {
+                throw new Error("Invalid response format");
+            }
+
+        } catch (error) {
+            console.error("AI Analysis Error:", error);
+            // คืนค่าเดิมหรือเว้นว่างเพื่อให้ผู้ใช้กรอกเองได้ทันที
+            detailInput.value = originalText;
+            showToast("เชื่อมต่อ AI ไม่สำเร็จ กรุณากรอกรายละเอียดด้วยตนเอง", "error");
+        } finally {
+            aiBtn.disabled = false;
+        }
     }
 
     window.addProduct = async function() {
