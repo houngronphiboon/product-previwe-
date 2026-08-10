@@ -10,14 +10,13 @@
         
         .container { background-color: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); width: 100%; max-width: 500px; margin-bottom: 25px; position: relative; }
         
-        /* สไตล์จุดไฟสถานะการเชื่อมต่อ (แถบคู่) */
-        .status-container { position: absolute; top: 15px; right: 15px; display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
-        .status-badge { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: #444; background: #f0f0f0; padding: 4px 8px; border-radius: 20px; border: 1px solid #e0e0e0; }
-        .status-dot { width: 8px; height: 8px; border-radius: 50%; background-color: #ffc107; transition: background-color 0.3s ease; }
+        /* สไตล์จุดไฟสถานะการเชื่อมต่อ */
+        .status-badge { position: absolute; top: 15px; right: 15px; display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #555; background: #f0f0f0; padding: 4px 10px; border-radius: 20px; }
+        .status-dot { width: 9px; height: 9px; border-radius: 50%; background-color: #ffc107; transition: background-color 0.3s ease; }
         .status-dot.online { background-color: #28a745; box-shadow: 0 0 6px #28a745; }
         .status-dot.offline { background-color: #dc3545; box-shadow: 0 0 6px #dc3545; }
 
-        .media-preview-box { width: 100%; height: 240px; background-color: #2b2b2b; border-radius: 8px; margin-top: 35px; margin-bottom: 15px; display: flex; justify-content: center; align-items: center; color: #aaa; border: 2px dashed #ccc; overflow: hidden; position: relative; }
+        .media-preview-box { width: 100%; height: 240px; background-color: #2b2b2b; border-radius: 8px; margin-top: 15px; margin-bottom: 15px; display: flex; justify-content: center; align-items: center; color: #aaa; border: 2px dashed #ccc; overflow: hidden; position: relative; }
         .media-preview-box img, .media-preview-box video { max-width: 100%; max-height: 100%; object-fit: contain; }
         
         .button-group { display: flex; gap: 10px; margin-bottom: 15px; }
@@ -69,15 +68,10 @@
 <body>
 
 <div class="container">
-    <div class="status-container">
-        <div class="status-badge" title="สถานะการเชื่อมต่อฐานข้อมูล Cloud">
-            <span class="status-dot" id="db-status-dot"></span>
-            <span id="db-status-text">DB: เช็ค...</span>
-        </div>
-        <div class="status-badge" title="สถานะความพร้อมของระบบ AI">
-            <span class="status-dot" id="ai-status-dot"></span>
-            <span id="ai-status-text">AI: เช็ค...</span>
-        </div>
+    <!-- จุดไฟสถานะการเชื่อมต่อ -->
+    <div class="status-badge">
+        <span class="status-dot" id="status-dot"></span>
+        <span id="status-text">กำลังเชื่อมต่อ...</span>
     </div>
 
     <div class="media-preview-box" id="preview-box">
@@ -174,7 +168,7 @@
         measurementId: "G-V45Q6BXMDH"
     };
 
-    // ⚠️ อย่าลืมใส่ URL เต็มของ Cloudflare Worker ของคุณ
+    // ⚠️ ใส่ Cloudflare Worker URL ของคุณ
     const WORKER_URL = "https://misty-frog-8bb9.narakonone.workers.dev/";
 
     const app = initializeApp(firebaseConfig);
@@ -185,47 +179,30 @@
     let activeProductId = null;
     let productsDB = [];
 
-    // --- 1. ตรวจสอบสถานะ DB (Firebase) ---
+    // ดึงข้อมูลและอัปเดตไฟสถานะการเชื่อมต่อ
     const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
     onSnapshot(q, (snapshot) => {
         productsDB = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         filterProducts();
-        setDbStatus(true, "DB พร้อม");
+        
+        // อัปเดตจุดไฟสถานะเป็น เขียว (Online)
+        setNetworkStatus(true, "Cloud ออนไลน์");
     }, (error) => {
-        setDbStatus(false, "DB ขัดข้อง");
+        // อัปเดตจุดไฟสถานะเป็น แดง (Offline)
+        setNetworkStatus(false, "เชื่อมต่อล้มเหลว");
+        showToast("เชื่อมต่อข้อมูลล้มเหลว ตรวจสอบสิทธิ์การเข้าถึง", "error");
     });
 
-    function setDbStatus(isOnline, text) {
-        const dot = document.getElementById('db-status-dot');
-        const textEl = document.getElementById('db-status-text');
-        dot.className = isOnline ? "status-dot online" : "status-dot offline";
+    function setNetworkStatus(isOnline, text) {
+        const dot = document.getElementById('status-dot');
+        const textEl = document.getElementById('status-text');
+        if (isOnline) {
+            dot.className = "status-dot online";
+        } else {
+            dot.className = "status-dot offline";
+        }
         textEl.innerText = text;
     }
-
-    // --- 2. ตรวจสอบสถานะ AI (Worker + Gemini) ---
-    async function checkAIStatus() {
-        const dot = document.getElementById('ai-status-dot');
-        const textEl = document.getElementById('ai-status-text');
-        
-        try {
-            // ส่ง OPTIONS Request เพื่อเช็คว่า Worker ตอบรับหรือไม่
-            const res = await fetch(WORKER_URL, { method: 'OPTIONS' });
-            if (res.ok || res.status === 204) {
-                dot.className = "status-dot online";
-                textEl.innerText = "AI พร้อม";
-            } else {
-                dot.className = "status-dot offline";
-                textEl.innerText = "AI ขัดข้อง";
-            }
-        } catch (e) {
-            dot.className = "status-dot offline";
-            textEl.innerText = "AI ไม่ตอบสนอง";
-        }
-    }
-
-    // เช็คสถานะ AI เมื่อโหลดหน้าเว็บ และเช็คซ้ำทุกๆ 30 วินาที
-    checkAIStatus();
-    setInterval(checkAIStatus, 30000);
 
     window.handleFileSelect = function(event) {
         const file = event.target.files[0];
@@ -329,7 +306,6 @@
             if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
                 detailInput.value = data.candidates[0].content.parts[0].text;
                 showToast("Gemini AI วิเคราะห์ข้อมูลสำเร็จ", "success");
-                setAiStatus(true, "AI พร้อม");
             } else {
                 throw new Error("โครงสร้างตอบกลับจาก AI ไม่ถูกต้อง");
             }
@@ -337,8 +313,7 @@
         } catch (error) {
             console.error("AI Analysis Error:", error);
             detailInput.value = originalText;
-            showToast("เชื่อมต่อ AI ไม่สำเร็จ กรุณาตรวจสอบคีย์ Token", "error");
-            setAiStatus(false, "AI ขัดข้อง");
+            showToast("เชื่อมต่อ AI ไม่สำเร็จ กรุณากรอกรายละเอียดด้วยตนเอง", "error");
             detailInput.focus();
             detailInput.select();
         } finally {
@@ -346,13 +321,7 @@
         }
     }
 
-    function setAiStatus(isOnline, text) {
-        const dot = document.getElementById('ai-status-dot');
-        const textEl = document.getElementById('ai-status-text');
-        dot.className = isOnline ? "status-dot online" : "status-dot offline";
-        textEl.innerText = text;
-    }
-
+    // ฟังก์ชันเพิ่มสินค้า พร้อมระบบตรวจเช็คชื่อซ้ำ
     window.addProduct = async function() {
         const nameInput = document.getElementById('product-name');
         const detailInput = document.getElementById('product-detail');
@@ -366,6 +335,7 @@
             return;
         }
 
+        // 🔍 ตรวจสอบว่าชื่อรุ่นซ้ำใน Cloud หรือไม่ (แบบไม่สนอักษรพิมพ์เล็ก-ใหญ่)
         const isDuplicate = productsDB.some(item => item.name.toLowerCase() === name.toLowerCase());
         if (isDuplicate) {
             triggerValidationError(`ชื่อรุ่น "${name}" มีอยู่ในระบบแล้ว กรุณาป้อนชื่อใหม่`);
@@ -486,6 +456,7 @@
             return;
         }
 
+        // 🔍 ตรวจเช็คชื่อซ้ำกรณีแก้ไข (เว้นรายการของตัวเองเอาไว้)
         const isDuplicate = productsDB.some(item => item.id !== activeProductId && item.name.toLowerCase() === newName.toLowerCase());
         if (isDuplicate) {
             showToast(`ชื่อรุ่น "${newName}" มีในระบบแล้ว โปรดเปลี่ยนเป็นชื่ออื่น`, "error");
