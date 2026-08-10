@@ -82,9 +82,7 @@
         <textarea id="product-detail" placeholder="กรอกรายละเอียดสินค้า อะไหล่ หรือกดให้ AI ช่วยวิเคราะห์"></textarea>
     </div>
 
-    <!-- ปุ่ม AI วางตำแหน่งไว้ใต้ช่องรายละเอียด -->
     <button class="btn btn-ai" id="btn-ai-search" onclick="generateAIDetails()">✨ ค้นหารายละเอียดสินค้าด้วย AI (จากชื่อรุ่น + รูปภาพ)</button>
-
     <button class="btn btn-save" id="btn-save" onclick="addProduct()">บันทึกสินค้าลงคลาวด์</button>
 </div>
 
@@ -155,8 +153,8 @@
         measurementId: "G-V45Q6BXMDH"
     };
 
-    //ใส่ URL ของ Worker misty-frog-8bb9 ตรงนี้
-    const WORKER_URL = "https://misty-frog-8bb9.YOUR-SUBDOMAIN.workers.dev";
+    // ⚠️ ใส่ Cloudflare Worker URL จริงของคุณที่นี่
+    const WORKER_URL = "https://misty-frog-8bb9.narakonone.workers.dev/";
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
@@ -168,10 +166,7 @@
 
     const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
     onSnapshot(q, (snapshot) => {
-        productsDB = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        }));
+        productsDB = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         filterProducts();
     }, (error) => {
         showToast("เชื่อมต่อข้อมูลล้มเหลว ตรวจสอบสิทธิ์การเข้าถึง", "error");
@@ -222,7 +217,7 @@
         });
     }
 
-    // ฟังก์ชันวิเคราะห์ AI (หากล้มเหลวจะ Focus และ Select ช่องรายละเอียดให้อัตโนมัติ)
+    // ฟังก์ชันเรียกใช้ Worker (รองรับ Vertex AI Response)
     window.generateAIDetails = async function() {
         const nameInput = document.getElementById('product-name');
         const detailInput = document.getElementById('product-detail');
@@ -240,7 +235,7 @@
         aiBtn.disabled = true;
 
         try {
-            const contentsParts = [];
+            const parts = [];
             let promptText = `คุณคือผู้เชี่ยวชาญด้านอะไหล่อิเล็กทรอนิกส์และอุปกรณ์ไฟฟ้า โปรดวิเคราะห์ข้อมูลสินค้าต่อไปนี้:
 1. แกะข้อความ สเปก รหัสพาร์ท (Part Number / Board Code) หรือตัวเลขราคาที่ปรากฏจากรูปภาพหรือชื่อรุ่น
 2. ระบุประเภทสินค้า ยี่ห้อ และรุ่นอุปกรณ์
@@ -251,12 +246,12 @@
 • สภาพสินค้า: อุปกรณ์ผ่านการตรวจเช็คเรียบร้อย พร้อมใช้งาน
 • รายละเอียดเพิ่มเติม: (สรุปรายละเอียดสเปก/รหัสพาร์ท สั้นกระชับ 2-3 บรรทัด)`;
 
-            contentsParts.push({ text: promptText });
+            parts.push({ text: promptText });
 
             if (currentMedia.type === 'image' && currentMedia.url) {
                 const base64Data = currentMedia.url.split(',')[1];
                 const mimeType = currentMedia.url.split(';')[0].split(':')[1];
-                contentsParts.push({
+                parts.push({
                     inline_data: {
                         mime_type: mimeType,
                         data: base64Data
@@ -267,28 +262,28 @@
             const response = await fetch(WORKER_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: contentsParts }] })
+                body: JSON.stringify({ contents: [{ parts: parts }] })
             });
 
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                const errData = await response.json();
+                throw new Error(errData.error || `HTTP error! status: ${response.status}`);
             }
 
             const data = await response.json();
 
+            // ดึงข้อความตอบกลับจากโครงสร้าง response ของ Vertex AI
             if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
                 detailInput.value = data.candidates[0].content.parts[0].text;
                 showToast("Gemini AI วิเคราะห์ข้อมูลสำเร็จ", "success");
             } else {
-                throw new Error("Invalid response format");
+                throw new Error("โครงสร้างตอบกลับจาก AI ไม่ถูกต้อง");
             }
 
         } catch (error) {
             console.error("AI Analysis Error:", error);
             detailInput.value = originalText;
             showToast("เชื่อมต่อ AI ไม่สำเร็จ กรุณากรอกรายละเอียดด้วยตนเอง", "error");
-            
-            // โฟกัส + ไฮไลต์ข้อความในช่องกรอกรายละเอียด
             detailInput.focus();
             detailInput.select();
         } finally {
@@ -322,7 +317,6 @@
             });
 
             showToast("บันทึกข้อมูลลง Cloud เรียบร้อยแล้ว", "success");
-
             nameInput.value = ''; detailInput.value = '';
             document.getElementById('preview-box').innerHTML = '<span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>';
             selectedFile = null;
@@ -337,10 +331,10 @@
     }
 
     window.filterProducts = function() {
-        const query = document.getElementById('search-input').value.toLowerCase().trim();
+        const queryStr = document.getElementById('search-input').value.toLowerCase().trim();
         const filtered = productsDB.filter(item => 
-            item.name.toLowerCase().includes(query) || 
-            item.detail.toLowerCase().includes(query)
+            item.name.toLowerCase().includes(queryStr) || 
+            item.detail.toLowerCase().includes(queryStr)
         );
         renderTable(filtered);
     }
