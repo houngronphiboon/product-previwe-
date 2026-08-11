@@ -434,7 +434,7 @@
 
       <!-- ปุ่ม AI & บันทึก -->
       <button class="btn btn-ai" id="btn-ai-search" onclick="generateAIDetails()">
-        ✨ ค้นหารายละเอียดสินค้าด้วย AI (จากชื่อรุ่น + รูปภาพ)
+        ✨ ค้นหารายละเอียดสินค้าด้วย AI (จากชื่อ/รุ่น)
       </button>
 
       <button class="btn btn-save active" id="btn-save" onclick="addProduct()">
@@ -538,7 +538,6 @@
 
     let processedMedia = { type: null, data: null, file: null };
     let activeProductId = null;
-    
     let productsList = [];
 
     // --- Helper Functions UI ---
@@ -609,7 +608,7 @@
       }
     }
 
-    // --- 2. Real-time Search เฉพาะจาก ชื่อ/รุ่น (ค้นหาคำจากส่วนไหนก็ได้) ---
+    // --- 2. Real-time Search เฉพาะจาก ชื่อ/รุ่น ---
     window.handleSearch = function() {
       const queryStr = document.getElementById('search-input').value.trim().toLowerCase();
 
@@ -618,7 +617,6 @@
         return;
       }
 
-      // กรองค้นหาเฉพาะฟิลด์ name (ชื่อ/รุ่น) เท่านั้น
       const filtered = productsList.filter(item => {
         const nameText = (item.name || '').toLowerCase();
         return nameText.includes(queryStr);
@@ -635,7 +633,6 @@
         
         productsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         
-        // เมื่อดึงข้อมูลมาแล้ว ล้างช่องค้นหาและแสดงตาราง
         document.getElementById('search-input').value = '';
         renderTable(productsList);
         setDbStatus(true, "DB พร้อม");
@@ -690,7 +687,6 @@
       document.getElementById('btn-camera').disabled = disabled;
     }
 
-    // ย่อขนาดรูปภาพ (ทำงานตอนบันทึกสินค้า)
     function compressImage(file, maxWidth = 800, quality = 0.6) {
       return new Promise((resolve) => {
         const reader = new FileReader();
@@ -716,7 +712,6 @@
       });
     }
 
-    // เมื่อผู้ใช้เลือกรูป/ถ่ายรูป: แสดง Preview ทันทีโดยยังไม่ย่อรูป
     window.handleFileSelect = function(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -768,43 +763,34 @@
       return data.secure_url;
     }
 
-    // --- AI Generator ---
+    // --- AI Generator (วิเคราะห์เฉพาะชื่อ/รุ่น เท่านั้น) ---
     window.generateAIDetails = async function() {
       const nameInput = document.getElementById('product-name');
       const detailInput = document.getElementById('product-detail');
       const name = nameInput.value.trim();
 
-      if (!name && !processedMedia.data) {
-        triggerValidationError("กรุณากรอกชื่อ/รุ่น หรือแนบรูปภาพก่อนกดวิเคราะห์");
-        showToast("กรุณากรอกชื่อ/รุ่น หรือแนบรูปภาพก่อนกดวิเคราะห์", "error");
+      if (!name) {
+        triggerValidationError("กรุณากรอกชื่อ/รุ่น สินค้าก่อนกดวิเคราะห์");
+        showToast("กรุณากรอกชื่อ/รุ่น สินค้าก่อนกดวิเคราะห์", "error");
         return;
       }
 
       const originalText = detailInput.value;
-      detailInput.value = `กำลังส่งข้อมูลให้ Gemini AI วิเคราะห์รายละเอียด...`;
+      detailInput.value = `กำลังส่งชื่อรุ่น "${name}" ให้ Gemini AI วิเคราะห์รายละเอียด...`;
       setFormButtonsDisabled(true);
 
       try {
-        const parts = [];
-        let promptText = `คุณคือผู้เชี่ยวชาญด้านอะไหล่อิเล็กทรอนิกส์และอุปกรณ์ไฟฟ้า โปรดวิเคราะห์ข้อมูลสินค้าต่อไปนี้:
-1. แกะข้อความ สเปก รหัสพาร์ท (Part Number / Board Code) หรือตัวเลขราคาที่ปรากฏจากรูปภาพหรือชื่อรุ่น
-2. ระบุประเภทสินค้า ยี่ห้อ และรุ่นอุปกรณ์
+        const promptText = `คุณคือผู้เชี่ยวชาญด้านอะไหล่อิเล็กทรอนิกส์และอุปกรณ์ไฟฟ้า โปรดวิเคราะห์ข้อมูลสินค้าจากชื่อรุ่น/รหัสพาร์ทต่อไปนี้:
+1. ระบุประเภทสินค้า ยี่ห้อ และรุ่น/สเปกที่เกี่ยวข้อง
+2. ระบุข้อแนะนำหรือจุดสังเกตสำหรับช่างผู้ใช้งาน (ถ้ามี)
 3. ตอบกลับในรูปแบบสรุปสวยงามดังนี้:
 
 [ผลการวิเคราะห์โดย AI]
-• สินค้า/อะไหล่: ${name || 'ดูจากรูปภาพ'}
+• สินค้า/อะไหล่: ${name}
 • สภาพสินค้า: อุปกรณ์ผ่านการตรวจเช็คเรียบร้อย พร้อมใช้งาน
-• รายละเอียดเพิ่มเติม: (สรุปรายละเอียดสเปก/รหัสพาร์ท สั้นกระชับ 2-3 บรรทัด)`;
+• รายละเอียดสเปก: (สรุปรายละเอียดสเปก/คุณสมบัติ สั้นกระชับ 2-3 บรรทัด)`;
 
-        parts.push({ text: promptText });
-
-        if (processedMedia.type === 'image' && processedMedia.data) {
-          const base64Data = processedMedia.data.split(',')[1];
-          const mimeType = processedMedia.data.split(';')[0].split(':')[1];
-          parts.push({
-            inline_data: { mime_type: mimeType, data: base64Data }
-          });
-        }
+        const parts = [{ text: promptText }];
 
         const response = await fetch(WORKER_URL, {
           method: 'POST',
@@ -835,7 +821,7 @@
       }
     }
 
-    // --- Save Product (ย่อรูปภาพ + อัปโหลด + บันทึกลง Firestore) ---
+    // --- Save Product ---
     window.addProduct = async function() {
       const nameInput = document.getElementById('product-name');
       const detailInput = document.getElementById('product-detail');
@@ -992,7 +978,7 @@
       }
     }
 
-    // --- Delete Product (Firestore + Cloudinary Cleanup) ---
+    // --- Delete Product ---
     window.deleteProduct = async function() {
       if (!confirm("คุณต้องการลบรายการนี้ใช่หรือไม่?")) return;
 
