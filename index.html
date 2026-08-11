@@ -751,6 +751,7 @@
       document.getElementById('btn-camera').disabled = disabled;
     }
 
+    // ฟังก์ชันสำหรับย่อขนาดรูปภาพ (จะถูกเรียกใช้ตอนกดบันทึก)
     function compressImage(file, maxWidth = 800, quality = 0.6) {
       return new Promise((resolve) => {
         const reader = new FileReader();
@@ -776,7 +777,8 @@
       });
     }
 
-    window.handleFileSelect = async function(event) {
+    // เมื่อผู้ใช้เลือกรูป/ถ่ายรูป: แสดง Preview ทันทีโดยยังไม่ย่อรูป
+    window.handleFileSelect = function(event) {
       const file = event.target.files[0];
       if (!file) return;
 
@@ -784,19 +786,17 @@
       const previewBox = document.getElementById('preview-box');
 
       if (file.type.startsWith('image/')) {
-        showToast("กำลังย่อขนาดรูปภาพ...", "info");
-        const compressed = await compressImage(file);
-        
-        processedMedia = { 
-          type: 'image', 
-          data: compressed.base64, 
-          file: compressed.blob 
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          processedMedia = { 
+            type: 'image', 
+            data: e.target.result, // Base64 ดั้งเดิมสำหรับใช้ Preview/AI
+            file: file             // ไฟล์ต้นฉบับรอการย่อตอนกดบันทึก
+          };
+          previewBox.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
         };
-        
-        previewBox.innerHTML = `<img src="${compressed.base64}" alt="Preview">`;
-        showToast("ย่อรูปภาพเรียบร้อย (พร้อมอัปโหลด)", "info");
+        reader.readAsDataURL(file);
       } else if (file.type.startsWith('video/')) {
-        showToast("โหลดวิดีโอเรียบร้อย", "info");
         const videoUrl = URL.createObjectURL(file);
         processedMedia = { 
           type: 'video', 
@@ -896,7 +896,7 @@
       }
     }
 
-    // --- Save Product ---
+    // --- Save Product (ย่อรูปภาพ + อัปโหลด + บันทึกลง Firestore) ---
     window.addProduct = async function() {
       const nameInput = document.getElementById('product-name');
       const detailInput = document.getElementById('product-detail');
@@ -911,16 +911,25 @@
       }
 
       setFormButtonsDisabled(true);
-      saveBtn.innerText = "กำลังอัปโหลดสื่อและบันทึก...";
+      saveBtn.innerText = "กำลังประมวลผลและบันทึก...";
 
       try {
         let mediaUrl = "";
         let mediaType = processedMedia.type;
 
         if (processedMedia.file) {
+          let uploadFile = processedMedia.file;
+
+          // ถ้ารูปภาพเป็นประเภท image ให้ทำการย่อขนาดรูปภาพในขั้นตอนนี้
+          if (mediaType === 'image') {
+            showToast("กำลังย่อขนาดรูปภาพ...", "info");
+            const compressed = await compressImage(processedMedia.file);
+            uploadFile = compressed.blob;
+          }
+
           showToast(`กำลังอัปโหลด ${mediaType === 'video' ? 'วิดีโอ' : 'รูปภาพ'} ไปยัง Cloudinary...`, "info");
           const resourceType = mediaType === 'video' ? 'video' : 'image';
-          mediaUrl = await uploadToCloudinary(processedMedia.file, resourceType);
+          mediaUrl = await uploadToCloudinary(uploadFile, resourceType);
         }
 
         await addDoc(collection(db, "products"), {
@@ -1064,13 +1073,11 @@
       const item = productsList.find(p => p.id === activeProductId);
 
       try {
-        // 1. ลบไฟล์สื่อบน Cloudinary ผ่าน Cloudflare Worker (ถ้ามี)
         if (item && item.mediaUrl) {
           showToast("กำลังลบไฟล์สื่อบน Cloud...", "info");
           await deleteMediaFromCloudinary(item.mediaUrl, item.mediaType);
         }
 
-        // 2. ลบเอกสารออกจาก Cloud Firestore
         await deleteDoc(doc(db, "products", activeProductId));
 
         closeModal();
