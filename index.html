@@ -223,7 +223,7 @@
       color: white;
     }
 
-    /* ตารางรายการสินค้า + ปรับปรุง Responsive */
+    /* ตารางรายการสินค้า */
     .list-container {
       width: 100%;
       max-width: 800px;
@@ -268,7 +268,7 @@
       background-color: #f0f9ff;
     }
 
-    /* Badge Tag ป้ายกำกับชนิดสื่อ (Soft Colors) */
+    /* Badge Tag ป้ายกำกับชนิดสื่อ */
     .badge {
       display: inline-flex;
       align-items: center;
@@ -383,7 +383,7 @@
 </head>
 <body>
 
-  <!-- ส่วนฟอร์มรับข้อมูล -->
+  <!-- ฟอร์มรับข้อมูล -->
   <div class="container">
     <div class="card">
       
@@ -432,7 +432,7 @@
         <textarea id="product-detail" class="form-control" placeholder="กรอกรายละเอียดสินค้า อะไหล่ หรือกดให้ AI ช่วยวิเคราะห์"></textarea>
       </div>
 
-      <!-- ปุ่ม AI & ปุ่มบันทึก -->
+      <!-- ปุ่ม AI & บันทึก -->
       <button class="btn btn-ai" id="btn-ai-search" onclick="generateAIDetails()">
         ✨ ค้นหารายละเอียดสินค้าด้วย AI (จากชื่อรุ่น + รูปภาพ)
       </button>
@@ -450,12 +450,12 @@
       รายการสินค้าบน Cloud
     </h3>
 
-    <!-- ช่องค้นหา -->
+    <!-- ช่องค้นหา Real-time บน Firestore -->
     <div class="form-group">
-      <input type="text" id="search-input" class="form-control" placeholder="🔍 พิมพ์เพื่อค้นหารายการสินค้า..." oninput="handleSearch()">
+      <input type="text" id="search-input" class="form-control" placeholder="🔍 พิมพ์ชื่อรุ่นเพื่อค้นหาบน คลาวด์..." oninput="handleSearch()">
     </div>
 
-    <!-- ตารางสินค้า Responsive สไลด์ซ้าย-ขวาได้ -->
+    <!-- ตารางสินค้า Responsive -->
     <div class="table-container">
       <table>
         <thead>
@@ -472,7 +472,7 @@
     </div>
 
     <div id="loading-indicator" style="display: none; text-align: center; color: #2563eb; padding: 12px; font-weight: 600;">
-      กำลังโหลดข้อมูลเพิ่มเติม...
+      กำลังโหลดข้อมูล...
     </div>
   </div>
 
@@ -512,12 +512,12 @@
   <!-- Toast การแจ้งเตือน -->
   <div id="toast" class="toast"></div>
 
-  <!-- Module Script: Firebase & Business Logic -->
+  <!-- Module Script: Firebase & Logic -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, query, orderBy, limit, startAfter, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, query, orderBy, limit, startAfter, getDocs, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // ตั้งค่า Cloudinary & Firebase
+    // Configuration
     const CLOUDINARY_CLOUD_NAME = "qxdbrnyx"; 
     const CLOUDINARY_UPLOAD_PRESET = "ainote_preset"; 
 
@@ -543,10 +543,86 @@
     let lastDoc = null;
     let isLoadingMore = false;
     let hasMoreData = true;
+    let isSearchActive = false;
+    let searchDebounceTimer = null;
     const PAGE_SIZE = 20;
+
+    // --- 1. Cloudinary Cleanup Helpers ---
+    function extractPublicId(cloudinaryUrl) {
+      if (!cloudinaryUrl) return null;
+      try {
+        const parts = cloudinaryUrl.split('/upload/');
+        if (parts.length < 2) return null;
+        let path = parts[1].replace(/^v\d+\//, '');
+        const lastDotIndex = path.lastIndexOf('.');
+        if (lastDotIndex !== -1) {
+          path = path.substring(0, lastDotIndex);
+        }
+        return path;
+      } catch (e) {
+        console.error("Extract Public ID Error:", e);
+        return null;
+      }
+    }
+
+    async function deleteMediaFromCloudinary(mediaUrl, mediaType) {
+      const publicId = extractPublicId(mediaUrl);
+      if (!publicId) return;
+
+      try {
+        await fetch(`${WORKER_URL}/delete-media`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            publicId: publicId,
+            resourceType: mediaType === 'video' ? 'video' : 'image'
+          })
+        });
+      } catch (err) {
+        console.error("Cloudinary Cleanup Error:", err);
+      }
+    }
+
+    // --- 2. Real-time Search on Cloud (Firestore Prefix Query) ---
+    window.handleSearch = function() {
+      clearTimeout(searchDebounceTimer);
+      searchDebounceTimer = setTimeout(async () => {
+        const queryStr = document.getElementById('search-input').value.trim();
+        
+        if (!queryStr) {
+          fetchInitialProducts();
+          return;
+        }
+
+        isSearchActive = true;
+        document.getElementById('loading-indicator').style.display = 'block';
+
+        try {
+          // ใช้ Prefix Match (\uf8ff) ในการค้นหา Firestore
+          const strEnd = queryStr + '\uf8ff';
+          const q = query(
+            collection(db, "products"),
+            where("name", ">=", queryStr),
+            where("name", "<=", strEnd),
+            limit(50)
+          );
+
+          const snapshot = await getDocs(q);
+          const searchResults = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          
+          renderTable(searchResults);
+        } catch (error) {
+          console.error("Real-time Cloud Search Error:", error);
+          showToast("เกิดข้อผิดพลาดในการค้นหาข้อมูล", "error");
+        } finally {
+          document.getElementById('loading-indicator').style.display = 'none';
+        }
+      }, 400);
+    };
 
     // --- Fetch Products & Pagination ---
     async function fetchInitialProducts() {
+      isSearchActive = false;
       try {
         const q = query(collection(db, "products"), orderBy("createdAt", "desc"), limit(PAGE_SIZE));
         const snapshot = await getDocs(q);
@@ -568,7 +644,7 @@
     }
 
     async function fetchNextProducts() {
-      if (isLoadingMore || !hasMoreData || !lastDoc) return;
+      if (isLoadingMore || !hasMoreData || !lastDoc || isSearchActive) return;
 
       isLoadingMore = true;
       document.getElementById('loading-indicator').style.display = 'block';
@@ -601,7 +677,7 @@
 
     fetchInitialProducts();
 
-    // --- Check AI Status & DB Status ---
+    // --- Status Checkers ---
     async function checkAIStatus() {
       const dot = document.getElementById('ai-status-dot');
       const textEl = document.getElementById('ai-status-text');
@@ -630,7 +706,7 @@
       textEl.innerText = text;
     }
 
-    // --- Media Handlers & Compression ---
+    // --- Media Processors ---
     function clearPreviousMedia() {
       if (processedMedia.type === 'video' && processedMedia.data) {
         URL.revokeObjectURL(processedMedia.data);
@@ -789,7 +865,7 @@
       }
     }
 
-    // --- Save Product to Firebase ---
+    // --- Save Product ---
     window.addProduct = async function() {
       const nameInput = document.getElementById('product-name');
       const detailInput = document.getElementById('product-detail');
@@ -862,7 +938,7 @@
       dataList.forEach((item, index) => {
         const tr = document.createElement('tr');
         tr.className = 'clickable-row';
-        tr.onclick = () => openModal(item.id);
+        tr.onclick = () => openModal(item.id, item);
 
         tr.innerHTML = `
           <td>${getMediaTypeBadgeHTML(item.mediaType)}</td>
@@ -871,7 +947,7 @@
         `;
         tbody.appendChild(tr);
 
-        if (index === dataList.length - 4 && hasMoreData && !isLoadingMore) {
+        if (index === dataList.length - 4 && hasMoreData && !isLoadingMore && !isSearchActive) {
           fetchNextProducts();
         }
       });
@@ -879,25 +955,16 @@
 
     window.addEventListener('scroll', () => {
       if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 300) {
-        if (hasMoreData && !isLoadingMore) {
+        if (hasMoreData && !isLoadingMore && !isSearchActive) {
           fetchNextProducts();
         }
       }
     });
 
-    window.handleSearch = function() {
-      const queryStr = document.getElementById('search-input').value.toLowerCase().trim();
-      const filtered = productsList.filter(item => 
-        item.name.toLowerCase().includes(queryStr) || 
-        item.detail.toLowerCase().includes(queryStr)
-      );
-      renderTable(filtered);
-    }
-
     // --- Modal Operations ---
-    function openModal(id) {
+    function openModal(id, itemData = null) {
       activeProductId = id;
-      const item = productsList.find(p => p.id === id);
+      const item = itemData || productsList.find(p => p.id === id);
       if (!item) return;
 
       document.getElementById('modal-title').innerText = item.name;
@@ -959,15 +1026,27 @@
       }
     }
 
+    // --- Delete Product (Firestore + Cloudinary Cleanup) ---
     window.deleteProduct = async function() {
       if (!confirm("คุณต้องการลบรายการนี้ใช่หรือไม่?")) return;
 
+      const item = productsList.find(p => p.id === activeProductId);
+
       try {
+        // 1. ส่งคำสั่งไปลบไฟล์สื่อบน Cloudinary ผ่าน Cloudflare Worker ก่อน
+        if (item && item.mediaUrl) {
+          showToast("กำลังลบไฟล์สื่อบน คลาวด์...", "info");
+          await deleteMediaFromCloudinary(item.mediaUrl, item.mediaType);
+        }
+
+        // 2. ลบ Document บน Firestore
         await deleteDoc(doc(db, "products", activeProductId));
+        
         closeModal();
-        showToast("ลบข้อมูลเรียบร้อย", "success");
+        showToast("ลบข้อมูลและไฟล์สื่อเรียบร้อย", "success");
         fetchInitialProducts();
       } catch (e) {
+        console.error("Delete Error:", e);
         showToast("ลบข้อมูลไม่สำเร็จ", "error");
       }
     }
