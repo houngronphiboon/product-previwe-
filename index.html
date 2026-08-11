@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ระบบบันทึกข้อมูลสินค้า - Nueng Ron Phibun Electronics</title>
   
-  <!-- Font Sarabun -->
+  <!-- Google Font: Sarabun -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -21,14 +21,15 @@
       margin: 0;
       padding: 16px;
       color: #1f2937;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
 
     .container {
+      width: 100%;
       max-width: 500px;
-      margin: 0 auto;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
+      margin-bottom: 20px;
     }
 
     .card {
@@ -36,17 +37,83 @@
       border-radius: 16px;
       padding: 20px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      position: relative;
     }
 
     .header-title {
       font-size: 16px;
       font-weight: 700;
       text-align: center;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
       color: #111827;
+      padding-right: 90px;
     }
 
-    /* ปุ่มอัปโหลดสื่อ 2 ช่อง */
+    /* สถานะระบบ AI / DB */
+    .status-container {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      align-items: flex-end;
+    }
+
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #4b5563;
+      background: #f3f4f6;
+      padding: 3px 8px;
+      border-radius: 12px;
+      border: 1px solid #e5e7eb;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: #f59e0b;
+      transition: background-color 0.3s ease;
+    }
+
+    .status-dot.online {
+      background-color: #10b981;
+      box-shadow: 0 0 6px #10b981;
+    }
+
+    .status-dot.offline {
+      background-color: #ef4444;
+      box-shadow: 0 0 6px #ef4444;
+    }
+
+    /* กรอบแสดงตัวอย่าง Preview รูป/วิดีโอ */
+    .media-preview-box {
+      width: 100%;
+      height: 200px;
+      background-color: #1f2937;
+      border-radius: 12px;
+      margin-top: 10px;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #9ca3af;
+      border: 2px dashed #d1d5db;
+      overflow: hidden;
+    }
+
+    .media-preview-box img, .media-preview-box video {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    /* ปุ่มกดอัปโหลดสื่อ */
     .media-buttons {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -54,39 +121,37 @@
       margin-bottom: 16px;
     }
 
-    .btn-media {
-      background-color: #e5e7eb;
-      color: #374151;
+    .btn {
       border: none;
-      padding: 14px 8px;
       border-radius: 10px;
       font-size: 14px;
       font-weight: 600;
       cursor: pointer;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 4px;
-      text-align: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .btn-media {
+      background-color: #e5e7eb;
+      color: #374151;
+      padding: 12px 8px;
     }
 
     .btn-camera {
       background-color: #007bff;
       color: white;
-      border: none;
-      padding: 14px 8px;
-      border-radius: 10px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
+      padding: 12px 8px;
     }
 
-    /* ฟอร์มป้อนข้อมูล */
+    /* ฟอร์มกรอกข้อมูล */
     .form-group {
       margin-bottom: 16px;
     }
@@ -95,7 +160,7 @@
       display: block;
       font-size: 15px;
       font-weight: 700;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
       color: #374151;
     }
 
@@ -105,7 +170,7 @@
 
     .form-control {
       width: 100%;
-      padding: 12px 14px;
+      padding: 12px;
       font-size: 15px;
       border: 1px solid #d1d5db;
       border-radius: 10px;
@@ -117,42 +182,40 @@
       border-color: #2563eb;
     }
 
+    .form-control.input-error {
+      border-color: #dc2626 !important;
+      background-color: #fef2f2;
+    }
+
+    .error-msg {
+      color: #dc2626;
+      font-size: 13px;
+      margin-top: 4px;
+      display: none;
+    }
+
     textarea.form-control {
       resize: vertical;
       min-height: 90px;
     }
 
-    /* ปุ่ม AI */
+    /* Action Buttons */
     .btn-ai {
       width: 100%;
       background: #8b5cf6;
       color: white;
-      border: none;
       padding: 14px;
-      border-radius: 10px;
       font-size: 15px;
-      font-weight: 700;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
       margin-bottom: 12px;
       box-shadow: 0 2px 4px rgba(139, 92, 246, 0.2);
     }
 
-    /* ปุ่มบันทึก */
     .btn-save {
       width: 100%;
       background-color: #86efac;
       color: #166534;
-      border: none;
       padding: 14px;
-      border-radius: 10px;
       font-size: 16px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.2s;
     }
 
     .btn-save.active {
@@ -160,7 +223,12 @@
       color: white;
     }
 
-    /* ส่วนตารางสินค้าที่ปรับปรุงแล้ว */
+    /* ตารางรายการสินค้า + ปรับปรุง Responsive */
+    .list-container {
+      width: 100%;
+      max-width: 800px;
+    }
+
     .table-container {
       width: 100%;
       overflow-x: auto;
@@ -171,7 +239,7 @@
 
     table {
       width: 100%;
-      min-width: 460px; /* กันตารางล้นและตัดขอบ */
+      min-width: 480px;
       border-collapse: collapse;
       text-align: left;
       font-size: 14px;
@@ -191,7 +259,16 @@
       vertical-align: middle;
     }
 
-    /* Badge ป้ายแสดงชนิดสื่อ */
+    .clickable-row {
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .clickable-row:hover {
+      background-color: #f0f9ff;
+    }
+
+    /* Badge Tag ป้ายกำกับชนิดสื่อ (Soft Colors) */
     .badge {
       display: inline-flex;
       align-items: center;
@@ -203,197 +280,724 @@
       white-space: nowrap;
     }
 
-    .badge-video {
-      background-color: #eff6ff;
-      color: #2563eb;
-    }
+    .badge-video { background-color: #eff6ff; color: #2563eb; }
+    .badge-image { background-color: #f0fdf4; color: #16a34a; }
+    .badge-none { background-color: #f3f4f6; color: #6b7280; }
 
-    .badge-image {
-      background-color: #f0fdf4;
-      color: #16a34a;
-    }
-
-    .badge-none {
-      background-color: #f3f4f6;
-      color: #6b7280;
-    }
-
+    /* ตัดคำส่วนเกิน (Ellipsis) */
     .text-truncate {
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      max-width: 140px;
+      max-width: 180px;
+      color: #6b7280;
     }
+
+    /* Modal รายละเอียด / แก้ไข */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background-color: rgba(0,0,0,0.6);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      padding: 16px;
+    }
+
+    .modal-content {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 480px;
+      position: relative;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .close-btn {
+      position: absolute;
+      right: 15px; top: 10px;
+      font-size: 24px;
+      cursor: pointer;
+      color: #9ca3af;
+    }
+
+    .modal-media-box {
+      width: 100%;
+      height: 230px;
+      background: #111827;
+      margin-bottom: 15px;
+      border-radius: 10px;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-media-box img, .modal-media-box video {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .btn-edit { background-color: #f59e0b; color: #ffffff; flex: 1; padding: 10px; }
+    .btn-delete { background-color: #ef4444; color: #ffffff; flex: 1; padding: 10px; }
+    .btn-update { background-color: #2563eb; color: #ffffff; width: 100%; margin-top: 10px; padding: 12px; }
+    .btn-cancel { background-color: #6b7280; color: #ffffff; width: 100%; margin-top: 6px; padding: 10px; }
+
+    /* Notification Toast */
+    .toast {
+      visibility: hidden;
+      min-width: 250px;
+      background-color: #1f2937;
+      color: #fff;
+      text-align: center;
+      border-radius: 10px;
+      padding: 12px 20px;
+      position: fixed;
+      z-index: 2000;
+      bottom: 30px;
+      font-size: 14px;
+    }
+
+    .toast.show {
+      visibility: visible;
+      animation: fadein 0.5s, fadeout 0.5s 2.5s;
+    }
+
+    .toast.toast-error { background-color: #dc2626; }
+    .toast.toast-success { background-color: #16a34a; }
+    .toast.toast-info { background-color: #0284c7; }
+
+    @keyframes fadein { from { bottom: 0; opacity: 0; } to { bottom: 30px; opacity: 1; } }
+    @keyframes fadeout { from { bottom: 30px; opacity: 1; } to { bottom: 0; opacity: 0; } }
   </style>
 </head>
 <body>
 
+  <!-- ส่วนฟอร์มรับข้อมูล -->
   <div class="container">
-    
-    <!-- ฟอร์มบันทึกสินค้า -->
     <div class="card">
-      <div class="header-title">ระบบบันทึกข้อมูลสินค้า - Nueng Ron Phibun Electronics</div>
       
+      <!-- สถานะ DB & AI -->
+      <div class="status-container">
+        <div class="status-badge" title="สถานะการเชื่อมต่อ Cloud Firestore">
+          <span class="status-dot" id="db-status-dot"></span>
+          <span id="db-status-text">DB: เช็ค...</span>
+        </div>
+        <div class="status-badge" title="สถานะความพร้อมของ AI Worker">
+          <span class="status-dot" id="ai-status-dot"></span>
+          <span id="ai-status-text">AI: เช็ค...</span>
+        </div>
+      </div>
+
+      <div class="header-title">ระบบบันทึกข้อมูลสินค้า - Nueng Ron Phibun Electronics</div>
+
+      <!-- Preview รูป/วิดีโอ -->
+      <div class="media-preview-box" id="preview-box">
+        <span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>
+      </div>
+
       <!-- ปุ่มเลือกรูป / ถ่ายรูป -->
       <div class="media-buttons">
-        <button type="button" class="btn-media" onclick="document.getElementById('fileInput').click()">
+        <button class="btn btn-media" id="btn-file-select" onclick="document.getElementById('media-input').click()">
           📁 เลือกรูป / วิดีโอ
         </button>
-        <button type="button" class="btn-camera" onclick="document.getElementById('cameraInput').click()">
+        <button class="btn btn-camera" id="btn-camera" onclick="document.getElementById('camera-input').click()">
           📷 ถ่ายรูป
         </button>
-        <!-- hidden inputs -->
-        <input type="file" id="fileInput" accept="image/*,video/*" style="display: none;" onchange="handleFileSelect(event)">
-        <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;" onchange="handleFileSelect(event)">
       </div>
+
+      <input type="file" id="media-input" accept="image/*,video/*" style="display: none;" onchange="handleFileSelect(event)">
+      <input type="file" id="camera-input" accept="image/*" capture="environment" style="display: none;" onchange="handleFileSelect(event)">
 
       <!-- ชื่อ/รุ่น -->
       <div class="form-group">
-        <label for="productName">ชื่อ/รุ่น <span class="required">*</span></label>
-        <input type="text" id="productName" class="form-control" value="ทดสอบบันทึกไฟล์วิดีโอ" placeholder="กรอกชื่อหรือรุ่นสินค้า...">
+        <label for="product-name">ชื่อ/รุ่น <span class="required">*</span></label>
+        <input type="text" id="product-name" class="form-control" placeholder="เช่น 32pht5853s" oninput="clearValidationError()">
+        <div class="error-msg" id="name-error-msg">กรุณากรอกชื่อหรือรุ่นสินค้า</div>
       </div>
 
       <!-- รายละเอียด -->
       <div class="form-group">
-        <label for="productDetails">รายละเอียด</label>
-        <textarea id="productDetails" class="form-control" placeholder="กรอกรายละเอียดสินค้า อะไหล่ หรือกดให้ AI ช่วยวิเคราะห์"></textarea>
+        <label for="product-detail">รายละเอียด</label>
+        <textarea id="product-detail" class="form-control" placeholder="กรอกรายละเอียดสินค้า อะไหล่ หรือกดให้ AI ช่วยวิเคราะห์"></textarea>
       </div>
 
-      <!-- ปุ่ม AI -->
-      <button type="button" class="btn-ai" onclick="handleAISearch()">
+      <!-- ปุ่ม AI & ปุ่มบันทึก -->
+      <button class="btn btn-ai" id="btn-ai-search" onclick="generateAIDetails()">
         ✨ ค้นหารายละเอียดสินค้าด้วย AI (จากชื่อรุ่น + รูปภาพ)
       </button>
 
-      <!-- ปุ่มบันทึก -->
-      <button type="button" id="saveBtn" class="btn-save" onclick="handleSaveData()">
-        กำลังบันทึกลง Cloud...
+      <button class="btn btn-save active" id="btn-save" onclick="addProduct()">
+        บันทึกสินค้าลงคลาวด์
       </button>
+
     </div>
-
-    <!-- ส่วนตารางรายการสินค้า -->
-    <div class="card">
-      <h3 style="margin: 0 0 14px 0; font-size: 18px; color: #111827; font-weight: 700;">
-        รายการสินค้าบน <span style="color: #111827;">Cloud</span>
-      </h3>
-
-      <!-- ช่องค้นหา -->
-      <div class="form-group">
-        <input type="text" id="searchInput" class="form-control" placeholder="🔍 พิมพ์เพื่อค้นหารายการสินค้า..." onkeyup="filterProducts()">
-      </div>
-
-      <!-- ตารางรายการสินค้า (ปรับปรุงการแสดงผล) -->
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th style="width: 30%;">ชนิดสื่อ</th>
-              <th style="width: 40%;">ชื่อ/รุ่น</th>
-              <th style="width: 30%;">รายละเอียด</th>
-            </tr>
-          </thead>
-          <tbody id="productTableBody">
-            <!-- ข้อมูลจะแสดงผลตรงนี้ -->
-          </tbody>
-        </table>
-      </div>
-    </div>
-
   </div>
 
-  <script>
-    // ตัวเลือกสื่อที่เลือกล่าสุด
-    let selectedMediaType = 'ไม่มีสื่อ';
+  <!-- ส่วนแสดงตารางรายการสินค้า -->
+  <div class="list-container card">
+    <h3 style="margin: 0 0 14px 0; font-size: 18px; color: #111827; font-weight: 700;">
+      รายการสินค้าบน Cloud
+    </h3>
 
-    // รายการสินค้าเริ่มต้น
-    let products = [
-      { mediaType: 'วิดีโอ', name: 'ทดสอบบันทึกไฟล์วิดีโอ', details: '-' },
-      { mediaType: 'รูปภาพ', name: '32d-2t', details: 'อะไหล่บอร์ด' },
-      { mediaType: 'วิดีโอ', name: 'ทดสอบบันทึกวิดีโอ', details: 'คลิปทดสอบ' },
-      { mediaType: 'ไม่มีสื่อ', name: 'ทดสอบบันทึกวิดีโอ', details: '-' },
-      { mediaType: 'รูปภาพ', name: '32hs534an', details: 'จอภาพ' }
-    ];
+    <!-- ช่องค้นหา -->
+    <div class="form-group">
+      <input type="text" id="search-input" class="form-control" placeholder="🔍 พิมพ์เพื่อค้นหารายการสินค้า..." oninput="handleSearch()">
+    </div>
 
-    // ตรวจจับการเลือกไฟล์
-    function handleFileSelect(event) {
-      const file = event.target.files[0];
-      if (file) {
-        if (file.type.startsWith('video/')) {
-          selectedMediaType = 'วิดีโอ';
-        } else if (file.type.startsWith('image/')) {
-          selectedMediaType = 'รูปภาพ';
+    <!-- ตารางสินค้า Responsive สไลด์ซ้าย-ขวาได้ -->
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 25%;">ชนิดสื่อ</th>
+            <th style="width: 35%;">ชื่อ/รุ่น</th>
+            <th style="width: 40%;">รายละเอียด</th>
+          </tr>
+        </thead>
+        <tbody id="product-list">
+          <!-- โหลดข้อมูลจาก Firestore -->
+        </tbody>
+      </table>
+    </div>
+
+    <div id="loading-indicator" style="display: none; text-align: center; color: #2563eb; padding: 12px; font-weight: 600;">
+      กำลังโหลดข้อมูลเพิ่มเติม...
+    </div>
+  </div>
+
+  <!-- Modal แสดงรายละเอียด/แก้ไข -->
+  <div class="modal" id="detail-modal">
+    <div class="modal-content">
+      <span class="close-btn" onclick="closeModal()">&times;</span>
+      <div class="modal-media-box" id="modal-media-container"></div>
+
+      <div id="view-mode">
+        <h3 id="modal-title" style="margin-top: 0; color: #2563eb; font-weight: 700;"></h3>
+        <p><strong>รายละเอียดสินค้า:</strong></p>
+        <p id="modal-detail-text" style="white-space: pre-line; color: #374151; background: #f9fafb; padding: 12px; border-radius: 8px; font-size: 14px; border: 1px solid #f3f4f6;"></p>
+        
+        <div class="modal-actions">
+          <button class="btn btn-edit" onclick="enableEditMode()">✏️ แก้ไขข้อมูล</button>
+          <button class="btn btn-delete" onclick="deleteProduct()">🗑️ ลบรายการ</button>
+        </div>
+      </div>
+
+      <div id="edit-mode" style="display: none;">
+        <h3 style="margin-top: 0; color: #d97706; font-weight: 700;">แก้ไขข้อมูลสินค้า</h3>
+        <div class="form-group">
+          <label for="edit-name">ชื่อ/รุ่น</label>
+          <input type="text" id="edit-name" class="form-control">
+        </div>
+        <div class="form-group">
+          <label for="edit-detail">รายละเอียด</label>
+          <textarea id="edit-detail" class="form-control"></textarea>
+        </div>
+        <button class="btn btn-update" onclick="saveEditProduct()">💾 บันทึกการแก้ไข</button>
+        <button class="btn btn-cancel" onclick="cancelEditMode()">ยกเลิก</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast การแจ้งเตือน -->
+  <div id="toast" class="toast"></div>
+
+  <!-- Module Script: Firebase & Business Logic -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, query, orderBy, limit, startAfter, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    // ตั้งค่า Cloudinary & Firebase
+    const CLOUDINARY_CLOUD_NAME = "qxdbrnyx"; 
+    const CLOUDINARY_UPLOAD_PRESET = "ainote_preset"; 
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAa1ueFx6m_unLe4k4IGF8BTzwFr5pkeiY",
+      authDomain: "ai-note-acedb.firebaseapp.com",
+      projectId: "ai-note-acedb",
+      storageBucket: "ai-note-acedb.firebasestorage.app",
+      messagingSenderId: "123666006400",
+      appId: "1:123666006400:web:edf4a7bc9ec3d8caf68165",
+      measurementId: "G-V45Q6BXMDH"
+    };
+
+    const WORKER_URL = "https://misty-frog-8bb9.5e9bfdd31183a82c054e59d2c36d0fcd.workers.dev";
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let processedMedia = { type: null, data: null, file: null };
+    let activeProductId = null;
+    
+    let productsList = [];
+    let lastDoc = null;
+    let isLoadingMore = false;
+    let hasMoreData = true;
+    const PAGE_SIZE = 20;
+
+    // --- Fetch Products & Pagination ---
+    async function fetchInitialProducts() {
+      try {
+        const q = query(collection(db, "products"), orderBy("createdAt", "desc"), limit(PAGE_SIZE));
+        const snapshot = await getDocs(q);
+        
+        if (!snapshot.empty) {
+          lastDoc = snapshot.docs[snapshot.docs.length - 1];
+          productsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          hasMoreData = snapshot.docs.length === PAGE_SIZE;
+        } else {
+          productsList = [];
+          hasMoreData = false;
         }
-        alert(`เลือกไฟล์เรียบร้อยแล้ว (${selectedMediaType})`);
+        renderTable(productsList);
+        setDbStatus(true, "DB พร้อม");
+      } catch (error) {
+        console.error("Fetch DB Error:", error);
+        setDbStatus(false, "DB ขัดข้อง");
       }
     }
 
-    // ฟังก์ชันสร้าง UI Badge แสดงชนิดสื่อ
-    function getMediaTypeBadgeHTML(type) {
-      if (type === 'วิดีโอ' || type === 'video') {
-        return `<span class="badge badge-video">🎥 วิดีโอ</span>`;
-      } else if (type === 'รูปภาพ' || type === 'image') {
-        return `<span class="badge badge-image">🖼️ รูปภาพ</span>`;
+    async function fetchNextProducts() {
+      if (isLoadingMore || !hasMoreData || !lastDoc) return;
+
+      isLoadingMore = true;
+      document.getElementById('loading-indicator').style.display = 'block';
+
+      try {
+        const q = query(
+          collection(db, "products"),
+          orderBy("createdAt", "desc"),
+          startAfter(lastDoc),
+          limit(PAGE_SIZE)
+        );
+        const snapshot = await getDocs(q);
+
+        if (!snapshot.empty) {
+          lastDoc = snapshot.docs[snapshot.docs.length - 1];
+          const newProducts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          productsList = [...productsList, ...newProducts];
+          hasMoreData = snapshot.docs.length === PAGE_SIZE;
+          renderTable(productsList);
+        } else {
+          hasMoreData = false;
+        }
+      } catch (error) {
+        console.error("Load more error:", error);
+      } finally {
+        isLoadingMore = false;
+        document.getElementById('loading-indicator').style.display = 'none';
+      }
+    }
+
+    fetchInitialProducts();
+
+    // --- Check AI Status & DB Status ---
+    async function checkAIStatus() {
+      const dot = document.getElementById('ai-status-dot');
+      const textEl = document.getElementById('ai-status-text');
+      
+      try {
+        const res = await fetch(WORKER_URL, { method: 'OPTIONS' });
+        if (res.ok || res.status === 204) {
+          dot.className = "status-dot online";
+          textEl.innerText = "AI พร้อม";
+        } else {
+          dot.className = "status-dot offline";
+          textEl.innerText = "AI ขัดข้อง";
+        }
+      } catch (e) {
+        dot.className = "status-dot offline";
+        textEl.innerText = "AI ขัดข้อง";
+      }
+    }
+    checkAIStatus();
+    setInterval(checkAIStatus, 30000);
+
+    function setDbStatus(isOnline, text) {
+      const dot = document.getElementById('db-status-dot');
+      const textEl = document.getElementById('db-status-text');
+      dot.className = isOnline ? "status-dot online" : "status-dot offline";
+      textEl.innerText = text;
+    }
+
+    // --- Media Handlers & Compression ---
+    function clearPreviousMedia() {
+      if (processedMedia.type === 'video' && processedMedia.data) {
+        URL.revokeObjectURL(processedMedia.data);
+      }
+    }
+
+    function setFormButtonsDisabled(disabled) {
+      document.getElementById('btn-save').disabled = disabled;
+      document.getElementById('btn-ai-search').disabled = disabled;
+      document.getElementById('btn-file-select').disabled = disabled;
+      document.getElementById('btn-camera').disabled = disabled;
+    }
+
+    function compressImage(file, maxWidth = 800, quality = 0.6) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (e) => {
+          const img = new Image();
+          img.src = e.target.result;
+          img.onload = () => {
+            let w = img.width, h = img.height;
+            if (w > maxWidth) { h = Math.round((h * maxWidth) / w); w = maxWidth; }
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = w; canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            
+            const base64 = canvas.toDataURL('image/jpeg', quality);
+            canvas.toBlob((blob) => {
+              resolve({ base64, blob });
+            }, 'image/jpeg', quality);
+          };
+        };
+      });
+    }
+
+    window.handleFileSelect = async function(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      clearPreviousMedia();
+      const previewBox = document.getElementById('preview-box');
+
+      if (file.type.startsWith('image/')) {
+        showToast("กำลังย่อขนาดรูปภาพ...", "info");
+        const compressed = await compressImage(file);
+        
+        processedMedia = { 
+          type: 'image', 
+          data: compressed.base64, 
+          file: compressed.blob 
+        };
+        
+        previewBox.innerHTML = `<img src="${compressed.base64}" alt="Preview">`;
+        showToast("ย่อรูปภาพเรียบร้อย (พร้อมอัปโหลด)", "info");
+      } else if (file.type.startsWith('video/')) {
+        showToast("โหลดวิดีโอเรียบร้อย", "info");
+        const videoUrl = URL.createObjectURL(file);
+        processedMedia = { 
+          type: 'video', 
+          data: videoUrl, 
+          file: file 
+        };
+        previewBox.innerHTML = `<video src="${videoUrl}" controls autoplay muted></video>`;
       } else {
-        return `<span class="badge badge-none">📷 ไม่มีสื่อ</span>`;
+        showToast("รองรับเฉพาะไฟล์รูปภาพและวิดีโอเท่านั้น", "error");
+      }
+      event.target.value = '';
+    }
+
+    async function uploadToCloudinary(file, resourceType = 'auto') {
+      const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`;
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+      const res = await fetch(url, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!res.ok) {
+        throw new Error('อัปโหลดไปยัง Cloudinary ล้มเหลว');
+      }
+
+      const data = await res.json();
+      return data.secure_url;
+    }
+
+    // --- AI Generator ---
+    window.generateAIDetails = async function() {
+      const nameInput = document.getElementById('product-name');
+      const detailInput = document.getElementById('product-detail');
+      const name = nameInput.value.trim();
+
+      if (!name && !processedMedia.data) {
+        triggerValidationError("กรุณากรอกชื่อ/รุ่น หรือแนบรูปภาพก่อนกดวิเคราะห์");
+        showToast("กรุณากรอกชื่อ/รุ่น หรือแนบรูปภาพก่อนกดวิเคราะห์", "error");
+        return;
+      }
+
+      const originalText = detailInput.value;
+      detailInput.value = `กำลังส่งข้อมูลให้ Gemini AI วิเคราะห์รายละเอียด...`;
+      setFormButtonsDisabled(true);
+
+      try {
+        const parts = [];
+        let promptText = `คุณคือผู้เชี่ยวชาญด้านอะไหล่อิเล็กทรอนิกส์และอุปกรณ์ไฟฟ้า โปรดวิเคราะห์ข้อมูลสินค้าต่อไปนี้:
+1. แกะข้อความ สเปก รหัสพาร์ท (Part Number / Board Code) หรือตัวเลขราคาที่ปรากฏจากรูปภาพหรือชื่อรุ่น
+2. ระบุประเภทสินค้า ยี่ห้อ และรุ่นอุปกรณ์
+3. ตอบกลับในรูปแบบสรุปสวยงามดังนี้:
+
+[ผลการวิเคราะห์โดย AI]
+• สินค้า/อะไหล่: ${name || 'ดูจากรูปภาพ'}
+• สภาพสินค้า: อุปกรณ์ผ่านการตรวจเช็คเรียบร้อย พร้อมใช้งาน
+• รายละเอียดเพิ่มเติม: (สรุปรายละเอียดสเปก/รหัสพาร์ท สั้นกระชับ 2-3 บรรทัด)`;
+
+        parts.push({ text: promptText });
+
+        if (processedMedia.type === 'image' && processedMedia.data) {
+          const base64Data = processedMedia.data.split(',')[1];
+          const mimeType = processedMedia.data.split(';')[0].split(':')[1];
+          parts.push({
+            inline_data: { mime_type: mimeType, data: base64Data }
+          });
+        }
+
+        const response = await fetch(WORKER_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts: parts }] })
+        });
+
+        if (!response.ok) {
+          const errData = await response.json();
+          throw new Error(errData.error || `HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
+          detailInput.value = data.candidates[0].content.parts[0].text;
+          showToast("Gemini AI วิเคราะห์ข้อมูลสำเร็จ", "success");
+        } else {
+          throw new Error("โครงสร้างตอบกลับจาก AI ไม่ถูกต้อง");
+        }
+
+      } catch (error) {
+        console.error("AI Error:", error);
+        detailInput.value = originalText;
+        showToast("เชื่อมต่อ AI ไม่สำเร็จ", "error");
+      } finally {
+        setFormButtonsDisabled(false);
       }
     }
 
-    // ฟังก์ชัน Render ตารางสินค้า
-    function renderProductTable(items) {
-      const tbody = document.getElementById('productTableBody');
-      if (!items || items.length === 0) {
+    // --- Save Product to Firebase ---
+    window.addProduct = async function() {
+      const nameInput = document.getElementById('product-name');
+      const detailInput = document.getElementById('product-detail');
+      const saveBtn = document.getElementById('btn-save');
+      const name = nameInput.value.trim();
+      const detail = detailInput.value.trim();
+
+      if (!name) {
+        triggerValidationError("กรุณากรอกชื่อสินค้า");
+        showToast("กรุณากรอกชื่อสินค้า", "error");
+        return;
+      }
+
+      setFormButtonsDisabled(true);
+      saveBtn.innerText = "กำลังอัปโหลดสื่อและบันทึก...";
+
+      try {
+        let mediaUrl = "";
+        let mediaType = processedMedia.type;
+
+        if (processedMedia.file) {
+          showToast(`กำลังอัปโหลด ${mediaType === 'video' ? 'วิดีโอ' : 'รูปภาพ'} ไปยัง Cloudinary...`, "info");
+          const resourceType = mediaType === 'video' ? 'video' : 'image';
+          mediaUrl = await uploadToCloudinary(processedMedia.file, resourceType);
+        }
+
+        await addDoc(collection(db, "products"), {
+          name: name,
+          detail: detail || "ไม่มีรายละเอียดเพิ่มเติม",
+          mediaType: mediaType,
+          mediaUrl: mediaUrl,
+          createdAt: Date.now()
+        });
+
+        showToast("บันทึกข้อมูลสำเร็จเรียบร้อย", "success");
+        clearPreviousMedia();
+        
+        nameInput.value = ''; detailInput.value = '';
+        document.getElementById('preview-box').innerHTML = '<span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>';
+        processedMedia = { type: null, data: null, file: null };
+        clearValidationError();
+        
+        fetchInitialProducts();
+
+      } catch (e) {
+        console.error("Save Error:", e);
+        showToast("เกิดข้อผิดพลาดในการบันทึกข้อมูล", "error");
+      } finally {
+        setFormButtonsDisabled(false);
+        saveBtn.innerText = "บันทึกสินค้าลงคลาวด์";
+      }
+    }
+
+    // --- Render Table UI ---
+    function getMediaTypeBadgeHTML(type) {
+      if (type === 'video') return `<span class="badge badge-video">🎥 วิดีโอ</span>`;
+      if (type === 'image') return `<span class="badge badge-image">🖼️ รูปภาพ</span>`;
+      return `<span class="badge badge-none">📷 ไม่มีสื่อ</span>`;
+    }
+
+    function renderTable(dataList) {
+      const tbody = document.getElementById('product-list');
+      tbody.innerHTML = '';
+
+      if (dataList.length === 0) {
         tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; padding: 20px; color: #9ca3af;">ไม่พบข้อมูลสินค้า</td></tr>`;
         return;
       }
 
-      tbody.innerHTML = items.map(item => `
-        <tr>
+      dataList.forEach((item, index) => {
+        const tr = document.createElement('tr');
+        tr.className = 'clickable-row';
+        tr.onclick = () => openModal(item.id);
+
+        tr.innerHTML = `
           <td>${getMediaTypeBadgeHTML(item.mediaType)}</td>
-          <td style="font-weight: 700; color: #111827;">${item.name || '-'}</td>
-          <td class="text-truncate" style="color: #6b7280;" title="${item.details || ''}">${item.details || '-'}</td>
-        </tr>
-      `).join('');
+          <td style="font-weight: 700; color: #111827;">${item.name}</td>
+          <td class="text-truncate" title="${item.detail}">${item.detail}</td>
+        `;
+        tbody.appendChild(tr);
+
+        if (index === dataList.length - 4 && hasMoreData && !isLoadingMore) {
+          fetchNextProducts();
+        }
+      });
     }
 
-    // ฟังก์ชัน ค้นหารายการสินค้า
-    function filterProducts() {
-      const query = document.getElementById('searchInput').value.toLowerCase();
-      const filtered = products.filter(item => 
-        (item.name && item.name.toLowerCase().includes(query)) ||
-        (item.details && item.details.toLowerCase().includes(query)) ||
-        (item.mediaType && item.mediaType.toLowerCase().includes(query))
+    window.addEventListener('scroll', () => {
+      if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 300) {
+        if (hasMoreData && !isLoadingMore) {
+          fetchNextProducts();
+        }
+      }
+    });
+
+    window.handleSearch = function() {
+      const queryStr = document.getElementById('search-input').value.toLowerCase().trim();
+      const filtered = productsList.filter(item => 
+        item.name.toLowerCase().includes(queryStr) || 
+        item.detail.toLowerCase().includes(queryStr)
       );
-      renderProductTable(filtered);
+      renderTable(filtered);
     }
 
-    // ฟังก์ชัน บันทึกข้อมูล
-    function handleSaveData() {
-      const name = document.getElementById('productName').value;
-      const details = document.getElementById('productDetails').value;
+    // --- Modal Operations ---
+    function openModal(id) {
+      activeProductId = id;
+      const item = productsList.find(p => p.id === id);
+      if (!item) return;
 
-      if (!name) {
-        alert('กรุณากรอกชื่อหรือรุ่นสินค้า');
+      document.getElementById('modal-title').innerText = item.name;
+      document.getElementById('modal-detail-text').innerText = item.detail;
+
+      const mediaContainer = document.getElementById('modal-media-container');
+      mediaContainer.innerHTML = '';
+
+      if (item.mediaType === 'image' && item.mediaUrl) {
+        mediaContainer.innerHTML = `<img src="${item.mediaUrl}">`;
+      } else if (item.mediaType === 'video' && item.mediaUrl) {
+        mediaContainer.innerHTML = `<video src="${item.mediaUrl}" controls autoplay></video>`;
+      } else {
+        mediaContainer.innerHTML = `<span style="color:#9ca3af;">ไม่มีสื่อแนบไว้</span>`;
+      }
+
+      cancelEditMode();
+      document.getElementById('detail-modal').style.display = 'flex';
+    }
+
+    window.enableEditMode = function() {
+      const item = productsList.find(p => p.id === activeProductId);
+      if (!item) return;
+
+      document.getElementById('edit-name').value = item.name;
+      document.getElementById('edit-detail').value = item.detail;
+
+      document.getElementById('view-mode').style.display = 'none';
+      document.getElementById('edit-mode').style.display = 'block';
+    }
+
+    window.cancelEditMode = function() {
+      document.getElementById('view-mode').style.display = 'block';
+      document.getElementById('edit-mode').style.display = 'none';
+    }
+
+    window.saveEditProduct = async function() {
+      const newName = document.getElementById('edit-name').value.trim();
+      const newDetail = document.getElementById('edit-detail').value.trim();
+
+      if (!newName) {
+        showToast("ชื่อ/รุ่น สินค้าห้ามเป็นค่าว่าง", "error");
         return;
       }
 
-      // เพิ่มลงตาราง
-      products.unshift({ name, mediaType: selectedMediaType, details: details || '-' });
-      renderProductTable(products);
+      try {
+        const docRef = doc(db, "products", activeProductId);
+        await updateDoc(docRef, {
+          name: newName,
+          detail: newDetail || "ไม่มีรายละเอียดเพิ่มเติม"
+        });
 
-      // เคลียร์ข้อมูลฟอร์ม
-      document.getElementById('productName').value = '';
-      document.getElementById('productDetails').value = '';
-      selectedMediaType = 'ไม่มีสื่อ';
-
-      alert('บันทึกสินค้าเรียบร้อยแล้ว!');
+        cancelEditMode();
+        closeModal();
+        showToast("อัปเดตข้อมูลเรียบร้อย", "success");
+        fetchInitialProducts();
+      } catch (e) {
+        showToast("แก้ไขข้อมูลไม่สำเร็จ", "error");
+      }
     }
 
-    // ฟังก์ชัน AI
-    function handleAISearch() {
-      alert('ระบบกำลังประมวลผลวิเคราะห์ข้อมูลด้วย AI...');
+    window.deleteProduct = async function() {
+      if (!confirm("คุณต้องการลบรายการนี้ใช่หรือไม่?")) return;
+
+      try {
+        await deleteDoc(doc(db, "products", activeProductId));
+        closeModal();
+        showToast("ลบข้อมูลเรียบร้อย", "success");
+        fetchInitialProducts();
+      } catch (e) {
+        showToast("ลบข้อมูลไม่สำเร็จ", "error");
+      }
     }
 
-    // แสดงผลข้อมูลตารางครั้งแรก
-    renderProductTable(products);
+    window.closeModal = function() {
+      const modalVideo = document.querySelector('#modal-media-container video');
+      if (modalVideo) modalVideo.pause();
+      document.getElementById('detail-modal').style.display = 'none';
+      activeProductId = null;
+    }
+
+    function triggerValidationError(msg = "กรุณากรอกชื่อหรือรุ่นสินค้า") {
+      const input = document.getElementById('product-name');
+      const errMsg = document.getElementById('name-error-msg');
+      input.classList.add('input-error');
+      errMsg.innerText = msg;
+      errMsg.style.display = 'block';
+    }
+
+    window.clearValidationError = function() {
+      document.getElementById('product-name').classList.remove('input-error');
+      document.getElementById('name-error-msg').style.display = 'none';
+    }
+
+    function showToast(msg, type="info") {
+      const toast = document.getElementById("toast");
+      toast.className = `toast toast-${type} show`;
+      toast.innerText = msg;
+      setTimeout(() => { toast.className = "toast"; }, 3000);
+    }
   </script>
 
 </body>
