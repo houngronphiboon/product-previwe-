@@ -547,6 +547,38 @@
     let searchDebounceTimer = null;
     const PAGE_SIZE = 20;
 
+    // --- Helper Functions UI ---
+    function showToast(message, type = 'info') {
+      const toast = document.getElementById('toast');
+      toast.innerText = message;
+      toast.className = `toast show toast-${type}`;
+      setTimeout(() => {
+        toast.className = toast.className.replace('show', '');
+      }, 3000);
+    }
+
+    function triggerValidationError(msg) {
+      const nameInput = document.getElementById('product-name');
+      const errorMsg = document.getElementById('name-error-msg');
+      nameInput.classList.add('input-error');
+      if (errorMsg) {
+        errorMsg.innerText = msg || "กรุณากรอกข้อมูล";
+        errorMsg.style.display = 'block';
+      }
+    }
+
+    window.clearValidationError = function() {
+      const nameInput = document.getElementById('product-name');
+      const errorMsg = document.getElementById('name-error-msg');
+      nameInput.classList.remove('input-error');
+      if (errorMsg) errorMsg.style.display = 'none';
+    }
+
+    window.closeModal = function() {
+      document.getElementById('detail-modal').style.display = 'none';
+      activeProductId = null;
+    }
+
     // --- 1. Cloudinary Cleanup Helpers ---
     function extractPublicId(cloudinaryUrl) {
       if (!cloudinaryUrl) return null;
@@ -598,7 +630,6 @@
         document.getElementById('loading-indicator').style.display = 'block';
 
         try {
-          // ใช้ Prefix Match (\uf8ff) ในการค้นหา Firestore
           const strEnd = queryStr + '\uf8ff';
           const q = query(
             collection(db, "products"),
@@ -1033,51 +1064,23 @@
       const item = productsList.find(p => p.id === activeProductId);
 
       try {
-        // 1. ส่งคำสั่งไปลบไฟล์สื่อบน Cloudinary ผ่าน Cloudflare Worker ก่อน
+        // 1. ลบไฟล์สื่อบน Cloudinary ผ่าน Cloudflare Worker (ถ้ามี)
         if (item && item.mediaUrl) {
-          showToast("กำลังลบไฟล์สื่อบน คลาวด์...", "info");
+          showToast("กำลังลบไฟล์สื่อบน Cloud...", "info");
           await deleteMediaFromCloudinary(item.mediaUrl, item.mediaType);
         }
 
-        // 2. ลบ Document บน Firestore
+        // 2. ลบเอกสารออกจาก Cloud Firestore
         await deleteDoc(doc(db, "products", activeProductId));
-        
+
         closeModal();
-        showToast("ลบข้อมูลและไฟล์สื่อเรียบร้อย", "success");
+        showToast("ลบรายการสินค้าเรียบร้อยแล้ว", "success");
         fetchInitialProducts();
       } catch (e) {
         console.error("Delete Error:", e);
-        showToast("ลบข้อมูลไม่สำเร็จ", "error");
+        showToast("เกิดข้อผิดพลาดในการลบรายการ", "error");
       }
     }
-
-    window.closeModal = function() {
-      const modalVideo = document.querySelector('#modal-media-container video');
-      if (modalVideo) modalVideo.pause();
-      document.getElementById('detail-modal').style.display = 'none';
-      activeProductId = null;
-    }
-
-    function triggerValidationError(msg = "กรุณากรอกชื่อหรือรุ่นสินค้า") {
-      const input = document.getElementById('product-name');
-      const errMsg = document.getElementById('name-error-msg');
-      input.classList.add('input-error');
-      errMsg.innerText = msg;
-      errMsg.style.display = 'block';
-    }
-
-    window.clearValidationError = function() {
-      document.getElementById('product-name').classList.remove('input-error');
-      document.getElementById('name-error-msg').style.display = 'none';
-    }
-
-    function showToast(msg, type="info") {
-      const toast = document.getElementById("toast");
-      toast.className = `toast toast-${type} show`;
-      toast.innerText = msg;
-      setTimeout(() => { toast.className = "toast"; }, 3000);
-    }
   </script>
-
 </body>
 </html>
