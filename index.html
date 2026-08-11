@@ -3,43 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบบันทึกสินค้า (Cloudinary + Firestore)</title>
+    <title>ระบบบันทึกสินค้า (Cloudinary)</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background-color: #f4f6f9; }
-        .container { max-width: 600px; margin: 0 auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input[type="text"], textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
-        .preview-box { border: 2px dashed #ccc; padding: 20px; text-align: center; border-radius: 5px; margin-top: 10px; min-height: 150px; display: flex; align-items: center; justify-content: center; }
-        .preview-box img, .preview-box video { max-width: 100%; max-height: 250px; border-radius: 5px; }
-        button { background-color: #007bff; color: white; border: none; padding: 12px 20px; border-radius: 5px; cursor: pointer; width: 100%; font-size: 16px; margin-top: 10px; }
-        button:disabled { background-color: #aaa; cursor: not-allowed; }
-        .toast { position: fixed; bottom: 20px; right: 20px; padding: 12px 20px; color: white; border-radius: 5px; display: none; z-index: 1000; }
-        .toast.info { background-color: #17a2b8; }
-        .toast.success { background-color: #28a745; }
-        .toast.error { background-color: #dc3545; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Sukhumvit Set', 'Segoe UI', Tahoma, sans-serif; }
+        body { background-color: #f8fafc; color: #1e293b; padding: 40px 20px; display: flex; justify-content: center; }
+        .card { background: #ffffff; width: 100%; max-width: 500px; padding: 32px; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.01); border: 1px solid #e2e8f0; }
+        h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 24px; color: #0f172a; text-align: center; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-size: 0.9rem; font-weight: 600; margin-bottom: 8px; color: #334155; }
+        input[type="text"], textarea { width: 100%; padding: 12px 16px; font-size: 0.95rem; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; transition: all 0.2s; background: #f8fafc; }
+        input[type="text"]:focus, textarea:focus { border-color: #2563eb; background: #ffffff; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+        .file-input-wrapper { position: relative; margin-bottom: 12px; }
+        input[type="file"] { width: 100%; font-size: 0.875rem; color: #64748b; }
+        .preview-box { border: 2px dashed #cbd5e1; border-radius: 12px; min-height: 180px; display: flex; align-items: center; justify-content: center; background: #f8fafc; overflow: hidden; margin-top: 8px; }
+        .preview-box span { color: #94a3b8; font-size: 0.9rem; }
+        .preview-box img, .preview-box video { width: 100%; height: 100%; max-height: 250px; object-fit: contain; }
+        .btn-submit { width: 100%; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; border: none; padding: 14px; font-size: 1rem; font-weight: 600; border-radius: 8px; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(37,99,235,0.2); }
+        .btn-submit:hover { background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%); }
+        .btn-submit:disabled { background: #94a3b8; cursor: not-allowed; box-shadow: none; }
+        .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #0f172a; color: white; padding: 12px 24px; border-radius: 50px; font-size: 0.9rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); display: none; z-index: 1000; animation: fadeIn 0.3s forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translate(-50%, 0); } }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>เพิ่มข้อมูลสินค้า</h2>
+<div class="card">
+    <h2>บันทึกข้อมูลสินค้า</h2>
     <div class="form-group">
-        <label for="product-name">ชื่อสินค้า *</label>
+        <label for="product-name">ชื่อสินค้า <span style="color: #ef4444;">*</span></label>
         <input type="text" id="product-name" placeholder="กรอกชื่อสินค้า">
     </div>
     <div class="form-group">
         <label for="product-detail">รายละเอียดสินค้า</label>
-        <textarea id="product-detail" rows="3" placeholder="กรอกรายละเอียด"></textarea>
+        <textarea id="product-detail" rows="3" placeholder="กรอกรายละเอียดเพิ่มเติม"></textarea>
     </div>
     <div class="form-group">
-        <label>เลือกไฟล์ (รูปภาพ หรือ วิดีโอ)</label>
-        <input type="file" id="media-file" accept="image/*,video/*" onchange="handleFileSelect(event)">
+        <label>ไฟล์สื่อ (รูปภาพ / วิดีโอ)</label>
+        <div class="file-input-wrapper">
+            <input type="file" id="media-file" accept="image/*,video/*" onchange="handleFileSelect(event)">
+        </div>
         <div class="preview-box" id="preview-box">
             <span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>
         </div>
     </div>
-    <button id="btn-save" onclick="addProduct()">บันทึกสินค้าลงคลาวด์</button>
+    <button id="btn-save" class="btn-submit" onclick="addProduct()">บันทึกสินค้าลงคลาวด์</button>
 </div>
 
 <div id="toast" class="toast"></div>
@@ -49,7 +56,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
   import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-  // 1. ใส่ Config ของ Firebase ที่คุณมีอยู่เดิม
+  // --- 1. ใส่ Config ของ Firebase ที่คุณมีอยู่เดิม ---
   const firebaseConfig = {
       apiKey: "ใส่_API_KEY_ของ_FIREBASE",
       authDomain: "ใส่_AUTH_DOMAIN_ของ_FIREBASE",
@@ -62,10 +69,9 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  // ตัวแปรสำหรับเก็บไฟล์สื่อ
   let processedMedia = { type: 'none', file: null };
 
-  // 2. ฟังก์ชันพรีวิวไฟล์สื่อ
+  // --- 2. ฟังก์ชันพรีวิวไฟล์สื่อ ---
   window.handleFileSelect = function(event) {
       const file = event.target.files[0];
       const previewBox = document.getElementById('preview-box');
@@ -82,10 +88,10 @@
       }
   };
 
-  // 3. ฟังก์ชันสำหรับอัปโหลดสื่อตรงไปที่ Cloudinary (ไม่ผ่าน Firebase Storage)
+  // --- 3. ฟังก์ชันอัปโหลดไป Cloudinary ---
   async function uploadToCloudinary(file) {
-      const cloudName = "qxbrnyx"; // Cloud Name ของคุณจากหน้า Dashboard
-      const uploadPreset = "ainote_preset"; // Upload Preset ที่ตั้งค่าแบบ Unsignedไว้
+      const cloudName = "qxbrnyx"; // Cloud Name ของคุณ
+      const uploadPreset = "ainote_preset"; // Upload Preset ที่ตั้งค่าเป็น Unsigned
 
       const formData = new FormData();
       formData.append('file', file);
@@ -105,7 +111,7 @@
       return data.secure_url;
   }
 
-  // 4. ฟังก์ชันหลักสำหรับบันทึกสินค้า
+  // --- 4. ฟังก์ชันหลักสำหรับบันทึกสินค้า ---
   window.addProduct = async function() {
       const nameInput = document.getElementById('product-name');
       const detailInput = document.getElementById('product-detail');
@@ -114,7 +120,7 @@
       const detail = detailInput.value.trim();
 
       if (!name) {
-          showToast("กรุณากรอกชื่อสินค้า", "error");
+          showToast("กรุณากรอกชื่อสินค้า");
           return;
       }
 
@@ -124,13 +130,13 @@
       try {
           let mediaUrl = "";
 
-          // ถ้ามีการเลือกไฟล์ ให้ส่งไปอัปโหลดที่ Cloudinary
+          // ถ้าเลือกไฟล์ ให้ส่งไปอัปโหลดที่ Cloudinary
           if (processedMedia.file) {
-              showToast(`กำลังอัปโหลด${processedMedia.type === 'video' ? 'วิดีโอ' : 'รูปภาพ'}ขึ้น Cloudinary...`, "info");
+              showToast(`กำลังอัปโหลด${processedMedia.type === 'video' ? 'วิดีโอ' : 'รูปภาพ'}...`);
               mediaUrl = await uploadToCloudinary(processedMedia.file);
           }
 
-          // นำ URL ที่ได้จาก Cloudinary และข้อมูลสินค้า เซฟลง Firestore
+          // นำ URL ของ Cloudinary และข้อมูลสินค้า เซฟลง Firestore
           await addDoc(collection(db, "products"), {
               name: name,
               detail: detail || "ไม่มีรายละเอียดเพิ่มเติม",
@@ -139,9 +145,9 @@
               createdAt: Date.now()
           });
 
-          showToast("บันทึกข้อมูลเรียบร้อยแล้ว!", "success");
+          showToast("บันทึกข้อมูลเรียบร้อยแล้ว!");
           
-          // ล้างค่าในหน้าเว็บ
+          // ล้างค่าในหน้าฟอร์ม
           nameInput.value = ''; 
           detailInput.value = '';
           document.getElementById('media-file').value = '';
@@ -150,20 +156,19 @@
 
       } catch (e) {
           console.error("Save Error:", e);
-          showToast("บันทึกไม่สำเร็จ: " + e.message, "error");
+          showToast("บันทึกไม่สำเร็จ: " + e.message);
       } finally {
           saveBtn.disabled = false;
           saveBtn.innerText = "บันทึกสินค้าลงคลาวด์";
       }
   };
 
-  // แจ้งเตือน Toast
-  function showToast(msg, type) {
+  // แสดงข้อความแจ้งเตือน Toast
+  function showToast(msg) {
       const toast = document.getElementById('toast');
       toast.innerText = msg;
-      toast.className = `toast ${type}`;
       toast.style.display = 'block';
-      setTimeout(() => { toast.style.display = 'none'; }, 4000);
+      setTimeout(() => { toast.style.display = 'none'; }, 3500);
   }
 </script>
 
