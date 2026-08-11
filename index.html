@@ -450,9 +450,9 @@
       รายการสินค้าบน Cloud
     </h3>
 
-    <!-- ช่องค้นหา Real-time บน Firestore -->
+    <!-- ช่องค้นหา Real-time เฉพาะจาก ชื่อ/รุ่น -->
     <div class="form-group">
-      <input type="text" id="search-input" class="form-control" placeholder="🔍 พิมพ์ชื่อรุ่นเพื่อค้นหาบน คลาวด์..." oninput="handleSearch()">
+      <input type="text" id="search-input" class="form-control" placeholder="🔍 พิมพ์ชื่อ/รุ่นเพื่อค้นหาทันที..." oninput="handleSearch()">
     </div>
 
     <!-- ตารางสินค้า Responsive -->
@@ -515,7 +515,7 @@
   <!-- Module Script: Firebase & Logic -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, query, orderBy, limit, startAfter, getDocs, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     // Configuration
     const CLOUDINARY_CLOUD_NAME = "qxdbrnyx"; 
@@ -540,12 +540,6 @@
     let activeProductId = null;
     
     let productsList = [];
-    let lastDoc = null;
-    let isLoadingMore = false;
-    let hasMoreData = true;
-    let isSearchActive = false;
-    let searchDebounceTimer = null;
-    const PAGE_SIZE = 20;
 
     // --- Helper Functions UI ---
     function showToast(message, type = 'info') {
@@ -615,94 +609,39 @@
       }
     }
 
-    // --- 2. Real-time Search on Cloud (Firestore Prefix Query) ---
+    // --- 2. Real-time Search เฉพาะจาก ชื่อ/รุ่น (ค้นหาคำจากส่วนไหนก็ได้) ---
     window.handleSearch = function() {
-      clearTimeout(searchDebounceTimer);
-      searchDebounceTimer = setTimeout(async () => {
-        const queryStr = document.getElementById('search-input').value.trim();
-        
-        if (!queryStr) {
-          fetchInitialProducts();
-          return;
-        }
+      const queryStr = document.getElementById('search-input').value.trim().toLowerCase();
 
-        isSearchActive = true;
-        document.getElementById('loading-indicator').style.display = 'block';
+      if (!queryStr) {
+        renderTable(productsList);
+        return;
+      }
 
-        try {
-          const strEnd = queryStr + '\uf8ff';
-          const q = query(
-            collection(db, "products"),
-            where("name", ">=", queryStr),
-            where("name", "<=", strEnd),
-            limit(50)
-          );
+      // กรองค้นหาเฉพาะฟิลด์ name (ชื่อ/รุ่น) เท่านั้น
+      const filtered = productsList.filter(item => {
+        const nameText = (item.name || '').toLowerCase();
+        return nameText.includes(queryStr);
+      });
 
-          const snapshot = await getDocs(q);
-          const searchResults = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          
-          renderTable(searchResults);
-        } catch (error) {
-          console.error("Real-time Cloud Search Error:", error);
-          showToast("เกิดข้อผิดพลาดในการค้นหาข้อมูล", "error");
-        } finally {
-          document.getElementById('loading-indicator').style.display = 'none';
-        }
-      }, 400);
+      renderTable(filtered);
     };
 
-    // --- Fetch Products & Pagination ---
+    // --- Fetch Products ทั้งหมด ---
     async function fetchInitialProducts() {
-      isSearchActive = false;
       try {
-        const q = query(collection(db, "products"), orderBy("createdAt", "desc"), limit(PAGE_SIZE));
+        const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
         const snapshot = await getDocs(q);
         
-        if (!snapshot.empty) {
-          lastDoc = snapshot.docs[snapshot.docs.length - 1];
-          productsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          hasMoreData = snapshot.docs.length === PAGE_SIZE;
-        } else {
-          productsList = [];
-          hasMoreData = false;
-        }
+        productsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        // เมื่อดึงข้อมูลมาแล้ว ล้างช่องค้นหาและแสดงตาราง
+        document.getElementById('search-input').value = '';
         renderTable(productsList);
         setDbStatus(true, "DB พร้อม");
       } catch (error) {
         console.error("Fetch DB Error:", error);
         setDbStatus(false, "DB ขัดข้อง");
-      }
-    }
-
-    async function fetchNextProducts() {
-      if (isLoadingMore || !hasMoreData || !lastDoc || isSearchActive) return;
-
-      isLoadingMore = true;
-      document.getElementById('loading-indicator').style.display = 'block';
-
-      try {
-        const q = query(
-          collection(db, "products"),
-          orderBy("createdAt", "desc"),
-          startAfter(lastDoc),
-          limit(PAGE_SIZE)
-        );
-        const snapshot = await getDocs(q);
-
-        if (!snapshot.empty) {
-          lastDoc = snapshot.docs[snapshot.docs.length - 1];
-          const newProducts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          productsList = [...productsList, ...newProducts];
-          hasMoreData = snapshot.docs.length === PAGE_SIZE;
-          renderTable(productsList);
-        } else {
-          hasMoreData = false;
-        }
-      } catch (error) {
-        console.error("Load more error:", error);
-      } finally {
-        isLoadingMore = false;
-        document.getElementById('loading-indicator').style.display = 'none';
       }
     }
 
@@ -751,7 +690,7 @@
       document.getElementById('btn-camera').disabled = disabled;
     }
 
-    // ฟังก์ชันสำหรับย่อขนาดรูปภาพ (จะถูกเรียกใช้ตอนกดบันทึก)
+    // ย่อขนาดรูปภาพ (ทำงานตอนบันทึกสินค้า)
     function compressImage(file, maxWidth = 800, quality = 0.6) {
       return new Promise((resolve) => {
         const reader = new FileReader();
@@ -790,8 +729,8 @@
         reader.onload = (e) => {
           processedMedia = { 
             type: 'image', 
-            data: e.target.result, // Base64 ดั้งเดิมสำหรับใช้ Preview/AI
-            file: file             // ไฟล์ต้นฉบับรอการย่อตอนกดบันทึก
+            data: e.target.result, 
+            file: file             
           };
           previewBox.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
         };
@@ -920,7 +859,6 @@
         if (processedMedia.file) {
           let uploadFile = processedMedia.file;
 
-          // ถ้ารูปภาพเป็นประเภท image ให้ทำการย่อขนาดรูปภาพในขั้นตอนนี้
           if (mediaType === 'image') {
             showToast("กำลังย่อขนาดรูปภาพ...", "info");
             const compressed = await compressImage(processedMedia.file);
@@ -975,7 +913,7 @@
         return;
       }
 
-      dataList.forEach((item, index) => {
+      dataList.forEach((item) => {
         const tr = document.createElement('tr');
         tr.className = 'clickable-row';
         tr.onclick = () => openModal(item.id, item);
@@ -986,20 +924,8 @@
           <td class="text-truncate" title="${item.detail}">${item.detail}</td>
         `;
         tbody.appendChild(tr);
-
-        if (index === dataList.length - 4 && hasMoreData && !isLoadingMore && !isSearchActive) {
-          fetchNextProducts();
-        }
       });
     }
-
-    window.addEventListener('scroll', () => {
-      if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 300) {
-        if (hasMoreData && !isLoadingMore && !isSearchActive) {
-          fetchNextProducts();
-        }
-      }
-    });
 
     // --- Modal Operations ---
     function openModal(id, itemData = null) {
