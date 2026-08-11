@@ -185,7 +185,7 @@
     const storage = getStorage(app);
 
     let selectedFile = null;
-    let processedMedia = { type: null, data: null, file: null }; // เก็บข้อมูลไฟล์หรือ Base64
+    let processedMedia = { type: null, data: null, file: null };
     let activeProductId = null;
     
     // pagination variables
@@ -195,7 +195,7 @@
     let hasMoreData = true;
     const PAGE_SIZE = 20;
 
-    // --- 1. โหลดข้อมูลแบบทีละ 20 รายการ ---
+    // --- 1. โหลดข้อมูลทีละ 20 รายการ ---
     async function fetchInitialProducts() {
         try {
             const q = query(collection(db, "products"), orderBy("createdAt", "desc"), limit(PAGE_SIZE));
@@ -280,7 +280,7 @@
         textEl.innerText = text;
     }
 
-    // --- 3. จัดการรูปภาพ/วิดีโอ + บีบอัดวิดีโอ ---
+    // --- 3. จัดการรูปภาพ/วิดีโอ (แก้ไขการแสดงผลวิดีโอ) ---
     window.handleFileSelect = async function(event) {
         const file = event.target.files[0];
         if (!file) return;
@@ -296,19 +296,16 @@
                 showToast("โหลดรูปภาพเรียบร้อย", "info");
             });
         } else if (file.type.startsWith('video/')) {
-            showToast("กำลังประมวลผลวิดีโอ...", "info");
-            try {
-                // บีบอัดวิดีโอ
-                const compressedVideoFile = await compressVideo(file);
-                processedMedia = { type: 'video', data: URL.createObjectURL(compressedVideoFile), file: compressedVideoFile };
-                previewBox.innerHTML = `<video src="${processedMedia.data}" controls autoplay muted></video>`;
-                showToast("ประมวลผลวิดีโอเรียบร้อย พร้อมอัปโหลด", "info");
-            } catch (err) {
-                console.error("Video processing failed:", err);
-                processedMedia = { type: 'video', data: URL.createObjectURL(file), file: file };
-                previewBox.innerHTML = `<video src="${processedMedia.data}" controls autoplay muted></video>`;
-                showToast("ใช้วิดีโอต้นฉบับเนื่องจากไม่สามารถบีบอัดได้", "info");
-            }
+            showToast("โหลดวิดีโอเรียบร้อย", "info");
+            
+            // สร้าง ObjectURL สำหรับแสดงพรีวิวตรงๆ (รองรับ iPhone / Android / Web)
+            const videoUrl = URL.createObjectURL(file);
+            processedMedia = { type: 'video', data: videoUrl, file: file };
+            
+            // ใส่ playsinline, autoplay, muted เพื่อให้วิดีโอเล่นตัวอย่างในกรอบได้ทันที
+            previewBox.innerHTML = `
+                <video src="${videoUrl}" controls autoplay muted playsinline style="max-width:100%; max-height:100%; object-fit:contain;"></video>
+            `;
         }
     }
 
@@ -332,85 +329,22 @@
         });
     }
 
-    // ฟังก์ชันบีบอัดวิดีโอผ่าน Canvas/MediaRecorder
-    function compressVideo(file) {
-        return new Promise((resolve, reject) => {
-            const video = document.createElement('video');
-            video.src = URL.createObjectURL(file);
-            video.muted = true;
-            video.playsInline = true;
-
-            video.onloadedmetadata = () => {
-                const maxDim = 720;
-                let w = video.videoWidth;
-                let h = video.videoHeight;
-
-                if (w > maxDim || h > maxDim) {
-                    if (w > h) {
-                        h = Math.round((h * maxDim) / w);
-                        w = maxDim;
-                    } else {
-                        w = Math.round((w * maxDim) / h);
-                        h = maxDim;
-                    }
-                }
-
-                const canvas = document.createElement('canvas');
-                canvas.width = w;
-                canvas.height = h;
-                const ctx = canvas.getContext('2d');
-
-                const stream = canvas.captureStream(25);
-                let mediaRecorder;
-
-                try {
-                    mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp8', videoBitsPerSecond: 1000000 });
-                } catch (e) {
-                    try {
-                        mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/mp4' });
-                    } catch (e2) {
-                        return resolve(file); // fallback ใช้อันเดิม
-                    }
-                }
-
-                const chunks = [];
-                mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
-                mediaRecorder.onstop = () => {
-                    const blob = new Blob(chunks, { type: mediaRecorder.mimeType });
-                    const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, ".webm"), { type: mediaRecorder.mimeType });
-                    resolve(compressedFile);
-                };
-
-                video.play();
-                mediaRecorder.start();
-
-                function drawFrame() {
-                    if (!video.paused && !video.ended) {
-                        ctx.drawImage(video, 0, 0, w, h);
-                        requestAnimationFrame(drawFrame);
-                    } else {
-                        mediaRecorder.stop();
-                    }
-                }
-                drawFrame();
-            };
-
-            video.onerror = (err) => reject(err);
-        });
-    }
-
-    // อัปโหลดไฟล์วิดีโอเข้า Firebase Storage
+    // ฟังก์ชันอัปโหลดวิดีโอขึ้น Firebase Storage
     async function uploadVideoToStorage(file) {
-        const fileRef = ref(storage, `videos/${Date.now()}_${file.name}`);
+        const cleanFileName = file.name.replace(/[^a-zA-Z0-9.]/g, "_");
+        const fileRef = ref(storage, `videos/${Date.now()}_${cleanFileName}`);
         const uploadTask = uploadBytesResumable(fileRef, file);
 
         return new Promise((resolve, reject) => {
             uploadTask.on('state_changed',
                 (snapshot) => {
                     const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                    showToast(`อัปโหลดวิดีโอแล้ว ${Math.round(progress)}%`, "info");
+                    showToast(`กำลังอัปโหลดวิดีโอ: ${Math.round(progress)}%`, "info");
                 },
-                (error) => reject(error),
+                (error) => {
+                    console.error("Storage upload error:", error);
+                    reject(error);
+                },
                 async () => {
                     const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
                     resolve(downloadURL);
@@ -487,7 +421,7 @@
         }
     }
 
-    // --- 5. บันทึกข้อมูลสินค้าลง Cloud ---
+    // --- 5. บันทึกข้อมูลสินค้าลง Cloud (ปรับปรุงข้อผิดพลาดวิดีโอ) ---
     window.addProduct = async function() {
         const nameInput = document.getElementById('product-name');
         const detailInput = document.getElementById('product-detail');
@@ -508,34 +442,40 @@
             let mediaUrl = "";
             let mediaType = processedMedia.type;
 
-            if (processedMedia.type === 'image') {
-                mediaUrl = processedMedia.data; // เก็บเป็น Base64 ขนาดเล็ก
-            } else if (processedMedia.type === 'video' && processedMedia.file) {
-                showToast("กำลังอัปโหลดวิดีโอขึ้น Firebase Storage...", "info");
+            if (processedMedia.type === 'video') {
+                if (!processedMedia.file) {
+                    throw new Error("ไม่พบไฟล์วิดีโอที่เลือก กรุณาเลือกไฟล์ใหม่อีกครั้ง");
+                }
+                showToast("เริ่มอัปโหลดวิดีโอลง Firebase Storage...", "info");
                 mediaUrl = await uploadVideoToStorage(processedMedia.file);
+            } else if (processedMedia.type === 'image') {
+                mediaUrl = processedMedia.data;
             }
 
             await addDoc(collection(db, "products"), {
                 name: name,
                 detail: detail || "ไม่มีรายละเอียดเพิ่มเติม",
-                mediaType: mediaType,
-                mediaUrl: mediaUrl,
+                mediaType: mediaType || 'none',
+                mediaUrl: mediaUrl || '',
                 createdAt: Date.now()
             });
 
-            showToast("บันทึกข้อมูลลง Cloud เรียบร้อยแล้ว", "success");
+            showToast("บันทึกข้อมูลเรียบร้อยแล้ว!", "success");
             nameInput.value = ''; detailInput.value = '';
             document.getElementById('preview-box').innerHTML = '<span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>';
             selectedFile = null;
             processedMedia = { type: null, data: null, file: null };
             clearValidationError();
             
-            // รีโหลดลิสต์ใหม่
             fetchInitialProducts();
 
         } catch (e) {
             console.error("Save Error:", e);
-            showToast("เกิดข้อผิดพลาดในการบันทึกข้อมูล", "error");
+            let errMsg = e.message || "เกิดข้อผิดพลาดในการบันทึก";
+            if (e.code === 'storage/unauthorized') {
+                errMsg = "Firebase Storage ติด Permissions/Rules (unauthorized)";
+            }
+            showToast("บันทึกไม่สำเร็จ: " + errMsg, "error");
         } finally {
             saveBtn.disabled = false;
             saveBtn.innerText = "บันทึกสินค้าลงคลาวด์";
@@ -568,14 +508,12 @@
             `;
             tbody.appendChild(tr);
 
-            // เช็คว่าถึงรายการที่ 17 ของชุดป้ายปัจจุบันหรือยัง เพื่อสั่งโหลดล่วงหน้า
             if (index === dataList.length - 4 && hasMoreData && !isLoadingMore) {
                 fetchNextProducts();
             }
         });
     }
 
-    // เลื่อนดูข้อมูลอัตโนมัติเมื่อ Scroll ถือจุดล่างสุด
     window.addEventListener('scroll', () => {
         if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 300) {
             if (hasMoreData && !isLoadingMore) {
@@ -608,7 +546,7 @@
         if (item.mediaType === 'image') {
             mediaContainer.innerHTML = `<img src="${item.mediaUrl}">`;
         } else if (item.mediaType === 'video') {
-            mediaContainer.innerHTML = `<video src="${item.mediaUrl}" controls autoplay></video>`;
+            mediaContainer.innerHTML = `<video src="${item.mediaUrl}" controls autoplay muted playsinline style="max-width:100%; max-height:100%;"></video>`;
         } else {
             mediaContainer.innerHTML = `<span style="color:#aaa;">ไม่มีสื่อแนบไว้</span>`;
         }
@@ -695,7 +633,7 @@
         const toast = document.getElementById("toast");
         toast.className = `toast toast-${type} show`;
         toast.innerText = msg;
-        setTimeout(() => { toast.className = "toast"; }, 3000);
+        setTimeout(() => { toast.className = "toast"; }, 3500);
     }
 </script>
 </body>
