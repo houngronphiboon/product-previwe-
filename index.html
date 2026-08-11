@@ -21,12 +21,11 @@
         
         .button-group { display: flex; gap: 10px; margin-bottom: 15px; }
         .btn { flex: 1; padding: 10px 14px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; display: flex; justify-content: center; align-items: center; gap: 6px; transition: all 0.2s ease; }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
         .btn-select { background-color: #e0e0e0; color: #333; }
         .btn-take { background-color: #007bff; color: #fff; }
         .btn-ai { background-color: #8e44ad; color: #fff; width: 100%; margin-top: 15px; margin-bottom: 5px; font-size: 15px; padding: 12px; }
-        .btn-ai:disabled { background-color: #c8a2c8; cursor: not-allowed; }
         .btn-save { background-color: #28a745; color: #fff; width: 100%; margin-top: 10px; font-size: 16px; padding: 12px; }
-        .btn-save:disabled { background-color: #94d3a2; cursor: not-allowed; }
         .btn-edit { background-color: #ffc107; color: #212529; }
         .btn-delete { background-color: #dc3545; color: #fff; }
         .btn-update { background-color: #0d6efd; color: #fff; width: 100%; margin-top: 10px; }
@@ -43,9 +42,12 @@
         .search-box { margin-bottom: 15px; position: relative; }
         .search-input { width: 100%; padding: 10px 15px; border: 2px solid #007bff; border-radius: 8px; font-size: 15px; outline: none; }
         .search-input:focus { box-shadow: 0 0 5px rgba(0, 123, 255, 0.4); }
-        table { width: 100%; border-collapse: collapse; }
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
         th, td { text-align: left; padding: 12px; border-bottom: 1px solid #ddd; }
         th { background-color: #f8f9fa; }
+        th:nth-child(1) { width: 110px; }
+        th:nth-child(2) { width: 180px; }
+        .detail-cell { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #555; }
         .clickable-row { cursor: pointer; transition: background 0.2s; }
         .clickable-row:hover { background-color: #f1f8ff; }
         .no-data { text-align: center; color: #888; padding: 20px; }
@@ -89,8 +91,8 @@
     <input type="file" id="camera-input" accept="image/*" capture="environment" style="display: none;" onchange="handleFileSelect(event)">
     
     <div class="button-group">
-        <button class="btn btn-select" onclick="document.getElementById('media-input').click()">📁 เลือกรูป / วิดีโอ</button>
-        <button class="btn btn-take" onclick="document.getElementById('camera-input').click()">📷 ถ่ายรูป</button>
+        <button class="btn btn-select" id="btn-file-select" onclick="document.getElementById('media-input').click()">📁 เลือกรูป / วิดีโอ</button>
+        <button class="btn btn-take" id="btn-camera" onclick="document.getElementById('camera-input').click()">📷 ถ่ายรูป</button>
     </div>
 
     <div class="input-group">
@@ -278,7 +280,20 @@
         textEl.innerText = text;
     }
 
-    // --- 3. ฟังก์ชันบีบอัดรูปภาพและจัดการสื่อ ---
+    // --- 3. ฟังก์ชันจัดการความจำ/สื่อ และการบีบอัดรูปภาพ ---
+    function clearPreviousMedia() {
+        if (processedMedia.type === 'video' && processedMedia.data) {
+            URL.revokeObjectURL(processedMedia.data);
+        }
+    }
+
+    function setFormButtonsDisabled(disabled) {
+        document.getElementById('btn-save').disabled = disabled;
+        document.getElementById('btn-ai-search').disabled = disabled;
+        document.getElementById('btn-file-select').disabled = disabled;
+        document.getElementById('btn-camera').disabled = disabled;
+    }
+
     function compressImage(file, maxWidth = 800, quality = 0.6) {
         return new Promise((resolve) => {
             const reader = new FileReader();
@@ -297,7 +312,6 @@
                     
                     const base64 = canvas.toDataURL('image/jpeg', quality);
                     canvas.toBlob((blob) => {
-                        // คืนค่าทั้ง Base64 และ Blob ที่ถูกบีบอัดแล้ว
                         resolve({ base64, blob });
                     }, 'image/jpeg', quality);
                 };
@@ -309,13 +323,13 @@
         const file = event.target.files[0];
         if (!file) return;
 
+        clearPreviousMedia();
         const previewBox = document.getElementById('preview-box');
 
         if (file.type.startsWith('image/')) {
             showToast("กำลังย่อขนาดรูปภาพ...", "info");
             const compressed = await compressImage(file);
             
-            // ใช้ไฟล์ Blob ที่ย่อขนาดแล้วส่งไป Cloudinary
             processedMedia = { 
                 type: 'image', 
                 data: compressed.base64, 
@@ -326,13 +340,17 @@
             showToast("ย่อรูปภาพเรียบร้อย (พร้อมอัปโหลด)", "info");
         } else if (file.type.startsWith('video/')) {
             showToast("โหลดวิดีโอเรียบร้อย", "info");
+            const videoUrl = URL.createObjectURL(file);
             processedMedia = { 
                 type: 'video', 
-                data: URL.createObjectURL(file), 
+                data: videoUrl, 
                 file: file 
             };
-            previewBox.innerHTML = `<video src="${processedMedia.data}" controls autoplay muted></video>`;
+            previewBox.innerHTML = `<video src="${videoUrl}" controls autoplay muted></video>`;
+        } else {
+            showToast("รองรับเฉพาะไฟล์รูปภาพและวิดีโอเท่านั้น", "error");
         }
+        event.target.value = '';
     }
 
     async function uploadToCloudinary(file, resourceType = 'auto') {
@@ -358,7 +376,6 @@
     window.generateAIDetails = async function() {
         const nameInput = document.getElementById('product-name');
         const detailInput = document.getElementById('product-detail');
-        const aiBtn = document.getElementById('btn-ai-search');
         const name = nameInput.value.trim();
 
         if (!name && !processedMedia.data) {
@@ -369,7 +386,7 @@
 
         const originalText = detailInput.value;
         detailInput.value = `กำลังส่งข้อมูลให้ Gemini AI วิเคราะห์รายละเอียด...`;
-        aiBtn.disabled = true;
+        setFormButtonsDisabled(true);
 
         try {
             const parts = [];
@@ -418,7 +435,7 @@
             detailInput.value = originalText;
             showToast("เชื่อมต่อ AI ไม่สำเร็จ", "error");
         } finally {
-            aiBtn.disabled = false;
+            setFormButtonsDisabled(false);
         }
     }
 
@@ -436,8 +453,8 @@
             return;
         }
 
-        saveBtn.disabled = true;
-        saveBtn.innerText = "กำลังอัปโหลดไฟล์สื่อและบันทึก...";
+        setFormButtonsDisabled(true);
+        saveBtn.innerText = "กำลังอัปโหลดสื่อและบันทึก...";
 
         try {
             let mediaUrl = "";
@@ -458,6 +475,8 @@
             });
 
             showToast("บันทึกข้อมูลสำเร็จเรียบร้อย", "success");
+            clearPreviousMedia();
+            
             nameInput.value = ''; detailInput.value = '';
             document.getElementById('preview-box').innerHTML = '<span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>';
             processedMedia = { type: null, data: null, file: null };
@@ -469,7 +488,7 @@
             console.error("Save Error:", e);
             showToast("เกิดข้อผิดพลาดในการบันทึกข้อมูล", "error");
         } finally {
-            saveBtn.disabled = false;
+            setFormButtonsDisabled(false);
             saveBtn.innerText = "บันทึกสินค้าลงคลาวด์";
         }
     }
@@ -496,7 +515,7 @@
             tr.innerHTML = `
                 <td>${mediaBadge}</td>
                 <td><strong>${item.name}</strong></td>
-                <td>${item.detail.substring(0, 35)}${item.detail.length > 35 ? '...' : ''}</td>
+                <td class="detail-cell" title="${item.detail}">${item.detail}</td>
             `;
             tbody.appendChild(tr);
 
