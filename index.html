@@ -166,11 +166,11 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, query, orderBy, limit, startAfter, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // ตั้งค่า Cloudinary (เปลี่ยนตามบัญชีของคุณ)
-    const CLOUDINARY_CLOUD_NAME = "YOUR_CLOUD_NAME"; 
-    const CLOUDINARY_UPLOAD_PRESET = "YOUR_UPLOAD_PRESET"; 
+    // ตั้งค่า Cloudinary (อัปเดตค่าจากรูปภาพแล้ว)
+    const CLOUDINARY_CLOUD_NAME = "qxdbrnyx"; 
+    const CLOUDINARY_UPLOAD_PRESET = "ainote_preset"; 
 
-    // Firebase Config (จัดเก็บเพียงข้อมูล Firestore)
+    // Firebase Config (จัดเก็บข้อมูล Firestore)
     const firebaseConfig = {
         apiKey: "AIzaSyAa1ueFx6m_unLe4k4IGF8BTzwFr5pkeiY",
         authDomain: "ai-note-acedb.firebaseapp.com",
@@ -323,7 +323,6 @@
         });
     }
 
-    // ฟังก์ชันอัปโหลดไฟล์สื่อ (ทั้ง รูปภาพ และ วิดีโอ) ขึ้น Cloudinary
     async function uploadToCloudinary(file, resourceType = 'auto') {
         const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`;
         const formData = new FormData();
