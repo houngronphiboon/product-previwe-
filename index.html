@@ -10,13 +10,14 @@
         
         .container { background-color: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); width: 100%; max-width: 500px; margin-bottom: 25px; position: relative; }
         
-        /* สไตล์จุดไฟสถานะการเชื่อมต่อ */
-        .status-badge { position: absolute; top: 15px; right: 15px; display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #555; background: #f0f0f0; padding: 4px 10px; border-radius: 20px; }
-        .status-dot { width: 9px; height: 9px; border-radius: 50%; background-color: #ffc107; transition: background-color 0.3s ease; }
+        /* สไตล์จุดไฟสถานะคู่ */
+        .status-container { position: absolute; top: 15px; right: 15px; display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+        .status-badge { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: #444; background: #f0f0f0; padding: 4px 8px; border-radius: 20px; border: 1px solid #e0e0e0; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background-color: #ffc107; transition: background-color 0.3s ease; }
         .status-dot.online { background-color: #28a745; box-shadow: 0 0 6px #28a745; }
         .status-dot.offline { background-color: #dc3545; box-shadow: 0 0 6px #dc3545; }
 
-        .media-preview-box { width: 100%; height: 240px; background-color: #2b2b2b; border-radius: 8px; margin-top: 15px; margin-bottom: 15px; display: flex; justify-content: center; align-items: center; color: #aaa; border: 2px dashed #ccc; overflow: hidden; position: relative; }
+        .media-preview-box { width: 100%; height: 240px; background-color: #2b2b2b; border-radius: 8px; margin-top: 35px; margin-bottom: 15px; display: flex; justify-content: center; align-items: center; color: #aaa; border: 2px dashed #ccc; overflow: hidden; position: relative; }
         .media-preview-box img, .media-preview-box video { max-width: 100%; max-height: 100%; object-fit: contain; }
         
         .button-group { display: flex; gap: 10px; margin-bottom: 15px; }
@@ -26,6 +27,7 @@
         .btn-ai { background-color: #8e44ad; color: #fff; width: 100%; margin-top: 15px; margin-bottom: 5px; font-size: 15px; padding: 12px; }
         .btn-ai:disabled { background-color: #c8a2c8; cursor: not-allowed; }
         .btn-save { background-color: #28a745; color: #fff; width: 100%; margin-top: 10px; font-size: 16px; padding: 12px; }
+        .btn-save:disabled { background-color: #94d3a2; cursor: not-allowed; }
         .btn-edit { background-color: #ffc107; color: #212529; }
         .btn-delete { background-color: #dc3545; color: #fff; }
         .btn-update { background-color: #0d6efd; color: #fff; width: 100%; margin-top: 10px; }
@@ -48,6 +50,7 @@
         .clickable-row { cursor: pointer; transition: background 0.2s; }
         .clickable-row:hover { background-color: #f1f8ff; }
         .no-data { text-align: center; color: #888; padding: 20px; }
+        .loading-text { text-align: center; color: #007bff; padding: 15px; font-weight: 600; }
 
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; }
         .modal-content { background-color: #fff; padding: 20px; border-radius: 12px; width: 90%; max-width: 480px; position: relative; max-height: 90vh; overflow-y: auto; }
@@ -68,10 +71,15 @@
 <body>
 
 <div class="container">
-    <!-- จุดไฟสถานะการเชื่อมต่อ -->
-    <div class="status-badge">
-        <span class="status-dot" id="status-dot"></span>
-        <span id="status-text">กำลังเชื่อมต่อ...</span>
+    <div class="status-container">
+        <div class="status-badge" title="สถานะการเชื่อมต่อฐานข้อมูล Cloud">
+            <span class="status-dot" id="db-status-dot"></span>
+            <span id="db-status-text">DB: เช็ค...</span>
+        </div>
+        <div class="status-badge" title="สถานะความพร้อมของระบบ AI">
+            <span class="status-dot" id="ai-status-dot"></span>
+            <span id="ai-status-text">AI: เช็ค...</span>
+        </div>
     </div>
 
     <div class="media-preview-box" id="preview-box">
@@ -102,10 +110,10 @@
 </div>
 
 <div class="list-container">
-    <div style="font-weight: bold; font-size: 18px; margin-bottom: 12px;">รายการสินค้าบน Cloud (อัปเดตเรียลไทม์)</div>
+    <div style="font-weight: bold; font-size: 18px; margin-bottom: 12px;">รายการสินค้าบน Cloud</div>
     
     <div class="search-box">
-        <input type="text" id="search-input" class="search-input" placeholder="🔍 พิมพ์เพื่อค้นหารายการสินค้า..." oninput="filterProducts()">
+        <input type="text" id="search-input" class="search-input" placeholder="🔍 พิมพ์เพื่อค้นหารายการสินค้า..." oninput="handleSearch()">
     </div>
 
     <table>
@@ -118,6 +126,7 @@
         </thead>
         <tbody id="product-list"></tbody>
     </table>
+    <div id="loading-indicator" class="loading-text" style="display: none;">กำลังโหลดข้อมูลเพิ่มเติม...</div>
 </div>
 
 <div class="modal" id="detail-modal">
@@ -156,7 +165,8 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, query, orderBy, limit, startAfter, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAa1ueFx6m_unLe4k4IGF8BTzwFr5pkeiY",
@@ -168,43 +178,110 @@
         measurementId: "G-V45Q6BXMDH"
     };
 
-    // ⚠️ ใส่ Cloudflare Worker URL ของคุณ
-    const WORKER_URL = "https://misty-frog-8bb9.narakonone.workers.dev/";
+    const WORKER_URL = "https://misty-frog-8bb9.5e9bfdd31183a82c054e59d2c36d0fcd.workers.dev";
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    const storage = getStorage(app);
 
     let selectedFile = null;
-    let currentMedia = { type: null, url: null };
+    let processedMedia = { type: null, data: null, file: null }; // เก็บข้อมูลไฟล์หรือ Base64
     let activeProductId = null;
-    let productsDB = [];
+    
+    // pagination variables
+    let productsList = [];
+    let lastDoc = null;
+    let isLoadingMore = false;
+    let hasMoreData = true;
+    const PAGE_SIZE = 20;
 
-    // ดึงข้อมูลและอัปเดตไฟสถานะการเชื่อมต่อ
-    const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
-    onSnapshot(q, (snapshot) => {
-        productsDB = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        filterProducts();
-        
-        // อัปเดตจุดไฟสถานะเป็น เขียว (Online)
-        setNetworkStatus(true, "Cloud ออนไลน์");
-    }, (error) => {
-        // อัปเดตจุดไฟสถานะเป็น แดง (Offline)
-        setNetworkStatus(false, "เชื่อมต่อล้มเหลว");
-        showToast("เชื่อมต่อข้อมูลล้มเหลว ตรวจสอบสิทธิ์การเข้าถึง", "error");
-    });
-
-    function setNetworkStatus(isOnline, text) {
-        const dot = document.getElementById('status-dot');
-        const textEl = document.getElementById('status-text');
-        if (isOnline) {
-            dot.className = "status-dot online";
-        } else {
-            dot.className = "status-dot offline";
+    // --- 1. โหลดข้อมูลแบบทีละ 20 รายการ ---
+    async function fetchInitialProducts() {
+        try {
+            const q = query(collection(db, "products"), orderBy("createdAt", "desc"), limit(PAGE_SIZE));
+            const snapshot = await getDocs(q);
+            
+            if (!snapshot.empty) {
+                lastDoc = snapshot.docs[snapshot.docs.length - 1];
+                productsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                hasMoreData = snapshot.docs.length === PAGE_SIZE;
+            } else {
+                productsList = [];
+                hasMoreData = false;
+            }
+            renderTable(productsList);
+            setDbStatus(true, "DB พร้อม");
+        } catch (error) {
+            console.error("Fetch DB Error:", error);
+            setDbStatus(false, "DB ขัดข้อง");
         }
+    }
+
+    async function fetchNextProducts() {
+        if (isLoadingMore || !hasMoreData || !lastDoc) return;
+
+        isLoadingMore = true;
+        document.getElementById('loading-indicator').style.display = 'block';
+
+        try {
+            const q = query(
+                collection(db, "products"),
+                orderBy("createdAt", "desc"),
+                startAfter(lastDoc),
+                limit(PAGE_SIZE)
+            );
+            const snapshot = await getDocs(q);
+
+            if (!snapshot.empty) {
+                lastDoc = snapshot.docs[snapshot.docs.length - 1];
+                const newProducts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                productsList = [...productsList, ...newProducts];
+                hasMoreData = snapshot.docs.length === PAGE_SIZE;
+                renderTable(productsList);
+            } else {
+                hasMoreData = false;
+            }
+        } catch (error) {
+            console.error("Load more error:", error);
+        } finally {
+            isLoadingMore = false;
+            document.getElementById('loading-indicator').style.display = 'none';
+        }
+    }
+
+    fetchInitialProducts();
+
+    // --- 2. ตรวจสอบสถานะ AI ---
+    async function checkAIStatus() {
+        const dot = document.getElementById('ai-status-dot');
+        const textEl = document.getElementById('ai-status-text');
+        
+        try {
+            const res = await fetch(WORKER_URL, { method: 'OPTIONS' });
+            if (res.ok || res.status === 204) {
+                dot.className = "status-dot online";
+                textEl.innerText = "AI พร้อม";
+            } else {
+                dot.className = "status-dot offline";
+                textEl.innerText = "AI ขัดข้อง";
+            }
+        } catch (e) {
+            dot.className = "status-dot offline";
+            textEl.innerText = "AI ไม่ตอบสนอง";
+        }
+    }
+    checkAIStatus();
+    setInterval(checkAIStatus, 30000);
+
+    function setDbStatus(isOnline, text) {
+        const dot = document.getElementById('db-status-dot');
+        const textEl = document.getElementById('db-status-text');
+        dot.className = isOnline ? "status-dot online" : "status-dot offline";
         textEl.innerText = text;
     }
 
-    window.handleFileSelect = function(event) {
+    // --- 3. จัดการรูปภาพ/วิดีโอ + บีบอัดวิดีโอ ---
+    window.handleFileSelect = async function(event) {
         const file = event.target.files[0];
         if (!file) return;
 
@@ -214,18 +291,24 @@
         if (file.type.startsWith('image/')) {
             showToast("กำลังประมวลผลรูปภาพ...", "info");
             compressImage(file).then(base64 => {
-                currentMedia = { type: 'image', url: base64 };
+                processedMedia = { type: 'image', data: base64, file: null };
                 previewBox.innerHTML = `<img src="${base64}" alt="Preview">`;
                 showToast("โหลดรูปภาพเรียบร้อย", "info");
             });
         } else if (file.type.startsWith('video/')) {
-            showToast("โหลดวิดีโอเรียบร้อย", "info");
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                currentMedia = { type: 'video', url: e.target.result };
-                previewBox.innerHTML = `<video src="${e.target.result}" controls autoplay muted></video>`;
-            };
-            reader.readAsDataURL(file);
+            showToast("กำลังประมวลผลวิดีโอ...", "info");
+            try {
+                // บีบอัดวิดีโอ
+                const compressedVideoFile = await compressVideo(file);
+                processedMedia = { type: 'video', data: URL.createObjectURL(compressedVideoFile), file: compressedVideoFile };
+                previewBox.innerHTML = `<video src="${processedMedia.data}" controls autoplay muted></video>`;
+                showToast("ประมวลผลวิดีโอเรียบร้อย พร้อมอัปโหลด", "info");
+            } catch (err) {
+                console.error("Video processing failed:", err);
+                processedMedia = { type: 'video', data: URL.createObjectURL(file), file: file };
+                previewBox.innerHTML = `<video src="${processedMedia.data}" controls autoplay muted></video>`;
+                showToast("ใช้วิดีโอต้นฉบับเนื่องจากไม่สามารถบีบอัดได้", "info");
+            }
         }
     }
 
@@ -249,13 +332,101 @@
         });
     }
 
+    // ฟังก์ชันบีบอัดวิดีโอผ่าน Canvas/MediaRecorder
+    function compressVideo(file) {
+        return new Promise((resolve, reject) => {
+            const video = document.createElement('video');
+            video.src = URL.createObjectURL(file);
+            video.muted = true;
+            video.playsInline = true;
+
+            video.onloadedmetadata = () => {
+                const maxDim = 720;
+                let w = video.videoWidth;
+                let h = video.videoHeight;
+
+                if (w > maxDim || h > maxDim) {
+                    if (w > h) {
+                        h = Math.round((h * maxDim) / w);
+                        w = maxDim;
+                    } else {
+                        w = Math.round((w * maxDim) / h);
+                        h = maxDim;
+                    }
+                }
+
+                const canvas = document.createElement('canvas');
+                canvas.width = w;
+                canvas.height = h;
+                const ctx = canvas.getContext('2d');
+
+                const stream = canvas.captureStream(25);
+                let mediaRecorder;
+
+                try {
+                    mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp8', videoBitsPerSecond: 1000000 });
+                } catch (e) {
+                    try {
+                        mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/mp4' });
+                    } catch (e2) {
+                        return resolve(file); // fallback ใช้อันเดิม
+                    }
+                }
+
+                const chunks = [];
+                mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(chunks, { type: mediaRecorder.mimeType });
+                    const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, ".webm"), { type: mediaRecorder.mimeType });
+                    resolve(compressedFile);
+                };
+
+                video.play();
+                mediaRecorder.start();
+
+                function drawFrame() {
+                    if (!video.paused && !video.ended) {
+                        ctx.drawImage(video, 0, 0, w, h);
+                        requestAnimationFrame(drawFrame);
+                    } else {
+                        mediaRecorder.stop();
+                    }
+                }
+                drawFrame();
+            };
+
+            video.onerror = (err) => reject(err);
+        });
+    }
+
+    // อัปโหลดไฟล์วิดีโอเข้า Firebase Storage
+    async function uploadVideoToStorage(file) {
+        const fileRef = ref(storage, `videos/${Date.now()}_${file.name}`);
+        const uploadTask = uploadBytesResumable(fileRef, file);
+
+        return new Promise((resolve, reject) => {
+            uploadTask.on('state_changed',
+                (snapshot) => {
+                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                    showToast(`อัปโหลดวิดีโอแล้ว ${Math.round(progress)}%`, "info");
+                },
+                (error) => reject(error),
+                async () => {
+                    const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                    resolve(downloadURL);
+                }
+            );
+        });
+    }
+
+    // --- 4. วิเคราะห์ AI ---
     window.generateAIDetails = async function() {
         const nameInput = document.getElementById('product-name');
         const detailInput = document.getElementById('product-detail');
         const aiBtn = document.getElementById('btn-ai-search');
         const name = nameInput.value.trim();
 
-        if (!name && !currentMedia.url) {
+        if (!name && !processedMedia.data) {
             triggerValidationError("กรุณากรอกชื่อ/รุ่น หรือแนบรูปภาพก่อนกดวิเคราะห์");
             showToast("กรุณากรอกชื่อ/รุ่น หรือแนบรูปภาพก่อนกดวิเคราะห์", "error");
             return;
@@ -279,14 +450,11 @@
 
             parts.push({ text: promptText });
 
-            if (currentMedia.type === 'image' && currentMedia.url) {
-                const base64Data = currentMedia.url.split(',')[1];
-                const mimeType = currentMedia.url.split(';')[0].split(':')[1];
+            if (processedMedia.type === 'image' && processedMedia.data) {
+                const base64Data = processedMedia.data.split(',')[1];
+                const mimeType = processedMedia.data.split(';')[0].split(':')[1];
                 parts.push({
-                    inline_data: {
-                        mime_type: mimeType,
-                        data: base64Data
-                    }
+                    inline_data: { mime_type: mimeType, data: base64Data }
                 });
             }
 
@@ -311,17 +479,15 @@
             }
 
         } catch (error) {
-            console.error("AI Analysis Error:", error);
+            console.error("AI Error:", error);
             detailInput.value = originalText;
-            showToast("เชื่อมต่อ AI ไม่สำเร็จ กรุณากรอกรายละเอียดด้วยตนเอง", "error");
-            detailInput.focus();
-            detailInput.select();
+            showToast("เชื่อมต่อ AI ไม่สำเร็จ กรุณาตรวจสอบคีย์ Token", "error");
         } finally {
             aiBtn.disabled = false;
         }
     }
 
-    // ฟังก์ชันเพิ่มสินค้า พร้อมระบบตรวจเช็คชื่อซ้ำ
+    // --- 5. บันทึกข้อมูลสินค้าลง Cloud ---
     window.addProduct = async function() {
         const nameInput = document.getElementById('product-name');
         const detailInput = document.getElementById('product-detail');
@@ -335,25 +501,25 @@
             return;
         }
 
-        // 🔍 ตรวจสอบว่าชื่อรุ่นซ้ำใน Cloud หรือไม่ (แบบไม่สนอักษรพิมพ์เล็ก-ใหญ่)
-        const isDuplicate = productsDB.some(item => item.name.toLowerCase() === name.toLowerCase());
-        if (isDuplicate) {
-            triggerValidationError(`ชื่อรุ่น "${name}" มีอยู่ในระบบแล้ว กรุณาป้อนชื่อใหม่`);
-            showToast(`ชื่อรุ่น "${name}" มีในระบบแล้ว โปรดใช้ชื่ออื่น`, "error");
-            nameInput.focus();
-            nameInput.select();
-            return;
-        }
-
         saveBtn.disabled = true;
         saveBtn.innerText = "กำลังบันทึกลง Cloud...";
 
         try {
+            let mediaUrl = "";
+            let mediaType = processedMedia.type;
+
+            if (processedMedia.type === 'image') {
+                mediaUrl = processedMedia.data; // เก็บเป็น Base64 ขนาดเล็ก
+            } else if (processedMedia.type === 'video' && processedMedia.file) {
+                showToast("กำลังอัปโหลดวิดีโอขึ้น Firebase Storage...", "info");
+                mediaUrl = await uploadVideoToStorage(processedMedia.file);
+            }
+
             await addDoc(collection(db, "products"), {
                 name: name,
                 detail: detail || "ไม่มีรายละเอียดเพิ่มเติม",
-                mediaType: currentMedia.type,
-                mediaUrl: currentMedia.url,
+                mediaType: mediaType,
+                mediaUrl: mediaUrl,
                 createdAt: Date.now()
             });
 
@@ -361,26 +527,22 @@
             nameInput.value = ''; detailInput.value = '';
             document.getElementById('preview-box').innerHTML = '<span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>';
             selectedFile = null;
-            currentMedia = { type: null, url: null };
-            document.getElementById('search-input').value = '';
+            processedMedia = { type: null, data: null, file: null };
             clearValidationError();
+            
+            // รีโหลดลิสต์ใหม่
+            fetchInitialProducts();
+
         } catch (e) {
-            showToast("เกิดข้อผิดพลาดในการบันทึก", "error");
+            console.error("Save Error:", e);
+            showToast("เกิดข้อผิดพลาดในการบันทึกข้อมูล", "error");
         } finally {
             saveBtn.disabled = false;
             saveBtn.innerText = "บันทึกสินค้าลงคลาวด์";
         }
     }
 
-    window.filterProducts = function() {
-        const queryStr = document.getElementById('search-input').value.toLowerCase().trim();
-        const filtered = productsDB.filter(item => 
-            item.name.toLowerCase().includes(queryStr) || 
-            item.detail.toLowerCase().includes(queryStr)
-        );
-        renderTable(filtered);
-    }
-
+    // --- 6. แสดงผลตาราง + Infinite Scroll ---
     function renderTable(dataList) {
         const tbody = document.getElementById('product-list');
         tbody.innerHTML = '';
@@ -390,7 +552,7 @@
             return;
         }
 
-        dataList.forEach(item => {
+        dataList.forEach((item, index) => {
             const tr = document.createElement('tr');
             tr.className = 'clickable-row';
             tr.onclick = () => openModal(item.id);
@@ -405,12 +567,36 @@
                 <td>${item.detail.substring(0, 35)}${item.detail.length > 35 ? '...' : ''}</td>
             `;
             tbody.appendChild(tr);
+
+            // เช็คว่าถึงรายการที่ 17 ของชุดป้ายปัจจุบันหรือยัง เพื่อสั่งโหลดล่วงหน้า
+            if (index === dataList.length - 4 && hasMoreData && !isLoadingMore) {
+                fetchNextProducts();
+            }
         });
     }
 
+    // เลื่อนดูข้อมูลอัตโนมัติเมื่อ Scroll ถือจุดล่างสุด
+    window.addEventListener('scroll', () => {
+        if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 300) {
+            if (hasMoreData && !isLoadingMore) {
+                fetchNextProducts();
+            }
+        }
+    });
+
+    window.handleSearch = function() {
+        const queryStr = document.getElementById('search-input').value.toLowerCase().trim();
+        const filtered = productsList.filter(item => 
+            item.name.toLowerCase().includes(queryStr) || 
+            item.detail.toLowerCase().includes(queryStr)
+        );
+        renderTable(filtered);
+    }
+
+    // --- 7. Modal & Action ---
     function openModal(id) {
         activeProductId = id;
-        const item = productsDB.find(p => p.id === id);
+        const item = productsList.find(p => p.id === id);
         if (!item) return;
 
         document.getElementById('modal-title').innerText = item.name;
@@ -432,7 +618,7 @@
     }
 
     window.enableEditMode = function() {
-        const item = productsDB.find(p => p.id === activeProductId);
+        const item = productsList.find(p => p.id === activeProductId);
         if (!item) return;
 
         document.getElementById('edit-name').value = item.name;
@@ -456,13 +642,6 @@
             return;
         }
 
-        // 🔍 ตรวจเช็คชื่อซ้ำกรณีแก้ไข (เว้นรายการของตัวเองเอาไว้)
-        const isDuplicate = productsDB.some(item => item.id !== activeProductId && item.name.toLowerCase() === newName.toLowerCase());
-        if (isDuplicate) {
-            showToast(`ชื่อรุ่น "${newName}" มีในระบบแล้ว โปรดเปลี่ยนเป็นชื่ออื่น`, "error");
-            return;
-        }
-
         try {
             const docRef = doc(db, "products", activeProductId);
             await updateDoc(docRef, {
@@ -472,7 +651,8 @@
 
             cancelEditMode();
             closeModal();
-            showToast("อัปเดตข้อมูลบน Cloud เรียบร้อย", "success");
+            showToast("อัปเดตข้อมูลเรียบร้อย", "success");
+            fetchInitialProducts();
         } catch (e) {
             showToast("แก้ไขข้อมูลไม่สำเร็จ", "error");
         }
@@ -484,7 +664,8 @@
         try {
             await deleteDoc(doc(db, "products", activeProductId));
             closeModal();
-            showToast("ลบข้อมูลออกจาก Cloud เรียบร้อย", "success");
+            showToast("ลบข้อมูลเรียบร้อย", "success");
+            fetchInitialProducts();
         } catch (e) {
             showToast("ลบข้อมูลไม่สำเร็จ", "error");
         }
