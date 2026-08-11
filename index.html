@@ -166,11 +166,9 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, query, orderBy, limit, startAfter, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // ตั้งค่า Cloudinary (อัปเดตค่าจากรูปภาพแล้ว)
     const CLOUDINARY_CLOUD_NAME = "qxdbrnyx"; 
     const CLOUDINARY_UPLOAD_PRESET = "ainote_preset"; 
 
-    // Firebase Config (จัดเก็บข้อมูล Firestore)
     const firebaseConfig = {
         apiKey: "AIzaSyAa1ueFx6m_unLe4k4IGF8BTzwFr5pkeiY",
         authDomain: "ai-note-acedb.firebaseapp.com",
@@ -186,7 +184,6 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    let selectedFile = null;
     let processedMedia = { type: null, data: null, file: null };
     let activeProductId = null;
     
@@ -281,29 +278,8 @@
         textEl.innerText = text;
     }
 
-    // --- 3. จัดการไฟล์สื่อและการอัปโหลดขึ้น Cloudinary ---
-    window.handleFileSelect = async function(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        selectedFile = file;
-        const previewBox = document.getElementById('preview-box');
-
-        if (file.type.startsWith('image/')) {
-            showToast("กำลังประมวลผลรูปภาพ...", "info");
-            compressImage(file).then(base64 => {
-                processedMedia = { type: 'image', data: base64, file: file };
-                previewBox.innerHTML = `<img src="${base64}" alt="Preview">`;
-                showToast("โหลดรูปภาพเรียบร้อย", "info");
-            });
-        } else if (file.type.startsWith('video/')) {
-            showToast("โหลดวิดีโอเรียบร้อย พร้อมสำหรับการอัปโหลด", "info");
-            processedMedia = { type: 'video', data: URL.createObjectURL(file), file: file };
-            previewBox.innerHTML = `<video src="${processedMedia.data}" controls autoplay muted></video>`;
-        }
-    }
-
-    function compressImage(file, maxWidth = 600, quality = 0.5) {
+    // --- 3. ฟังก์ชันบีบอัดรูปภาพและจัดการสื่อ ---
+    function compressImage(file, maxWidth = 800, quality = 0.6) {
         return new Promise((resolve) => {
             const reader = new FileReader();
             reader.readAsDataURL(file);
@@ -313,14 +289,50 @@
                 img.onload = () => {
                     let w = img.width, h = img.height;
                     if (w > maxWidth) { h = Math.round((h * maxWidth) / w); w = maxWidth; }
+                    
                     const canvas = document.createElement('canvas');
                     canvas.width = w; canvas.height = h;
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, w, h);
-                    resolve(canvas.toDataURL('image/jpeg', quality));
+                    
+                    const base64 = canvas.toDataURL('image/jpeg', quality);
+                    canvas.toBlob((blob) => {
+                        // คืนค่าทั้ง Base64 และ Blob ที่ถูกบีบอัดแล้ว
+                        resolve({ base64, blob });
+                    }, 'image/jpeg', quality);
                 };
             };
         });
+    }
+
+    window.handleFileSelect = async function(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const previewBox = document.getElementById('preview-box');
+
+        if (file.type.startsWith('image/')) {
+            showToast("กำลังย่อขนาดรูปภาพ...", "info");
+            const compressed = await compressImage(file);
+            
+            // ใช้ไฟล์ Blob ที่ย่อขนาดแล้วส่งไป Cloudinary
+            processedMedia = { 
+                type: 'image', 
+                data: compressed.base64, 
+                file: compressed.blob 
+            };
+            
+            previewBox.innerHTML = `<img src="${compressed.base64}" alt="Preview">`;
+            showToast("ย่อรูปภาพเรียบร้อย (พร้อมอัปโหลด)", "info");
+        } else if (file.type.startsWith('video/')) {
+            showToast("โหลดวิดีโอเรียบร้อย", "info");
+            processedMedia = { 
+                type: 'video', 
+                data: URL.createObjectURL(file), 
+                file: file 
+            };
+            previewBox.innerHTML = `<video src="${processedMedia.data}" controls autoplay muted></video>`;
+        }
     }
 
     async function uploadToCloudinary(file, resourceType = 'auto') {
@@ -404,7 +416,7 @@
         } catch (error) {
             console.error("AI Error:", error);
             detailInput.value = originalText;
-            showToast("เชื่อมต่อ AI ไม่สำเร็จ กรุณาตรวจสอบคีย์ Token", "error");
+            showToast("เชื่อมต่อ AI ไม่สำเร็จ", "error");
         } finally {
             aiBtn.disabled = false;
         }
@@ -432,7 +444,7 @@
             let mediaType = processedMedia.type;
 
             if (processedMedia.file) {
-                showToast(`กำลังอัปโหลด ${mediaType === 'video' ? 'วิดีโอ' : 'รูปภาพ'} ไปยัง Cloudinary...`, "info");
+                showToast(`กำลังอัปโหลด ${mediaType === 'video' ? 'วิดีโอ' : 'รูปภาพบีบอัด'} ไปยัง Cloudinary...`, "info");
                 const resourceType = mediaType === 'video' ? 'video' : 'image';
                 mediaUrl = await uploadToCloudinary(processedMedia.file, resourceType);
             }
@@ -448,7 +460,6 @@
             showToast("บันทึกข้อมูลสำเร็จเรียบร้อย", "success");
             nameInput.value = ''; detailInput.value = '';
             document.getElementById('preview-box').innerHTML = '<span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>';
-            selectedFile = null;
             processedMedia = { type: null, data: null, file: null };
             clearValidationError();
             
