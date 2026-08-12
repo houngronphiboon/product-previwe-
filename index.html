@@ -103,7 +103,7 @@
 
       <div class="form-group">
         <label for="product-name">ชื่อ/รุ่น <span class="required">*</span></label>
-        <input type="text" id="product-name" class="form-control" placeholder="เช่น 32hs534an" oninput="clearValidationError()">
+        <input type="text" id="product-name" class="form-control" placeholder="เช่น 32hs534an หรือ VETZ90L" oninput="clearValidationError()">
         <div class="error-msg" id="name-error-msg">กรุณากรอกชื่อหรือรุ่นสินค้า</div>
       </div>
 
@@ -113,7 +113,7 @@
       </div>
 
       <button class="btn btn-ai" id="btn-ai-search" onclick="generateAIDetails()">
-        ✨ ค้นหารายละเอียดสินค้าด้วย AI (จากชื่อ/รุ่น)
+        ✨ ค้นหารายละเอียดสินค้าด้วย AI (จากชื่อ/รุ่น + รูปภาพ)
       </button>
 
       <button class="btn btn-save active" id="btn-save" onclick="addProduct()">
@@ -290,6 +290,29 @@
       });
     }
 
+    // แปลงรูปเป็น Base64 สำหรับส่งวิเคราะห์ AI Vision
+    function getBase64FromImage(file, maxWidth = 800, quality = 0.7) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (e) => {
+          const img = new Image();
+          img.src = e.target.result;
+          img.onload = () => {
+            let w = img.width, h = img.height;
+            if (w > maxWidth) { h = Math.round((h * maxWidth) / w); w = maxWidth; }
+            const canvas = document.createElement('canvas');
+            canvas.width = w; canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            resolve(canvas.toDataURL('image/jpeg', quality));
+          };
+          img.onerror = (err) => reject(err);
+        };
+        reader.onerror = (err) => reject(err);
+      });
+    }
+
     window.handleFileSelect = function(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -323,30 +346,34 @@
       return data.secure_url;
     }
 
-    // เรียก AI ผ่าน Cloudflare Worker (OpenRouter Backend)
+    // เรียก AI ผ่าน Cloudflare Worker (ส่งทั้งชื่อ/รุ่น + รูปภาพ)
     window.generateAIDetails = async function() {
       const nameInput = document.getElementById('product-name');
       const detailInput = document.getElementById('product-detail');
       const name = nameInput.value.trim();
 
-      if (!name) {
-        triggerValidationError("กรุณากรอกชื่อ/รุ่น สินค้าก่อนกดวิเคราะห์");
-        showToast("กรุณากรอกชื่อ/รุ่น สินค้าก่อนกดวิเคราะห์", "error");
+      if (!name && processedMedia.type !== 'image') {
+        triggerValidationError("กรุณากรอกชื่อ/รุ่น หรือเลือกรูปภาพก่อนกดวิเคราะห์");
+        showToast("กรุณากรอกชื่อ/รุ่น หรือเลือกรูปภาพก่อนกดวิเคราะห์", "error");
         return;
       }
 
       const originalText = detailInput.value;
-      detailInput.value = `กำลังส่งชื่อรุ่น "${name}" ให้ OpenRouter AI วิเคราะห์ข้อมูล...`;
+      detailInput.value = `กำลังส่งข้อมูล ${name ? `"${name}"` : ''} ${processedMedia.type === 'image' ? '+ รูปภาพ' : ''} ให้ OpenRouter AI วิเคราะห์...`;
       setFormButtonsDisabled(true);
 
       try {
+        let imageBase64 = null;
+        if (processedMedia.type === 'image' && processedMedia.file) {
+          imageBase64 = await getBase64FromImage(processedMedia.file);
+        }
+
         const response = await fetch(WORKER_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            contents: [{
-              parts: [{ text: `วิเคราะห์สเปก รายละเอียด และข้อแนะนำสำหรับช่าง ของอะไหล่/สินค้ารุ่น: ${name}` }]
-            }]
+            productName: name,
+            imageBase64: imageBase64
           })
         });
 
