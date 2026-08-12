@@ -32,7 +32,7 @@
     .form-control:focus { border-color: #2563eb; }
     .form-control.input-error { border-color: #dc2626 !important; background-color: #fef2f2; }
     .error-msg { color: #dc2626; font-size: 13px; margin-top: 4px; display: none; }
-    textarea.form-control { resize: vertical; min-height: 90px; }
+    textarea.form-control { resize: vertical; min-height: 110px; }
     .btn-ai { width: 100%; background: #8b5cf6; color: white; padding: 14px; font-size: 15px; margin-bottom: 12px; box-shadow: 0 2px 4px rgba(139, 92, 246, 0.2); }
     .btn-save { width: 100%; background-color: #86efac; color: #166534; padding: 14px; font-size: 16px; }
     .btn-save.active { background-color: #22c55e; color: white; }
@@ -71,7 +71,6 @@
 
   <div class="container">
     <div class="card">
-      
       <div class="status-container">
         <div class="status-badge">
           <span class="status-dot"></span>
@@ -103,7 +102,7 @@
 
       <div class="form-group">
         <label for="product-name">ชื่อ/รุ่น <span class="required">*</span></label>
-        <input type="text" id="product-name" class="form-control" placeholder="เช่น 32hs534an" oninput="clearValidationError()">
+        <input type="text" id="product-name" class="form-control" placeholder="เช่น VETZ90L, 32hs534an" oninput="clearValidationError()">
         <div class="error-msg" id="name-error-msg">กรุณากรอกชื่อหรือรุ่นสินค้า</div>
       </div>
 
@@ -119,7 +118,6 @@
       <button class="btn btn-save active" id="btn-save" onclick="addProduct()">
         บันทึกสินค้าลงคลาวด์
       </button>
-
     </div>
   </div>
 
@@ -141,8 +139,7 @@
             <th style="width: 40%;">รายละเอียด</th>
           </tr>
         </thead>
-        <tbody id="product-list">
-        </tbody>
+        <tbody id="product-list"></tbody>
       </table>
     </div>
   </div>
@@ -187,8 +184,6 @@
 
     const CLOUDINARY_CLOUD_NAME = "qxdbrnyx"; 
     const CLOUDINARY_UPLOAD_PRESET = "ainote_preset"; 
-    
-    // URL ของ Cloudflare Worker
     const WORKER_URL = "https://misty-frog-8bb9.narakonone.workers.dev/";
 
     const firebaseConfig = {
@@ -207,6 +202,47 @@
     let processedMedia = { type: null, data: null, file: null };
     let activeProductId = null;
     let productsList = [];
+
+    function extractPublicIdFromUrl(url) {
+      if (!url) return null;
+      try {
+        const parts = url.split('/');
+        const uploadIndex = parts.indexOf('upload');
+        if (uploadIndex === -1) return null;
+        
+        const pathParts = parts.slice(uploadIndex + 1);
+        if (pathParts[0].startsWith('v') && !isNaN(pathParts[0].substring(1))) {
+          pathParts.shift();
+        }
+        
+        const fullFileName = pathParts.join('/');
+        const lastDotIndex = fullFileName.lastIndexOf('.');
+        if (lastDotIndex === -1) return fullFileName;
+        return fullFileName.substring(0, lastDotIndex);
+      } catch (e) {
+        console.error("Extract Public ID Error:", e);
+        return null;
+      }
+    }
+
+    async function deleteCloudinaryMedia(mediaUrl, mediaType) {
+      if (!mediaUrl) return;
+      const publicId = extractPublicIdFromUrl(mediaUrl);
+      if (!publicId) return;
+
+      try {
+        await fetch(`${WORKER_URL}delete-media`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            publicId: publicId,
+            resourceType: mediaType === "video" ? "video" : "image"
+          })
+        });
+      } catch (err) {
+        console.error("Failed to delete media from Cloudinary:", err);
+      }
+    }
 
     function showToast(message, type = 'info') {
       const toast = document.getElementById('toast');
@@ -323,7 +359,6 @@
       return data.secure_url;
     }
 
-    // เรียก AI ผ่าน Cloudflare Worker (OpenRouter Backend)
     window.generateAIDetails = async function() {
       const nameInput = document.getElementById('product-name');
       const detailInput = document.getElementById('product-detail');
@@ -497,7 +532,14 @@
 
     window.deleteProduct = async function() {
       if (!confirm("คุณต้องการลบรายการนี้ใช่หรือไม่?")) return;
+      
+      const item = productsList.find(p => p.id === activeProductId);
+      
       try {
+        if (item && item.mediaUrl) {
+          await deleteCloudinaryMedia(item.mediaUrl, item.mediaType);
+        }
+
         await deleteDoc(doc(db, "products", activeProductId));
         closeModal();
         showToast("ลบรายการสินค้าเรียบร้อยแล้ว", "success");
