@@ -11,11 +11,12 @@
 
   <style>
     * { box-sizing: border-box; font-family: 'Sarabun', sans-serif; }
+    html { scroll-behavior: smooth; }
     body { 
       background-color: #f3f4f6; 
       margin: 0; 
       padding: 16px; 
-      padding-bottom: 40px; /* ปรับลดพื้นที่ว่างด้านล่าง ไม่ให้หน้าจอโล่งเกินไป */
+      padding-bottom: 20px; 
       color: #1f2937; 
       display: flex; 
       flex-direction: column; 
@@ -48,21 +49,19 @@
     .btn-save { width: 100%; background-color: #86efac; color: #166534; padding: 14px; font-size: 16px; }
     .btn-save.active { background-color: #22c55e; color: white; }
     
+    /* ปรับแต่งส่วนการ์ดรายการให้ดึงขึ้นชิดขอบบนสุดได้พอดี */
     .list-container { 
       width: 100%; 
       max-width: 800px; 
-      scroll-margin-top: 15px; 
-      margin-bottom: 20px; /* ปรับลดพื้นที่ขอบล่างของการ์ด */
+      scroll-margin-top: 10px; /* ให้เว้นระยะชิดขอบบนสุด */
+      margin-bottom: 10px; 
     }
     
-    #search-input {
-      scroll-margin-top: 15px;
-    }
-    
+    /* ปรับให้ตารางกินพื้นที่ความสูงส่วนใหญ่ของหน้าจอ (72vh) ให้แสดงรายการยาวลงมาเต็มตา */
     .table-container { 
       width: 100%; 
-      min-height: 250px; 
-      max-height: 50vh; 
+      height: 72vh; 
+      max-height: 700px;
       overflow-y: auto; 
       overflow-x: auto; 
       -webkit-overflow-scrolling: touch; 
@@ -160,7 +159,7 @@
     </h3>
 
     <div class="form-group">
-      <input type="text" id="search-input" class="form-control" placeholder="🔍 พิมพ์ชื่อ/รุ่น หรือรายละเอียด เพื่อค้นหาในระบบทั้งหมด..." oninput="handleSearch()">
+      <input type="text" id="search-input" class="form-control" placeholder="🔍 พิมพ์ชื่อ/รุ่น หรือรายละเอียด เพื่อค้นหาในระบบทั้งหมด..." onfocus="scrollToListHeader()" oninput="handleSearch()">
     </div>
 
     <div class="table-container" id="table-container">
@@ -268,12 +267,19 @@
     let activeProductId = null;
     let productsList = [];
 
-    // ตัวแปรควบคุม Infinite Scroll & Pagination
-    const PAGE_SIZE = 20;
+    const PAGE_SIZE = 50;
     let lastVisibleDoc = null;
     let isLoadingMore = false;
     let hasMoreData = true;
     let isSearchMode = false;
+
+    // ฟังก์ชันเลื่อนการ์ดรายการสินค้าขึ้นมาชิดขอบบนสุดของหน้าจอ
+    window.scrollToListHeader = function() {
+      const listCard = document.getElementById('list-card');
+      if (listCard) {
+        listCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    };
 
     window.autoScrollFocus = function(element) {
       setTimeout(() => {
@@ -365,7 +371,6 @@
       closeQuotaModal();
     }
 
-    // --- ระบบดึงข้อมูลแบบ Infinite Scroll ---
     async function fetchInitialProducts() {
       try {
         lastVisibleDoc = null;
@@ -456,7 +461,6 @@
       }
     }
 
-    // --- ระบบค้นหาจากรายการทั้งหมดใน Cloud ---
     window.handleSearch = async function() {
       const searchInput = document.getElementById('search-input');
       const queryStr = searchInput.value.trim().toLowerCase();
