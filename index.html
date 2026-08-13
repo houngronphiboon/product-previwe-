@@ -58,6 +58,7 @@
     .btn-delete { background-color: #ef4444; color: #ffffff; flex: 1; padding: 10px; }
     .btn-update { background-color: #2563eb; color: #ffffff; width: 100%; margin-top: 10px; padding: 12px; }
     .btn-cancel { background-color: #6b7280; color: #ffffff; width: 100%; margin-top: 6px; padding: 10px; }
+    .btn-quota { background-color: #8b5cf6; color: white; width: 100%; padding: 12px; margin-top: 10px; }
     .toast { visibility: hidden; min-width: 250px; background-color: #1f2937; color: #fff; text-align: center; border-radius: 10px; padding: 12px 20px; position: fixed; z-index: 2000; bottom: 30px; font-size: 14px; }
     .toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
     .toast.toast-error { background-color: #dc2626; }
@@ -144,6 +145,7 @@
     </div>
   </div>
 
+  <!-- Modal แสดง/แก้ไข รายละเอียดสินค้า -->
   <div class="modal" id="detail-modal">
     <div class="modal-content">
       <span class="close-btn" onclick="closeModal()">&times;</span>
@@ -164,7 +166,6 @@
       <div id="edit-mode" style="display: none;">
         <h3 style="margin-top: 0; color: #d97706; font-weight: 700;">แก้ไขข้อมูลสินค้า</h3>
 
-        <!-- ปุ่มสำหรับเปลี่ยนรูป/วิดีโอในโหมดแก้ไข -->
         <div class="media-buttons">
           <button class="btn btn-media" onclick="document.getElementById('edit-media-input').click()">
             📁 เปลี่ยนรูป / วิดีโอ
@@ -188,6 +189,19 @@
         <button class="btn btn-update" id="btn-update-submit" onclick="saveEditProduct()">💾 บันทึกการแก้ไข</button>
         <button class="btn btn-cancel" onclick="cancelEditMode()">ยกเลิก</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Modal แจ้งเตือนสิทธิ์ AI หมด -->
+  <div class="modal" id="quota-modal">
+    <div class="modal-content" style="text-align: center;">
+      <div style="font-size: 40px; margin-bottom: 10px;">⚠️</div>
+      <h3 style="margin-top: 0; color: #dc2626; font-weight: 700;">สิทธิ์วิเคราะห์ AI หมดแล้ว</h3>
+      <p style="color: #4b5563; font-size: 14px; line-height: 1.5;" id="quota-modal-msg">
+        เครดิตหรือสิทธิ์การใช้งาน OpenRouter AI ของคุณหมดแล้ว ต้องการไปยังหน้าจัดการเครดิตเพื่อเติมสิทธิ์หรือไม่?
+      </p>
+      <button class="btn btn-quota" onclick="goToRecharge()">💳 ไปเติมสิทธิ์ (OpenRouter)</button>
+      <button class="btn btn-cancel" onclick="closeQuotaModal()">ยกเลิก / ปิดหน้าต่าง</button>
     </div>
   </div>
 
@@ -290,6 +304,15 @@
       document.getElementById('detail-modal').style.display = 'none';
       activeProductId = null;
       editProcessedMedia = { type: null, data: null, file: null };
+    }
+
+    window.closeQuotaModal = function() {
+      document.getElementById('quota-modal').style.display = 'none';
+    }
+
+    window.goToRecharge = function() {
+      window.open('https://openrouter.ai/settings/keys', '_blank');
+      closeQuotaModal();
     }
 
     window.handleSearch = function() {
@@ -425,16 +448,38 @@
 
         const data = await response.json();
 
-        if (response.ok && data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
+        // 1. ดักจับกรณี Credit หมด / HTTP Status Error
+        if (response.status === 402 || response.status === 429) {
+          throw { isQuotaError: true, message: "สิทธิ์หรือโควต้าใช้งาน AI หมดแล้ว" };
+        }
+
+        // 2. ดักจับ Error จาก Body ของ API
+        if (!response.ok || data.error) {
+          const errMsg = data.error?.message || data.error || "";
+          if (errMsg.toLowerCase().includes("quota") || errMsg.toLowerCase().includes("rate limit") || errMsg.toLowerCase().includes("insufficient")) {
+            throw { isQuotaError: true, message: "สิทธิ์การใช้งาน AI หมดแล้ว" };
+          }
+          throw new Error(errMsg || "ไม่สามารถวิเคราะห์ข้อมูลได้");
+        }
+
+        // 3. แสดงผลเมื่อสำเร็จ
+        if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
           detailInput.value = data.candidates[0].content.parts[0].text;
           showToast("วิเคราะห์ข้อมูลด้วย OpenRouter AI สำเร็จ!", "success");
         } else {
-          throw new Error(data.error || "ไม่ได้รับข้อมูลตอบกลับจาก AI");
+          throw new Error("ไม่ได้รับข้อมูลตอบกลับจาก AI");
         }
+
       } catch (error) {
         console.error("AI Error:", error);
         detailInput.value = originalText;
-        showToast("เกิดข้อผิดพลาดในการวิเคราะห์ AI: " + error.message, "error");
+
+        if (error.isQuotaError) {
+          document.getElementById('quota-modal').style.display = 'flex';
+          showToast("สิทธิ์การใช้งาน AI หมดแล้ว", "error");
+        } else {
+          showToast("เกิดข้อผิดพลาดในการวิเคราะห์ AI: " + (error.message || error), "error");
+        }
       } finally {
         setFormButtonsDisabled(false);
       }
@@ -579,7 +624,6 @@
           detail: newDetail || "ไม่มีรายละเอียดเพิ่มเติม"
         };
 
-        // หากมีการเลือกรูปภาพหรือวิดีโอใหม่
         if (editProcessedMedia.file) {
           let uploadFile = editProcessedMedia.file;
           if (editProcessedMedia.type === 'image') {
@@ -590,7 +634,6 @@
           const resourceType = editProcessedMedia.type === 'video' ? 'video' : 'image';
           const newMediaUrl = await uploadToCloudinary(uploadFile, resourceType);
 
-          // ลบไฟล์เก่าออกจาก Cloudinary (ถ้ามี)
           if (item.mediaUrl) {
             await deleteCloudinaryMedia(item.mediaUrl, item.mediaType);
           }
