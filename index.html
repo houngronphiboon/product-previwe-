@@ -12,7 +12,6 @@
   <style>
     * { box-sizing: border-box; font-family: 'Sarabun', sans-serif; }
     body { background-color: #f3f4f6; margin: 0; padding: 16px; color: #1f2937; display: flex; flex-direction: column; align-items: center; }
-    /* สไตล์เมื่อล็อกสกอร์ลหน้าหลังตอนเปิด Modal */
     body.modal-open { overflow: hidden; height: 100vh; position: fixed; width: 100%; }
 
     .container { width: 100%; max-width: 500px; margin-bottom: 20px; }
@@ -52,7 +51,6 @@
     .badge-none { background-color: #f3f4f6; color: #6b7280; }
     .text-truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; color: #6b7280; }
     
-    /* Modal Styles */
     .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; padding: 16px; -webkit-overflow-scrolling: touch; }
     .modal-content { background-color: #fff; padding: 20px; border-radius: 16px; width: 100%; max-width: 480px; position: relative; max-height: 90vh; overflow-y: auto; -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }
     .close-btn { position: absolute; right: 15px; top: 10px; font-size: 24px; cursor: pointer; color: #9ca3af; z-index: 10; }
@@ -108,13 +106,13 @@
 
       <div class="form-group">
         <label for="product-name">ชื่อ/รุ่น <span class="required">*</span></label>
-        <input type="text" id="product-name" class="form-control" placeholder="เช่น HR-907C NS, BSA075NHMV" oninput="clearValidationError()">
+        <input type="text" id="product-name" class="form-control" placeholder="เช่น HR-907C NS, UA32N4003AK, TP.HV320.PB801" oninput="clearValidationError()">
         <div class="error-msg" id="name-error-msg">กรุณากรอกชื่อหรือรุ่นสินค้า</div>
       </div>
 
       <div class="form-group">
         <label for="product-detail">รายละเอียด</label>
-        <textarea id="product-detail" class="form-control" placeholder="กรอกรายละเอียดสินค้า หรือแนบรูปเพลทแล้วกดวิเคราะห์ด้วย AI"></textarea>
+        <textarea id="product-detail" class="form-control" placeholder="กรอกรายละเอียดสินค้า หรือแนบรูปเพลต/บอร์ดแล้วกดวิเคราะห์ด้วย AI"></textarea>
       </div>
 
       <button class="btn btn-ai" id="btn-ai-search" onclick="generateAIDetails()">
@@ -236,7 +234,6 @@
     let activeProductId = null;
     let productsList = [];
 
-    // ฟังก์ชันเลื่อนกล่องข้อความให้อยู่ตรงกลางเมื่อถูกแตะเปิดคีย์บอร์ดบนมือถือ
     window.autoScrollFocus = function(element) {
       setTimeout(() => {
         element.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -312,7 +309,7 @@
 
     window.closeModal = function() {
       document.getElementById('detail-modal').style.display = 'none';
-      document.body.classList.remove('modal-open'); // ปลดล็อกสกอร์ลฉากหลัง
+      document.body.classList.remove('modal-open');
       activeProductId = null;
       editProcessedMedia = { type: null, data: null, file: null };
     }
@@ -351,11 +348,18 @@
 
     fetchInitialProducts();
 
-    function setFormButtonsDisabled(disabled) {
+    function setFormButtonsDisabled(disabled, isAnalyzing = false) {
+      const aiBtn = document.getElementById('btn-ai-search');
       document.getElementById('btn-save').disabled = disabled;
-      document.getElementById('btn-ai-search').disabled = disabled;
+      aiBtn.disabled = disabled;
       document.getElementById('btn-file-select').disabled = disabled;
       document.getElementById('btn-camera').disabled = disabled;
+
+      if (isAnalyzing) {
+        aiBtn.innerText = "⏳ กำลังวิเคราะห์สเปกข้อมูลด้วย AI...";
+      } else {
+        aiBtn.innerText = "✨ วิเคราะห์ข้อมูลสินค้าด้วย AI (จากรูปถ่าย/ชื่อรุ่น)";
+      }
     }
 
     function compressImage(file, maxWidth = 800, quality = 0.6) {
@@ -432,12 +436,12 @@
       const name = nameInput.value.trim();
 
       const originalText = detailInput.value;
-      detailInput.value = "กำลังส่งข้อมูลให้ AI อ่านสติกเกอร์และวิเคราะห์...";
-      setFormButtonsDisabled(true);
+      detailInput.value = "กำลังส่งข้อมูลให้ AI อ่านเพลต/แผงวงจร และวิเคราะห์สเปก...";
+      setFormButtonsDisabled(true, true);
 
       try {
         let payload = {
-          temperature: 0.1,
+          temperature: 0.0,
           contents: []
         };
 
@@ -454,15 +458,15 @@
                 }
               },
               {
-                text: `โปรดวิเคราะห์เพลตสติกเกอร์สินค้าในรูปภาพร่วมกับชื่อ/รุ่น "${name || 'ไม่ระบุ'}"`
+                text: `โปรดวิเคราะห์เพลต/สติกเกอร์/บอร์ดสินค้าในรูปภาพร่วมกับชื่อ/รุ่น "${name || 'ไม่ระบุ'}"`
               }
             ]
           });
         } else {
           if (!name) {
-            triggerValidationError("กรุณากรอกชื่อ/รุ่น หรืออัปโหลดรูปถ่ายเพลทสินค้า");
+            triggerValidationError("กรุณากรอกชื่อ/รุ่น หรืออัปโหลดรูปถ่ายเพลตสินค้า");
             detailInput.value = originalText;
-            setFormButtonsDisabled(false);
+            setFormButtonsDisabled(false, false);
             return;
           }
 
@@ -512,7 +516,7 @@
           showToast("เกิดข้อผิดพลาด: " + (error.message || error), "error");
         }
       } finally {
-        setFormButtonsDisabled(false);
+        setFormButtonsDisabled(false, false);
       }
     }
 
@@ -542,7 +546,7 @@
         return;
       }
 
-      setFormButtonsDisabled(true);
+      setFormButtonsDisabled(true, false);
       saveBtn.innerText = "กำลังประมวลผลและบันทึก...";
 
       try {
@@ -573,7 +577,7 @@
         console.error(e);
         showToast("เกิดข้อผิดพลาดในการบันทึกข้อมูล", "error");
       } finally {
-        setFormButtonsDisabled(false);
+        setFormButtonsDisabled(false, false);
         saveBtn.innerText = "บันทึกสินค้าลงคลาวด์";
       }
     }
@@ -607,7 +611,7 @@
 
       cancelEditMode();
       document.getElementById('detail-modal').style.display = 'flex';
-      document.body.classList.add('modal-open'); // ล็อกสกอร์ลฉากหลัง
+      document.body.classList.add('modal-open');
     }
 
     function renderModalMedia(type, url) {
