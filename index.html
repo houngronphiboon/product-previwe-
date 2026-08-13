@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>ระบบบันทึกข้อมูลสินค้า - Nueng Ron Phibun Electronics</title>
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,6 +12,9 @@
   <style>
     * { box-sizing: border-box; font-family: 'Sarabun', sans-serif; }
     body { background-color: #f3f4f6; margin: 0; padding: 16px; color: #1f2937; display: flex; flex-direction: column; align-items: center; }
+    /* สไตล์เมื่อล็อกสกอร์ลหน้าหลังตอนเปิด Modal */
+    body.modal-open { overflow: hidden; height: 100vh; position: fixed; width: 100%; }
+
     .container { width: 100%; max-width: 500px; margin-bottom: 20px; }
     .card { background: #ffffff; border-radius: 16px; padding: 20px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); position: relative; }
     .header-title { font-size: 16px; font-weight: 700; text-align: center; margin-bottom: 16px; color: #111827; padding-right: 90px; }
@@ -48,9 +51,11 @@
     .badge-image { background-color: #f0fdf4; color: #16a34a; }
     .badge-none { background-color: #f3f4f6; color: #6b7280; }
     .text-truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; color: #6b7280; }
-    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; padding: 16px; }
-    .modal-content { background-color: #fff; padding: 20px; border-radius: 16px; width: 100%; max-width: 480px; position: relative; max-height: 90vh; overflow-y: auto; }
-    .close-btn { position: absolute; right: 15px; top: 10px; font-size: 24px; cursor: pointer; color: #9ca3af; }
+    
+    /* Modal Styles */
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; padding: 16px; -webkit-overflow-scrolling: touch; }
+    .modal-content { background-color: #fff; padding: 20px; border-radius: 16px; width: 100%; max-width: 480px; position: relative; max-height: 90vh; overflow-y: auto; -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }
+    .close-btn { position: absolute; right: 15px; top: 10px; font-size: 24px; cursor: pointer; color: #9ca3af; z-index: 10; }
     .modal-media-box { width: 100%; height: 230px; background: #111827; margin-bottom: 15px; border-radius: 10px; overflow: hidden; display: flex; justify-content: center; align-items: center; }
     .modal-media-box img, .modal-media-box video { max-width: 100%; max-height: 100%; object-fit: contain; }
     .modal-actions { display: flex; gap: 10px; margin-top: 15px; }
@@ -145,9 +150,8 @@
     </div>
   </div>
 
-  <!-- Modal แสดง/แก้ไข รายละเอียดสินค้า -->
   <div class="modal" id="detail-modal">
-    <div class="modal-content">
+    <div class="modal-content" id="modal-content-box">
       <span class="close-btn" onclick="closeModal()">&times;</span>
       
       <div class="modal-media-box" id="modal-media-container"></div>
@@ -180,11 +184,11 @@
 
         <div class="form-group">
           <label for="edit-name">ชื่อ/รุ่น</label>
-          <input type="text" id="edit-name" class="form-control">
+          <input type="text" id="edit-name" class="form-control" onfocus="autoScrollFocus(this)">
         </div>
         <div class="form-group">
           <label for="edit-detail">รายละเอียด</label>
-          <textarea id="edit-detail" class="form-control"></textarea>
+          <textarea id="edit-detail" class="form-control" onfocus="autoScrollFocus(this)"></textarea>
         </div>
         <button class="btn btn-update" id="btn-update-submit" onclick="saveEditProduct()">💾 บันทึกการแก้ไข</button>
         <button class="btn btn-cancel" onclick="cancelEditMode()">ยกเลิก</button>
@@ -192,7 +196,6 @@
     </div>
   </div>
 
-  <!-- Modal แจ้งเตือนสิทธิ์ AI หมด -->
   <div class="modal" id="quota-modal">
     <div class="modal-content" style="text-align: center;">
       <div style="font-size: 40px; margin-bottom: 10px;">⚠️</div>
@@ -232,6 +235,13 @@
     let editProcessedMedia = { type: null, data: null, file: null };
     let activeProductId = null;
     let productsList = [];
+
+    // ฟังก์ชันเลื่อนกล่องข้อความให้อยู่ตรงกลางเมื่อถูกแตะเปิดคีย์บอร์ดบนมือถือ
+    window.autoScrollFocus = function(element) {
+      setTimeout(() => {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300);
+    };
 
     function extractPublicIdFromUrl(url) {
       if (!url) return null;
@@ -302,12 +312,14 @@
 
     window.closeModal = function() {
       document.getElementById('detail-modal').style.display = 'none';
+      document.body.classList.remove('modal-open'); // ปลดล็อกสกอร์ลฉากหลัง
       activeProductId = null;
       editProcessedMedia = { type: null, data: null, file: null };
     }
 
     window.closeQuotaModal = function() {
       document.getElementById('quota-modal').style.display = 'none';
+      document.body.classList.remove('modal-open');
     }
 
     window.goToRecharge = function() {
@@ -494,6 +506,7 @@
 
         if (error.isQuotaError) {
           document.getElementById('quota-modal').style.display = 'flex';
+          document.body.classList.add('modal-open');
           showToast("สิทธิ์การใช้งาน AI หมดแล้ว", "error");
         } else {
           showToast("เกิดข้อผิดพลาด: " + (error.message || error), "error");
@@ -503,7 +516,6 @@
       }
     }
 
-    // ฟังก์ชันช่วยทำความสะอาดข้อความเปรียบเทียบชื่อซ้ำ
     function normalizeModelName(str) {
       return (str || '').replace(/\s+/g, '').toUpperCase();
     }
@@ -520,7 +532,6 @@
         return;
       }
 
-      // ระบบป้องกันบันทึกชื่อ/รุ่นซ้ำ
       const isDuplicate = productsList.some(item => 
         normalizeModelName(item.name) === normalizeModelName(name)
       );
@@ -596,6 +607,7 @@
 
       cancelEditMode();
       document.getElementById('detail-modal').style.display = 'flex';
+      document.body.classList.add('modal-open'); // ล็อกสกอร์ลฉากหลัง
     }
 
     function renderModalMedia(type, url) {
@@ -641,7 +653,6 @@
         return;
       }
 
-      // ระบบป้องกันแก้ไขชื่อไปซ้ำกับรายการอื่นในระบบ
       const isDuplicate = productsList.some(item => 
         item.id !== activeProductId && normalizeModelName(item.name) === normalizeModelName(newName)
       );
