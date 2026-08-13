@@ -11,7 +11,7 @@
 
   <style>
     * { box-sizing: border-box; font-family: 'Sarabun', sans-serif; }
-    html { scroll-behavior: smooth; }
+    html { scroll-behavior: smooth; overflow-x: hidden; }
     body { 
       background-color: #f3f4f6; 
       margin: 0; 
@@ -21,6 +21,7 @@
       display: flex; 
       flex-direction: column; 
       align-items: center; 
+      overflow-x: hidden; 
     }
     body.modal-open { overflow: hidden; height: 100vh; position: fixed; width: 100%; }
 
@@ -49,38 +50,80 @@
     .btn-save { width: 100%; background-color: #86efac; color: #166534; padding: 14px; font-size: 16px; }
     .btn-save.active { background-color: #22c55e; color: white; }
     
-    /* ปรับแต่งส่วนการ์ดรายการให้ดึงขึ้นชิดขอบบนสุดได้พอดี */
     .list-container { 
       width: 100%; 
       max-width: 800px; 
-      scroll-margin-top: 10px; /* ให้เว้นระยะชิดขอบบนสุด */
+      scroll-margin-top: 10px; 
       margin-bottom: 10px; 
     }
     
-    /* ปรับให้ตารางกินพื้นที่ความสูงส่วนใหญ่ของหน้าจอ (72vh) ให้แสดงรายการยาวลงมาเต็มตา */
+    /* ปรับแต่งส่วนตารางให้อ่านง่ายแต่หนืด ไม่โยกเยกไถลลื่น */
     .table-container { 
       width: 100%; 
       height: 72vh; 
       max-height: 700px;
       overflow-y: auto; 
       overflow-x: auto; 
-      -webkit-overflow-scrolling: touch; 
+      overscroll-behavior-x: contain; /* ป้องกันไม่ให้ดึงหน้าจอหลักโยก */
+      scroll-snap-type: x mandatory;   /* บังคับล็อกตำแหน่งไม่ให้ไถลกลางทาง */
       border-radius: 8px; 
       border: 1px solid #e5e7eb; 
     }
-    table { width: 100%; min-width: 480px; border-collapse: collapse; text-align: left; font-size: 14px; }
-    th { position: sticky; top: 0; background-color: #f9fafb; padding: 10px 12px; color: #374151; font-weight: 700; border-bottom: 1px solid #e5e7eb; z-index: 5; }
-    td { padding: 10px 12px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
+
+    table { 
+      width: 100%; 
+      min-width: 480px; /* ความกว้างคงเดิมเพื่อให้ไม่อัดแน่นเกินไป */
+      border-collapse: collapse; 
+      text-align: left; 
+      font-size: 13px; 
+    }
+
+    th { 
+      position: sticky; 
+      top: 0; 
+      background-color: #f9fafb; 
+      padding: 10px 8px; 
+      color: #374151; 
+      font-weight: 700; 
+      border-bottom: 1px solid #e5e7eb; 
+      z-index: 5; 
+      scroll-snap-align: start;
+    }
+
+    td { 
+      padding: 10px 8px; 
+      border-bottom: 1px solid #f3f4f6; 
+      vertical-align: middle; 
+      scroll-snap-align: start;
+    }
+
     .clickable-row { cursor: pointer; transition: background 0.15s; }
     .clickable-row:hover { background-color: #f0f9ff; }
-    .badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+    
+    .badge { 
+      display: inline-flex; 
+      align-items: center; 
+      gap: 2px; 
+      padding: 3px 6px; 
+      border-radius: 20px; 
+      font-size: 11px; 
+      font-weight: 600; 
+      white-space: nowrap; 
+    }
     .badge-video { background-color: #eff6ff; color: #2563eb; }
     .badge-image { background-color: #f0fdf4; color: #16a34a; }
     .badge-none { background-color: #f3f4f6; color: #6b7280; }
-    .text-truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; color: #6b7280; }
     
-    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; padding: 16px; -webkit-overflow-scrolling: touch; }
-    .modal-content { background-color: #fff; padding: 20px; border-radius: 16px; width: 100%; max-width: 480px; position: relative; max-height: 90vh; overflow-y: auto; -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }
+    .text-truncate { 
+      white-space: nowrap; 
+      overflow: hidden; 
+      text-overflow: ellipsis; 
+      max-width: 180px; 
+      color: #6b7280; 
+    }
+    
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; padding: 16px; }
+    .modal-content { background-color: #fff; padding: 20px; border-radius: 16px; width: 100%; max-width: 480px; position: relative; max-height: 90vh; overflow-y: auto; scroll-behavior: smooth; }
     .close-btn { position: absolute; right: 15px; top: 10px; font-size: 24px; cursor: pointer; color: #9ca3af; z-index: 10; }
     .modal-media-box { width: 100%; height: 230px; background: #111827; margin-bottom: 15px; border-radius: 10px; overflow: hidden; display: flex; justify-content: center; align-items: center; }
     .modal-media-box img, .modal-media-box video { max-width: 100%; max-height: 100%; object-fit: contain; }
@@ -159,7 +202,7 @@
     </h3>
 
     <div class="form-group">
-      <input type="text" id="search-input" class="form-control" placeholder="🔍 พิมพ์ชื่อ/รุ่น หรือรายละเอียด เพื่อค้นหาในระบบทั้งหมด..." onfocus="scrollToListHeader()" oninput="handleSearch()">
+      <input type="text" id="search-input" class="form-control" placeholder="🔍 พิมพ์ชื่อ/รุ่น หรือรายละเอียด..." onfocus="scrollToListHeader()" oninput="handleSearch()">
     </div>
 
     <div class="table-container" id="table-container">
@@ -273,7 +316,6 @@
     let hasMoreData = true;
     let isSearchMode = false;
 
-    // ฟังก์ชันเลื่อนการ์ดรายการสินค้าขึ้นมาชิดขอบบนสุดของหน้าจอ
     window.scrollToListHeader = function() {
       const listCard = document.getElementById('list-card');
       if (listCard) {
@@ -760,8 +802,8 @@
         const tr = document.createElement('tr');
         tr.className = 'clickable-row';
         tr.onclick = () => openModal(item.id, item);
-        const badge = item.mediaType === 'video' ? '<span class="badge badge-video">🎥 วิดีโอ</span>' : (item.mediaType === 'image' ? '<span class="badge badge-image">🖼️ รูปภาพ</span>' : '<span class="badge badge-none">📷 ไม่มีสื่อ</span>');
-        tr.innerHTML = `<td>${badge}</td><td style="font-weight: 700;">${item.name}</td><td class="text-truncate">${item.detail}</td>`;
+        const badge = item.mediaType === 'video' ? '<span class="badge badge-video">🎥 วิดีโอ</span>' : (item.mediaType === 'image' ? '<span class="badge badge-image">🖼️ รูปภาพ</span>' : '<span class="badge badge-none">📷 ไม่มี</span>');
+        tr.innerHTML = `<td>${badge}</td><td style="font-weight: 700; color: #111827;">${item.name}</td><td class="text-truncate">${item.detail}</td>`;
         tbody.appendChild(tr);
       });
     }
