@@ -38,16 +38,16 @@
     .btn-ai { width: 100%; background: #8b5cf6; color: white; padding: 14px; font-size: 15px; margin-bottom: 12px; box-shadow: 0 2px 4px rgba(139, 92, 246, 0.2); }
     .btn-save { width: 100%; background-color: #86efac; color: #166534; padding: 14px; font-size: 16px; }
     .btn-save.active { background-color: #22c55e; color: white; }
-    .list-container { width: 100%; max-width: 800px; scroll-margin-top: 10px; }
     
-    /* ตั้งค่าให้เว้นระยะและยืดหดตามความสูงหน้าจอเมื่อคีย์บอร์ดเด้ง */
+    .list-container { width: 100%; max-width: 800px; scroll-margin-top: 15px; }
+    
     #search-input {
       scroll-margin-top: 15px;
     }
     
     .table-container { 
       width: 100%; 
-      max-height: 45vh; /* ยืดหดตาม Viewport ของมือถือ */
+      max-height: 45vh; 
       overflow-y: auto; 
       overflow-x: auto; 
       -webkit-overflow-scrolling: touch; 
@@ -55,8 +55,8 @@
       border: 1px solid #e5e7eb; 
     }
     table { width: 100%; min-width: 480px; border-collapse: collapse; text-align: left; font-size: 14px; }
-    th { position: sticky; top: 0; background-color: #f9fafb; padding: 12px 14px; color: #374151; font-weight: 700; border-bottom: 1px solid #e5e7eb; z-index: 5; }
-    td { padding: 12px 14px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
+    th { position: sticky; top: 0; background-color: #f9fafb; padding: 10px 12px; color: #374151; font-weight: 700; border-bottom: 1px solid #e5e7eb; z-index: 5; }
+    td { padding: 10px 12px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
     .clickable-row { cursor: pointer; transition: background 0.15s; }
     .clickable-row:hover { background-color: #f0f9ff; }
     .badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap; }
@@ -263,7 +263,7 @@
     window.autoScrollFocus = function(element) {
       setTimeout(() => {
         element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 300);
+      }, 400);
     };
 
     function extractPublicIdFromUrl(url) {
@@ -350,7 +350,7 @@
       closeQuotaModal();
     }
 
-    // --- ระบบดึงข้อมูลแบบ Infinite Scroll (ทีละ 20 รายการ) ---
+    // --- ระบบดึงข้อมูลแบบ Infinite Scroll ---
     async function fetchInitialProducts() {
       try {
         lastVisibleDoc = null;
@@ -441,10 +441,12 @@
         });
       }
 
-      // ป้องกันคีย์บอร์ดมือถือบังตาราง เมื่อผู้ใช้กดที่ช่องค้นหา
+      // ดันช่องค้นหาขึ้นเมื่อเริ่มกดพิมพ์ โดยไม่รบกวนจังหวะพิมพ์ภายหลัง
       if (searchInput) {
         searchInput.addEventListener('focus', function() {
-          autoScrollFocus(this);
+          setTimeout(() => {
+            this.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }, 400);
         });
       }
     }
@@ -462,7 +464,7 @@
 
       isSearchMode = true;
 
-      // หากยังมีข้อมูลใน Cloud ที่ยังดึงมาไม่หมด ให้ดึงสินค้าทั้งหมดมาสแกนค้นหาทันที
+      // ดึงข้อมูลทั้งหมดมาค้นหาหากยังดึงมาไม่หมด
       let searchPool = productsList;
       if (hasMoreData) {
         showToast("🔍 กำลังค้นหาจากรายการทั้งหมดในระบบ...", "info");
@@ -662,17 +664,14 @@
       return (str || '').replace(/\s+/g, '').toUpperCase();
     }
 
-    // ตรวจสอบรุ่นซ้ำกับฐานข้อมูลทั้งหมดบน Cloud
     async function checkIsDuplicateModel(name, excludeId = null) {
       const targetName = normalizeModelName(name);
       
-      // เช็กใน Memory ก่อน
       const existsInLocal = productsList.some(item => 
         item.id !== excludeId && normalizeModelName(item.name) === targetName
       );
       if (existsInLocal) return true;
 
-      // หากยังมีข้อมูลใน Cloud ดึงมาเช็กให้ชัวร์
       if (hasMoreData) {
         const q = query(collection(db, "products"));
         const snapshot = await getDocs(q);
