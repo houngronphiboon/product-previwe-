@@ -103,7 +103,7 @@
 
       <div class="form-group">
         <label for="product-name">ชื่อ/รุ่น <span class="required">*</span></label>
-        <input type="text" id="product-name" class="form-control" placeholder="เช่น VETZ90L, 32hs534an" oninput="clearValidationError()">
+        <input type="text" id="product-name" class="form-control" placeholder="เช่น VETZ90L, HR-907C NS" oninput="clearValidationError()">
         <div class="error-msg" id="name-error-msg">กรุณากรอกชื่อหรือรุ่นสินค้า</div>
       </div>
 
@@ -441,14 +441,18 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{
-              parts: [{ text: `วิเคราะห์สเปก รายละเอียด และข้อแนะนำสำหรับช่าง ของอะไหล่/สินค้ารุ่น: ${name}` }]
+              parts: [{ 
+                text: `ค้นหาและสรุปสเปกทางเทคนิคที่ถูกต้องสำหรับตู้เย็น เครื่องใช้ไฟฟ้า หรืออะไหล่อิเล็กทรอนิกส์ รุ่น: "${name}" 
+ระบุประเภทสินค้า, ขนาด/ความจุ (ถ้ามี), ระบบสารทำความเย็น, ค่าทางไฟฟ้า และข้อแนะนำสำหรับช่างวิเคราะห์ซ่อม 
+หากเป็นรุ่นที่ไม่ชัดเจนหรือไม่มีในฐานข้อมูล ให้ระบุเฉพาะสเปกพื้นฐานที่มั่นใจ ห้ามเดาหรือสร้างข้อมูลคอมเพรสเซอร์/ระบบอินเวอร์เตอร์ที่ไม่ตรงรุ่นขึ้นมาเอง` 
+              }]
             }]
           })
         });
 
         const data = await response.json();
 
-        // 1. ดักจับกรณี Credit หมด / HTTP Status Error
+        // 1. ดักจับกรณี Credit หมด / HTTP Status Error (Rate Limit หรือ Quota)
         if (response.status === 402 || response.status === 429) {
           throw { isQuotaError: true, message: "สิทธิ์หรือโควต้าใช้งาน AI หมดแล้ว" };
         }
