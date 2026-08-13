@@ -79,7 +79,7 @@
         </div>
         <div class="status-badge">
           <span class="status-dot"></span>
-          <span>AI: OpenRouter</span>
+          <span>AI: Vision</span>
         </div>
       </div>
 
@@ -109,11 +109,11 @@
 
       <div class="form-group">
         <label for="product-detail">รายละเอียด</label>
-        <textarea id="product-detail" class="form-control" placeholder="กรอกรายละเอียดสินค้า อะไหล่ หรือกดให้ AI ช่วยวิเคราะห์"></textarea>
+        <textarea id="product-detail" class="form-control" placeholder="กรอกรายละเอียดสินค้า หรือแนบรูปเพลทแล้วกดวิเคราะห์ด้วย AI"></textarea>
       </div>
 
       <button class="btn btn-ai" id="btn-ai-search" onclick="generateAIDetails()">
-        ✨ ค้นหารายละเอียดสินค้าด้วย AI (จากชื่อ/รุ่น)
+        ✨ วิเคราะห์ข้อมูลสินค้าด้วย AI (จากรูปถ่าย/ชื่อรุ่น)
       </button>
 
       <button class="btn btn-save active" id="btn-save" onclick="addProduct()">
@@ -198,7 +198,7 @@
       <div style="font-size: 40px; margin-bottom: 10px;">⚠️</div>
       <h3 style="margin-top: 0; color: #dc2626; font-weight: 700;">สิทธิ์วิเคราะห์ AI หมดแล้ว</h3>
       <p style="color: #4b5563; font-size: 14px; line-height: 1.5;" id="quota-modal-msg">
-        เครดิตหรือสิทธิ์การใช้งาน OpenRouter AI ของคุณหมดแล้ว ต้องการไปยังหน้าจัดการเครดิตเพื่อเติมสิทธิ์หรือไม่?
+        เครดิตหรือสิทธิ์การใช้งาน AI ของคุณหมดแล้ว ต้องการไปยังหน้าจัดการเพื่อเติมสิทธิ์หรือไม่?
       </p>
       <button class="btn btn-quota" onclick="goToRecharge()">💳 ไปเติมสิทธิ์ (OpenRouter)</button>
       <button class="btn btn-cancel" onclick="closeQuotaModal()">ยกเลิก / ปิดหน้าต่าง</button>
@@ -360,25 +360,22 @@
             canvas.width = w; canvas.height = h;
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, w, h);
-            canvas.toBlob((blob) => resolve({ blob }), 'image/jpeg', quality);
+            canvas.toBlob((blob) => resolve({ blob, dataUrl: canvas.toDataURL('image/jpeg', quality) }), 'image/jpeg', quality);
           };
         };
       });
     }
 
-    window.handleFileSelect = function(event) {
+    window.handleFileSelect = async function(event) {
       const file = event.target.files[0];
       if (!file) return;
 
       const previewBox = document.getElementById('preview-box');
 
       if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          processedMedia = { type: 'image', data: e.target.result, file: file };
-          previewBox.innerHTML = `<img src="${e.target.result}">`;
-        };
-        reader.readAsDataURL(file);
+        const compressed = await compressImage(file);
+        processedMedia = { type: 'image', data: compressed.dataUrl, file: compressed.blob };
+        previewBox.innerHTML = `<img src="${compressed.dataUrl}">`;
       } else if (file.type.startsWith('video/')) {
         const videoUrl = URL.createObjectURL(file);
         processedMedia = { type: 'video', data: videoUrl, file: file };
@@ -387,19 +384,16 @@
       event.target.value = '';
     }
 
-    window.handleEditFileSelect = function(event) {
+    window.handleEditFileSelect = async function(event) {
       const file = event.target.files[0];
       if (!file) return;
 
       const mediaContainer = document.getElementById('modal-media-container');
 
       if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          editProcessedMedia = { type: 'image', data: e.target.result, file: file };
-          mediaContainer.innerHTML = `<img src="${e.target.result}">`;
-        };
-        reader.readAsDataURL(file);
+        const compressed = await compressImage(file);
+        editProcessedMedia = { type: 'image', data: compressed.dataUrl, file: compressed.blob };
+        mediaContainer.innerHTML = `<img src="${compressed.dataUrl}">`;
       } else if (file.type.startsWith('video/')) {
         const videoUrl = URL.createObjectURL(file);
         editProcessedMedia = { type: 'video', data: videoUrl, file: file };
@@ -425,63 +419,78 @@
       const detailInput = document.getElementById('product-detail');
       const name = nameInput.value.trim();
 
-      if (!name) {
-        triggerValidationError("กรุณากรอกชื่อ/รุ่น สินค้าก่อนกดวิเคราะห์");
-        showToast("กรุณากรอกชื่อ/รุ่น สินค้าก่อนกดวิเคราะห์", "error");
-        return;
-      }
-
       const originalText = detailInput.value;
-      detailInput.value = `กำลังส่งชื่อรุ่น "${name}" ให้ OpenRouter AI วิเคราะห์ข้อมูล...`;
+      detailInput.value = "กำลังส่งข้อมูลให้ AI อ่านสติกเกอร์และวิเคราะห์...";
       setFormButtonsDisabled(true);
 
       try {
-        // เพิ่มบริบทเครื่องใช้ไฟฟ้าให้อัตโนมัติหากผู้ใช้พิมพ์แต่รหัสรุ่น
-        let searchContext = name;
-        if (!name.toLowerCase().includes('haier') && name.toUpperCase().startsWith('HR-')) {
-          searchContext = `Haier ตู้เย็น รุ่น ${name}`;
+        let payload = {
+          temperature: 0.1,
+          contents: []
+        };
+
+        // ส่ง Base64 ของรูปถ่ายเข้า AI Vision โดยตรง
+        if (processedMedia.type === 'image' && processedMedia.data) {
+          const base64Data = processedMedia.data.split(',')[1];
+          const mimeType = processedMedia.data.split(';')[0].split(':')[1];
+
+          payload.contents.push({
+            parts: [
+              {
+                inline_data: {
+                  mime_type: mimeType,
+                  data: base64Data
+                }
+              },
+              {
+                text: `โปรดอ่านข้อความบนเพลท/สติกเกอร์ในรูปภาพนี้อย่างละเอียด และสรุปข้อมูลสเปกสินค้าออกมาเป็นหัวข้อกระชับสำหรับช่าง:
+- ยี่ห้อ และ รุ่นสินค้า
+- ประเภทสินค้า/อุปกรณ์
+- แรงดันไฟฟ้า (V) / ความถี่ (Hz) / กำลังไฟฟ้า (W)
+- สารทำความเย็น (Refrigerant) และ ปริมาณ (g) ถ้ามี
+- ปริมาตรความจุ (คิว/ลิตร) ถ้ามี`
+              }
+            ]
+          });
+        } else {
+          if (!name) {
+            triggerValidationError("กรุณากรอกชื่อ/รุ่น หรืออัปโหลดรูปถ่ายเพลทสินค้า");
+            detailInput.value = originalText;
+            setFormButtonsDisabled(false);
+            return;
+          }
+
+          payload.contents.push({
+            parts: [{
+              text: `โปรดค้นหาและสรุปสเปกทางเทคนิคของตู้เย็น Haier รุ่น "${name}":
+ระบุประเภทตู้เย็น, ขนาดคิว, ระบบการทำงาน (Direct Cool หรือ Inverter) และสารทำความเย็นให้ถูกต้อง ห้ามสุ่มเดาหากไม่มีข้อมูลแน่นอน`
+            }]
+          });
         }
 
         const response = await fetch(WORKER_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            temperature: 0.1,
-            contents: [{
-              parts: [{ 
-                text: `คุณคือผู้เชี่ยวชาญด้านเครื่องใช้ไฟฟ้าและงานซ่อม 
-โปรดค้นหาและสรุปสเปกทางเทคนิคของสินค้าต่อไปนี้: "${searchContext}"
-
-เงื่อนไขการตอบ:
-1. หากรหัสรุ่นขึ้นต้นด้วย HR-907C ให้ระบุว่าเป็น "ตู้เย็น 1 ประตู (Direct Cool)" ขนาดประมาณ 5.2-6.3 คิว
-2. ระบุประเภทสินค้า, สารทำความเย็น (เช่น R134a หรือ R600a), ค่าไฟฟ้า และการใช้งาน
-3. ห้ามระบุว่าเป็นคอมเพรสเซอร์ Secop หรือระบบ Inverter หากไม่มีข้อมูลยืนยันแน่นอน
-4. แสดงผลลัพธ์เป็นหัวข้อสั้นๆ เข้าใจง่ายสำหรับช่าง` 
-              }]
-            }]
-          })
+          body: JSON.stringify(payload)
         });
 
         const data = await response.json();
 
-        // 1. ดักจับกรณี Credit หมด / HTTP Status Error (Rate Limit หรือ Quota)
         if (response.status === 402 || response.status === 429) {
           throw { isQuotaError: true, message: "สิทธิ์หรือโควต้าใช้งาน AI หมดแล้ว" };
         }
 
-        // 2. ดักจับ Error จาก Body ของ API
         if (!response.ok || data.error) {
           const errMsg = data.error?.message || data.error || "";
-          if (errMsg.toLowerCase().includes("quota") || errMsg.toLowerCase().includes("rate limit") || errMsg.toLowerCase().includes("insufficient")) {
+          if (errMsg.toLowerCase().includes("quota") || errMsg.toLowerCase().includes("rate limit")) {
             throw { isQuotaError: true, message: "สิทธิ์การใช้งาน AI หมดแล้ว" };
           }
           throw new Error(errMsg || "ไม่สามารถวิเคราะห์ข้อมูลได้");
         }
 
-        // 3. แสดงผลเมื่อสำเร็จ
         if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
           detailInput.value = data.candidates[0].content.parts[0].text;
-          showToast("วิเคราะห์ข้อมูลด้วย OpenRouter AI สำเร็จ!", "success");
+          showToast("วิเคราะห์ข้อมูลสำเร็จ!", "success");
         } else {
           throw new Error("ไม่ได้รับข้อมูลตอบกลับจาก AI");
         }
@@ -494,7 +503,7 @@
           document.getElementById('quota-modal').style.display = 'flex';
           showToast("สิทธิ์การใช้งาน AI หมดแล้ว", "error");
         } else {
-          showToast("เกิดข้อผิดพลาดในการวิเคราะห์ AI: " + (error.message || error), "error");
+          showToast("เกิดข้อผิดพลาด: " + (error.message || error), "error");
         }
       } finally {
         setFormButtonsDisabled(false);
@@ -521,13 +530,8 @@
         let mediaType = processedMedia.type;
 
         if (processedMedia.file) {
-          let uploadFile = processedMedia.file;
-          if (mediaType === 'image') {
-            const compressed = await compressImage(processedMedia.file);
-            uploadFile = compressed.blob;
-          }
           const resourceType = mediaType === 'video' ? 'video' : 'image';
-          mediaUrl = await uploadToCloudinary(uploadFile, resourceType);
+          mediaUrl = await uploadToCloudinary(processedMedia.file, resourceType);
         }
 
         await addDoc(collection(db, "products"), {
@@ -641,14 +645,8 @@
         };
 
         if (editProcessedMedia.file) {
-          let uploadFile = editProcessedMedia.file;
-          if (editProcessedMedia.type === 'image') {
-            const compressed = await compressImage(editProcessedMedia.file);
-            uploadFile = compressed.blob;
-          }
-          
           const resourceType = editProcessedMedia.type === 'video' ? 'video' : 'image';
-          const newMediaUrl = await uploadToCloudinary(uploadFile, resourceType);
+          const newMediaUrl = await uploadToCloudinary(editProcessedMedia.file, resourceType);
 
           if (item.mediaUrl) {
             await deleteCloudinaryMedia(item.mediaUrl, item.mediaType);
