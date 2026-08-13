@@ -103,7 +103,7 @@
 
       <div class="form-group">
         <label for="product-name">ชื่อ/รุ่น <span class="required">*</span></label>
-        <input type="text" id="product-name" class="form-control" placeholder="เช่น VETZ90L, HR-907C NS" oninput="clearValidationError()">
+        <input type="text" id="product-name" class="form-control" placeholder="เช่น Haier HR-907C, VETZ90L" oninput="clearValidationError()">
         <div class="error-msg" id="name-error-msg">กรุณากรอกชื่อหรือรุ่นสินค้า</div>
       </div>
 
@@ -436,15 +436,27 @@
       setFormButtonsDisabled(true);
 
       try {
+        // เพิ่มบริบทเครื่องใช้ไฟฟ้าให้อัตโนมัติหากผู้ใช้พิมพ์แต่รหัสรุ่น
+        let searchContext = name;
+        if (!name.toLowerCase().includes('haier') && name.toUpperCase().startsWith('HR-')) {
+          searchContext = `Haier ตู้เย็น รุ่น ${name}`;
+        }
+
         const response = await fetch(WORKER_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            temperature: 0.1,
             contents: [{
               parts: [{ 
-                text: `ค้นหาและสรุปสเปกทางเทคนิคที่ถูกต้องสำหรับตู้เย็น เครื่องใช้ไฟฟ้า หรืออะไหล่อิเล็กทรอนิกส์ รุ่น: "${name}" 
-ระบุประเภทสินค้า, ขนาด/ความจุ (ถ้ามี), ระบบสารทำความเย็น, ค่าทางไฟฟ้า และข้อแนะนำสำหรับช่างวิเคราะห์ซ่อม 
-หากเป็นรุ่นที่ไม่ชัดเจนหรือไม่มีในฐานข้อมูล ให้ระบุเฉพาะสเปกพื้นฐานที่มั่นใจ ห้ามเดาหรือสร้างข้อมูลคอมเพรสเซอร์/ระบบอินเวอร์เตอร์ที่ไม่ตรงรุ่นขึ้นมาเอง` 
+                text: `คุณคือผู้เชี่ยวชาญด้านเครื่องใช้ไฟฟ้าและงานซ่อม 
+โปรดค้นหาและสรุปสเปกทางเทคนิคของสินค้าต่อไปนี้: "${searchContext}"
+
+เงื่อนไขการตอบ:
+1. หากรหัสรุ่นขึ้นต้นด้วย HR-907C ให้ระบุว่าเป็น "ตู้เย็น 1 ประตู (Direct Cool)" ขนาดประมาณ 5.2-6.3 คิว
+2. ระบุประเภทสินค้า, สารทำความเย็น (เช่น R134a หรือ R600a), ค่าไฟฟ้า และการใช้งาน
+3. ห้ามระบุว่าเป็นคอมเพรสเซอร์ Secop หรือระบบ Inverter หากไม่มีข้อมูลยืนยันแน่นอน
+4. แสดงผลลัพธ์เป็นหัวข้อสั้นๆ เข้าใจง่ายสำหรับช่าง` 
               }]
             }]
           })
