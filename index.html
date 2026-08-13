@@ -103,7 +103,7 @@
 
       <div class="form-group">
         <label for="product-name">ชื่อ/รุ่น <span class="required">*</span></label>
-        <input type="text" id="product-name" class="form-control" placeholder="เช่น Haier HR-907C, VETZ90L" oninput="clearValidationError()">
+        <input type="text" id="product-name" class="form-control" placeholder="เช่น HR-907C NS, BSA075NHMV" oninput="clearValidationError()">
         <div class="error-msg" id="name-error-msg">กรุณากรอกชื่อหรือรุ่นสินค้า</div>
       </div>
 
@@ -442,12 +442,7 @@
                 }
               },
               {
-                text: `โปรดวิเคราะห์เพลตสติกเกอร์สินค้าในรูปภาพร่วมกับชื่อ/รุ่น "${name || 'ไม่ระบุ'}"
-และสรุปรายละเอียดออกมาเป็น 3 หัวข้อกระชับตามรูปแบบนี้เท่านั้น:
-
-• ประเภท/ยี่ห้อ: [ระบุประเภทสินค้า ยี่ห้อ และรุ่น]
-• คุณสมบัติทางไฟฟ้า/สเปก: [ระบุ แรงดันไฟ V / ความถี่ Hz / กำลังไฟ W / ปริมาตรคิว / น้ำยาทำความเย็น ตามที่อ่านได้จริงจากเพลต]
-• การทำงาน: [ระบุลักษณะการใช้งานของอุปกรณ์นี้]`
+                text: `โปรดวิเคราะห์เพลตสติกเกอร์สินค้าในรูปภาพร่วมกับชื่อ/รุ่น "${name || 'ไม่ระบุ'}"`
               }
             ]
           });
@@ -461,10 +456,7 @@
 
           payload.contents.push({
             parts: [{
-              text: `โปรดวิเคราะห์และสรุปสเปกทางเทคนิคของสินค้าชื่อ/รุ่น "${name}" ออกมาเป็น 3 หัวข้อกระชับ:
-• ประเภท/ยี่ห้อ:
-• คุณสมบัติทางไฟฟ้า/สเปก:
-• การทำงาน:`
+              text: `วิเคราะห์รหัสสินค้า "${name}"`
             }]
           });
         }
@@ -511,6 +503,11 @@
       }
     }
 
+    // ฟังก์ชันช่วยทำความสะอาดข้อความเปรียบเทียบชื่อซ้ำ
+    function normalizeModelName(str) {
+      return (str || '').replace(/\s+/g, '').toUpperCase();
+    }
+
     window.addProduct = async function() {
       const nameInput = document.getElementById('product-name');
       const detailInput = document.getElementById('product-detail');
@@ -520,6 +517,17 @@
 
       if (!name) {
         triggerValidationError("กรุณากรอกชื่อสินค้า");
+        return;
+      }
+
+      // ระบบป้องกันบันทึกชื่อ/รุ่นซ้ำ
+      const isDuplicate = productsList.some(item => 
+        normalizeModelName(item.name) === normalizeModelName(name)
+      );
+
+      if (isDuplicate) {
+        triggerValidationError(`รุ่น "${name}" มีอยู่ในระบบแล้ว`);
+        showToast(`❌ ไม่สามารถบันทึกได้! รุ่น "${name}" มีในระบบแล้ว`, "error");
         return;
       }
 
@@ -630,6 +638,16 @@
 
       if (!newName) {
         showToast("ชื่อ/รุ่น สินค้าห้ามเป็นค่าว่าง", "error");
+        return;
+      }
+
+      // ระบบป้องกันแก้ไขชื่อไปซ้ำกับรายการอื่นในระบบ
+      const isDuplicate = productsList.some(item => 
+        item.id !== activeProductId && normalizeModelName(item.name) === normalizeModelName(newName)
+      );
+
+      if (isDuplicate) {
+        showToast(`❌ ชื่อรุ่น "${newName}" มีอยู่ในระบบแล้ว`, "error");
         return;
       }
 
