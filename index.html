@@ -15,7 +15,7 @@
       background-color: #f3f4f6; 
       margin: 0; 
       padding: 16px; 
-      padding-bottom: 60vh; /* เพิ่มพื้นที่ว่างด้านล่าง ป้องกันหน้าจอเด้งลงเวลามีแป้นพิมพ์ */
+      padding-bottom: 40px; /* ปรับลดพื้นที่ว่างด้านล่าง ไม่ให้หน้าจอโล่งเกินไป */
       color: #1f2937; 
       display: flex; 
       flex-direction: column; 
@@ -52,7 +52,7 @@
       width: 100%; 
       max-width: 800px; 
       scroll-margin-top: 15px; 
-      margin-bottom: 20vh; /* เพิ่มพื้นที่ว่างใต้การ์ดค้นหา */
+      margin-bottom: 20px; /* ปรับลดพื้นที่ขอบล่างของการ์ด */
     }
     
     #search-input {
@@ -61,8 +61,8 @@
     
     .table-container { 
       width: 100%; 
-      min-height: 250px; /* ล็อกความสูงขั้นต่ำ ไม่ให้ตารางหดตามผลค้นหา */
-      max-height: 45vh; 
+      min-height: 250px; 
+      max-height: 50vh; 
       overflow-y: auto; 
       overflow-x: auto; 
       -webkit-overflow-scrolling: touch; 
@@ -277,8 +277,8 @@
 
     window.autoScrollFocus = function(element) {
       setTimeout(() => {
-        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 400);
+        element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 300);
     };
 
     function extractPublicIdFromUrl(url) {
@@ -446,7 +446,6 @@
 
     function setupScrollListener() {
       const tableContainer = document.getElementById('table-container');
-      const searchInput = document.getElementById('search-input');
 
       if (tableContainer) {
         tableContainer.addEventListener('scroll', () => {
@@ -455,17 +454,9 @@
           }
         });
       }
-
-      if (searchInput) {
-        searchInput.addEventListener('focus', function() {
-          setTimeout(() => {
-            this.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }, 400);
-        });
-      }
     }
 
-    // --- ระบบค้นหาจากรายการทั้งหมดใน Cloud (ปิดการแสดง Toast สีฟ้าแล้ว) ---
+    // --- ระบบค้นหาจากรายการทั้งหมดใน Cloud ---
     window.handleSearch = async function() {
       const searchInput = document.getElementById('search-input');
       const queryStr = searchInput.value.trim().toLowerCase();
