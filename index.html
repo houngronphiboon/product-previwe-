@@ -25,43 +25,46 @@
     body.modal-open { overflow: hidden; height: 100vh; position: fixed; width: 100%; }
 
     .container { width: 100%; max-width: 500px; margin-bottom: 20px; }
-    .card { background: #ffffff; border-radius: 16px; padding: 20px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); }
     
-    /* ===== จัดระเบียบ Header & Status Badges ใหม่หมด (ป้องกันการซ้อนทับ) ===== */
-    .header-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 16px;
-      padding-bottom: 8px;
-      border-bottom: 1px solid #f3f4f6;
+    /* ===== Card หลัก กำหนด position: relative เพื่ออ้างอิงจุดไฟมุมขวาบน ===== */
+    .card { 
+      background: #ffffff; 
+      border-radius: 16px; 
+      padding: 20px; 
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); 
+      position: relative; 
     }
 
+    /* ชื่อร้านชิดซ้าย เว้นระยะขวาเผื่อจุดไฟ และเว้นระยะล่างดันกรอบรูป */
     .header-title { 
       font-size: 16px; 
       font-weight: 700; 
       color: #111827; 
-      margin: 0;
+      margin: 0 0 16px 0; 
+      padding-right: 145px; /* เว้นพื้นที่ขวาไว้ไม่ให้ชื่อร้านยาวทับจุดไฟ */
+      line-height: 1.4;
     }
     
+    /* ล็อกจุดไฟไว้มุมขวาบนตรงข้ามชื่อร้าน */
     .status-container { 
+      position: absolute;
+      top: 18px;
+      right: 18px;
       display: flex; 
       align-items: center; 
       gap: 6px; 
-      flex-wrap: wrap;
+      z-index: 10;
     }
 
     .status-badge { 
       display: inline-flex; 
       align-items: center; 
-      gap: 6px; 
+      gap: 5px; 
       font-size: 11px; 
       font-weight: 600; 
       color: #4b5563; 
       background: #f8fafc; 
-      padding: 4px 8px; 
+      padding: 3px 7px; 
       border-radius: 12px; 
       border: 1px solid #e2e8f0; 
       white-space: nowrap;
@@ -72,12 +75,13 @@
     .status-dot.orange { background-color: #f59e0b; box-shadow: 0 0 6px #f59e0b; }
     .status-dot.red { background-color: #ef4444; box-shadow: 0 0 6px #ef4444; }
 
-    /* ===== กรอบรูปภาพ / วิดีโอ อยู่ใน Block แยกชัดเจน ===== */
+    /* ===== กรอบแสดงรูปภาพ / วิดีโอ มีระยะบนพอดี ไม่ชนจุดไฟ ===== */
     .media-preview-box { 
       width: 100%; 
       height: 200px; 
       background-color: #1f2937; 
       border-radius: 12px; 
+      margin-top: 4px; 
       margin-bottom: 16px; 
       display: flex; 
       justify-content: center; 
@@ -153,23 +157,22 @@
   <div class="container">
     <div class="card">
       
-      <!-- ส่วนแถบหัวเรื่องที่จัดระเบียบใหม่ -->
-      <div class="header-bar">
-        <h1 class="header-title">หนึ่ง ร่อนพิบูลย์ อิเล็กทรอนิกส์</h1>
-        
-        <div class="status-container">
-          <div class="status-badge">
-            <span class="status-dot green" id="db-status-dot"></span>
-            <span id="db-status-text">DB: พร้อม</span>
-          </div>
-          <div class="status-badge">
-            <span class="status-dot green" id="ai-status-dot"></span>
-            <span id="ai-status-text">AI: Vision</span>
-          </div>
+      <!-- จุดไฟแสดงสถานะ ล็อกไว้มุมขวาบน -->
+      <div class="status-container">
+        <div class="status-badge">
+          <span class="status-dot green" id="db-status-dot"></span>
+          <span id="db-status-text">DB: พร้อม</span>
+        </div>
+        <div class="status-badge">
+          <span class="status-dot green" id="ai-status-dot"></span>
+          <span id="ai-status-text">AI: Vision</span>
         </div>
       </div>
 
-      <!-- กรอบแสดงรูปภาพที่อยู่ด้านล่างอย่างเป็นระเบียบ -->
+      <!-- ชื่อร้านชิดซ้าย -->
+      <h1 class="header-title">หนึ่ง ร่อนพิบูลย์ อิเล็กทรอนิกส์</h1>
+
+      <!-- กรอบรูปแสดงอยู่ถัดลงมาจากหัวข้อพอดีเป๊ะ -->
       <div class="media-preview-box" id="preview-box">
         <span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>
       </div>
