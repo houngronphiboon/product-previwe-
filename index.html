@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>ระบบบันทึกข้อมูลสินค้า - Nueng Ron Phibun Electronics</title>
+  <title>ระบบบันทึกข้อมูลสินค้า - หนึ่ง ร่อนพิบูลย์ อิเล็กทรอนิกส์</title>
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -28,7 +28,7 @@
     .card { background: #ffffff; border-radius: 16px; padding: 20px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); position: relative; }
     .header-title { font-size: 16px; font-weight: 700; text-align: center; margin-bottom: 16px; color: #111827; padding-right: 90px; }
     
-    /* Status Badges Dynamic Style */
+    /* Status Badges */
     .status-container { position: absolute; top: 16px; right: 16px; display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
     .status-badge { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; color: #4b5563; background: #f3f4f6; padding: 3px 8px; border-radius: 12px; border: 1px solid #e5e7eb; }
     .status-dot { width: 8px; height: 8px; border-radius: 50%; transition: all 0.3s ease; }
@@ -50,17 +50,12 @@
     .form-control:focus { border-color: #2563eb; }
     .form-control.input-error { border-color: #dc2626 !important; background-color: #fef2f2; }
     .error-msg { color: #dc2626; font-size: 13px; margin-top: 4px; display: none; }
-    textarea.form-control { resize: vertical; min-height: 110px; }
+    textarea.form-control { resize: vertical; min-height: 120px; }
     .btn-ai { width: 100%; background: #8b5cf6; color: white; padding: 14px; font-size: 15px; margin-bottom: 12px; box-shadow: 0 2px 4px rgba(139, 92, 246, 0.2); }
     .btn-save { width: 100%; background-color: #86efac; color: #166534; padding: 14px; font-size: 16px; }
     .btn-save.active { background-color: #22c55e; color: white; }
     
-    .list-container { 
-      width: 100%; 
-      max-width: 800px; 
-      margin-bottom: 10px; 
-    }
-    
+    .list-container { width: 100%; max-width: 800px; margin-bottom: 10px; }
     .table-container { 
       width: 100%; 
       height: 72vh; 
@@ -117,7 +112,7 @@
         </div>
       </div>
 
-      <div class="header-title">ระบบบันทึกข้อมูลสินค้า - Nueng Ron Phibun Electronics</div>
+      <div class="header-title">หนึ่ง ร่อนพิบูลย์ อิเล็กทรอนิกส์</div>
 
       <div class="media-preview-box" id="preview-box">
         <span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>
@@ -137,13 +132,13 @@
 
       <div class="form-group">
         <label for="product-name">ชื่อ/รุ่น <span class="required">*</span></label>
-        <input type="text" id="product-name" class="form-control" placeholder="เช่น HR-907C NS, UA32N4003AK, TP.HV320.PB801" oninput="clearValidationError()">
+        <input type="text" id="product-name" class="form-control" placeholder="เช่น HR-907C NS, VTH1111Y, EAX64905001" oninput="clearValidationError()">
         <div class="error-msg" id="name-error-msg">กรุณากรอกชื่อหรือรุ่นสินค้า</div>
       </div>
 
       <div class="form-group">
-        <label for="product-detail">รายละเอียด</label>
-        <textarea id="product-detail" class="form-control" placeholder="กรอกรายละเอียดสินค้า หรือแนบรูปเพลต/บอร์ดแล้วกดวิเคราะห์ด้วย AI"></textarea>
+        <label for="product-detail">รายละเอียดสินค้า</label>
+        <textarea id="product-detail" class="form-control" placeholder="ระบุรายละเอียดสินค้า หรือแนบรูปเพลต/แผงวงจรแล้วกดให้ AI วิเคราะห์สเปก"></textarea>
       </div>
 
       <button class="btn btn-ai" id="btn-ai-search" onclick="generateAIDetails()">
@@ -232,7 +227,7 @@
       <div style="font-size: 40px; margin-bottom: 10px;">⚠️</div>
       <h3 style="margin-top: 0; color: #dc2626; font-weight: 700;">สิทธิ์วิเคราะห์ AI หมดแล้ว</h3>
       <p style="color: #4b5563; font-size: 14px; line-height: 1.5;" id="quota-modal-msg">
-        เครดิตหรือสิทธิ์การใช้งาน AI ของคุณหมดแล้ว ต้องการไปยังหน้าจัดการเพื่อเติมสิทธิ์หรือไม่?
+        โควต้าหรือสิทธิ์ใช้ AI ของคุณหมดแล้ว ต้องการไปยังหน้าจัดการเพื่อเติมสิทธิ์หรือไม่?
       </p>
       <button class="btn btn-quota" onclick="goToRecharge()">💳 ไปเติมสิทธิ์ (OpenRouter)</button>
       <button class="btn btn-cancel" onclick="closeQuotaModal()">ยกเลิก / ปิดหน้าต่าง</button>
@@ -277,7 +272,6 @@
     let isSearchMode = false;
     let searchDebounceTimer = null;
 
-    // --- ฟังก์ชันอัปเดตสถานะไฟเตือน (Status Badge Helper) ---
     function updateStatusUI(target, state, text) {
       const dot = document.getElementById(`${target}-status-dot`);
       const txt = document.getElementById(`${target}-status-text`);
@@ -287,7 +281,6 @@
       }
     }
 
-    // ฟังก์ชันช่วยเคลียร์ Blob URL ป้องกัน Memory Leak
     function revokePreviousMediaUrl(mediaObj) {
       if (mediaObj.type === 'video' && mediaObj.data && mediaObj.data.startsWith('blob:')) {
         URL.revokeObjectURL(mediaObj.data);
@@ -479,12 +472,11 @@
       }
     }
 
-    // --- ปรับปรุงระบบ Search ค้นหาประสิทธิภาพสูง (Optimized Search) ---
     window.handleSearchDebounced = function() {
       clearTimeout(searchDebounceTimer);
       searchDebounceTimer = setTimeout(() => {
         executeOptimizedSearch();
-      }, 400); // หน่วงเวลา 400ms ลดภาระการยิง Database
+      }, 400);
     };
 
     async function executeOptimizedSearch() {
@@ -500,19 +492,16 @@
       isSearchMode = true;
       const lowerQuery = queryStr.toLowerCase();
 
-      // 1. ค้นหาจากข้อมูลที่มีอยู่บนหน้าจอเบื้องต้นก่อน (เพื่อความเร็ว)
       let matchedResults = productsList.filter(item => 
         (item.name || '').toLowerCase().includes(lowerQuery) ||
         (item.detail || '').toLowerCase().includes(lowerQuery)
       );
 
-      // 2. หากรายการในเครื่องมีน้อย และยังมีข้อมูลเหลือบน Cloud ให้ค้นหาแบบ Prefix ค้นตรงผ่าน Firestore
       if (matchedResults.length < 5 && hasMoreData) {
         try {
           updateStatusUI('db', 'orange', 'DB: กำลังค้นหา');
           const firestoreResults = await searchFirestoreDirectly(queryStr);
           
-          // รวมผลลัพธ์แบบไม่ให้มี ID ซ้ำ
           const combined = [...matchedResults];
           firestoreResults.forEach(item => {
             if (!combined.some(p => p.id === item.id)) {
@@ -532,7 +521,6 @@
 
     async function searchFirestoreDirectly(searchTerm) {
       try {
-        // ใช้เทคนิค Prefix Search บน Firestore (ช่วงตัวอักษร)
         const strFrontCode = searchTerm;
         const strEndCode = searchTerm + '\uf8ff';
 
@@ -546,7 +534,7 @@
         const snapshot = await getDocs(q);
         return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       } catch (e) {
-        console.warn("Direct Firestore search skipped/failed:", e);
+        console.warn("Direct Firestore search skipped:", e);
         return [];
       }
     }
@@ -651,7 +639,6 @@
 
       try {
         let payload = {
-          temperature: 0.0,
           contents: []
         };
 
@@ -708,8 +695,10 @@
           throw new Error(errMsg || "ไม่สามารถวิเคราะห์ข้อมูลได้");
         }
 
-        if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
-          detailInput.value = data.candidates[0].content.parts[0].text;
+        const resultText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (resultText) {
+          detailInput.value = resultText;
           showToast("วิเคราะห์ข้อมูลสำเร็จ!", "success");
           updateStatusUI('ai', 'green', 'AI: Vision');
         } else {
