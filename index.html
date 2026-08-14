@@ -33,13 +33,13 @@
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); 
     }
 
-    /* ===== กล่องส่วนหัว ครอบชื่อร้าน + ปุ่มสถานะซ้อนกัน ===== */
+    /* ===== ส่วนหัว ชื่อร้าน + ปุ่มสถานะซ้อนกัน 2 บรรทัด ===== */
     .header-container {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
       gap: 12px;
-      margin-bottom: 16px; /* ดันกรอบรูปลงไปข้างล่าง ไม่ให้ทับกัน */
+      margin-bottom: 16px;
     }
 
     .header-title { 
@@ -51,11 +51,10 @@
       flex: 1;
     }
     
-    /* ล็อกปุ่มสถานะให้ซ้อนกัน 2 บรรทัดแนวตั้ง (Column) ชิดขวา */
     .status-container { 
       display: flex; 
-      flex-direction: column; /* เรียงซ้อนแนวตั้ง */
-      align-items: flex-end;   /* ชิดขวา */
+      flex-direction: column; 
+      align-items: flex-end;   
       gap: 6px; 
       flex-shrink: 0;
     }
@@ -79,7 +78,7 @@
     .status-dot.orange { background-color: #f59e0b; box-shadow: 0 0 6px #f59e0b; }
     .status-dot.red { background-color: #ef4444; box-shadow: 0 0 6px #ef4444; }
 
-    /* ===== กรอบแสดงรูปภาพ / วิดีโอ อยู่ต่อจากส่วนหัวพอดี ===== */
+    /* ===== กรอบแสดงรูปภาพ / วิดีโอ ===== */
     .media-preview-box { 
       width: 100%; 
       height: 200px; 
@@ -159,7 +158,7 @@
   <div class="container">
     <div class="card">
       
-      <!-- ส่วนหัว: ชื่อร้านฝั่งซ้าย + ปุ่มสถานะซ้อนกัน 2 บรรทัดฝั่งขวา -->
+      <!-- ส่วนหัว -->
       <div class="header-container">
         <h1 class="header-title">หนึ่ง ร่อนพิบูลย์ อิเล็กทรอนิกส์</h1>
         
@@ -175,7 +174,7 @@
         </div>
       </div>
 
-      <!-- กรอบแสดงรูปภาพ / วิดีโอ อยู่ต่อด้านล่างพอดี ไม่ทับแน่นอน -->
+      <!-- กรอบแสดงรูปภาพ / วิดีโอ -->
       <div class="media-preview-box" id="preview-box">
         <span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>
       </div>
@@ -688,16 +687,32 @@
       return data.secure_url;
     }
 
+    /* ===== ปรับปรุงคำสั่งวิเคราะห์ AI ให้ทำงานแบบ 2 Step รอดูปกติ/เบลอ ===== */
     window.generateAIDetails = async function() {
       const nameInput = document.getElementById('product-name');
       const detailInput = document.getElementById('product-detail');
       const name = nameInput.value.trim();
 
       const originalText = detailInput.value;
-      detailInput.value = "กำลังส่งข้อมูลให้ AI อ่านเพลต/แผงวงจร และวิเคราะห์สเปก...";
+      detailInput.value = "กำลังส่งข้อมูลให้ AI วิเคราะห์สเปกสินค้า...";
       setFormButtonsDisabled(true, true);
       
       updateStatusUI('ai', 'orange', 'AI: กำลังคิด');
+
+      // System Instructions คุม AI ให้ทำงานฉลาด ไม่มโนสเปก
+      const systemInstructionPrompt = `คุณคือผู้เชี่ยวชาญด้านอะไหล่และช่างซ่อมอิเล็กทรอนิกส์ (TV, เครื่องซักผ้า, ตู้เย็น, แอร์)
+
+คำสั่งสำคัญในการวิเคราะห์:
+1. หากรูปภาพไกล เบลอ หรืออ่านรหัสตัวอักษรบนบอร์ดไม่ออก: ให้ระบุชนิดสินค้าหลักจากภาพคร่าวๆ แล้วดึงสเปก/แบรนด์ที่ถูกต้องจาก "ชื่อ/รุ่น" ที่ระบุมาเป็นหลัก
+2. ห้าม "เดา" หรือมโนสเปกไฟฟ้า (เช่น AC 220V, Fixed Speed, BTU) ขึ้นมาเองเด็ดขาด หากรูปภาพหรือชื่อรุ่นไม่ได้ระบุไว้ชัดเจน
+3. หากรู้ยี่ห้อและประเภทสินค้าที่แน่ชัดจากชื่อรุ่น ให้ระบุให้ตรงตามจริง (เช่น 43HS534AN คือ TV Aconatic)
+
+รูปแบบการตอบ (เน้นสั้น กระชับ อ่านง่าย):
+📋 ข้อมูลทั่วไปของสินค้า:
+• สินค้า / แบรนด์: [ระบุชนิดสินค้า และ แบรนด์ที่ถูกต้อง]
+• รุ่นที่ระบุ: [แสดงชื่อรุ่น]
+• รหัสบอร์ด / Part No.: [ระบุรหัสที่อ่านได้ชัดเจนจากรูปภาพ / หากภาพเบลอให้ใส่วิเคราะห์จากชื่อรุ่น]
+• รายละเอียดสเปก: [ระบุสเปกย่อๆ ที่ตรงกับสินค้าจริง]`;
 
       try {
         let payload = { contents: [] };
@@ -709,7 +724,7 @@
           payload.contents.push({
             parts: [
               { inline_data: { mime_type: mimeType, data: base64Data } },
-              { text: `โปรดวิเคราะห์เพลต/สติกเกอร์/บอร์ดสินค้าในรูปภาพร่วมกับชื่อ/รุ่น "${name || 'ไม่ระบุ'}"` }
+              { text: `${systemInstructionPrompt}\n\n[ข้อมูลที่ส่งมา] ชื่อ/รุ่นสินค้าคือ: "${name || 'ไม่ระบุ'}"` }
             ]
           });
         } else {
@@ -722,7 +737,7 @@
           }
 
           payload.contents.push({
-            parts: [{ text: `วิเคราะห์รหัสสินค้า "${name}"` }]
+            parts: [{ text: `${systemInstructionPrompt}\n\n[ข้อมูลที่ส่งมา] ชื่อ/รุ่นสินค้าคือ: "${name}"` }]
           });
         }
 
