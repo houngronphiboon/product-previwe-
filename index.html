@@ -69,7 +69,7 @@
     th { position: sticky; top: 0; background-color: #f9fafb; padding: 10px 12px; color: #374151; font-weight: 700; border-bottom: 1px solid #e5e7eb; z-index: 5; }
     td { padding: 10px 12px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
     .clickable-row { cursor: pointer; transition: background 0.15s; }
-    .clickable-row:hover { background-color: #f0f9ff; }
+    .clickable-row:hover, .clickable-row:active { background-color: #e0f2fe; }
     .badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap; }
     .badge-video { background-color: #eff6ff; color: #2563eb; }
     .badge-image { background-color: #f0fdf4; color: #16a34a; }
@@ -264,12 +264,18 @@
     let activeProductId = null;
     let productsList = [];
 
-    // ปรับแสดงผลเริ่มต้นที่ 20 รายการ
     const PAGE_SIZE = 20;
     let lastVisibleDoc = null;
     let isLoadingMore = false;
     let hasMoreData = true;
     let isSearchMode = false;
+
+    // ฟังก์ชันช่วยเคลียร์ Blob URL ป้องกัน Memory Leak บนอุปกรณ์เคลื่อนที่
+    function revokePreviousMediaUrl(mediaObj) {
+      if (mediaObj.type === 'video' && mediaObj.data && mediaObj.data.startsWith('blob:')) {
+        URL.revokeObjectURL(mediaObj.data);
+      }
+    }
 
     window.autoScrollFocus = function(element) {
       setTimeout(() => {
@@ -347,6 +353,10 @@
     window.closeModal = function() {
       document.getElementById('detail-modal').style.display = 'none';
       document.body.classList.remove('modal-open');
+      
+      // เคลียร์ memory วิดีโอในหน้าแก้ไข
+      revokePreviousMediaUrl(editProcessedMedia);
+      
       activeProductId = null;
       editProcessedMedia = { type: null, data: null, file: null };
     }
@@ -525,6 +535,9 @@
 
       const previewBox = document.getElementById('preview-box');
 
+      // เคลียร์วิดีโอเดิมเพื่อป้องกัน Memory Leak
+      revokePreviousMediaUrl(processedMedia);
+
       if (file.type.startsWith('image/')) {
         const compressed = await compressImage(file);
         processedMedia = { type: 'image', data: compressed.dataUrl, file: compressed.blob };
@@ -542,6 +555,9 @@
       if (!file) return;
 
       const mediaContainer = document.getElementById('modal-media-container');
+
+      // เคลียร์วิดีโอเดิมในหน้าแก้ไขเพื่อป้องกัน Memory Leak
+      revokePreviousMediaUrl(editProcessedMedia);
 
       if (file.type.startsWith('image/')) {
         const compressed = await compressImage(file);
@@ -726,7 +742,11 @@
         showToast("บันทึกข้อมูลสำเร็จเรียบร้อย", "success");
         nameInput.value = ''; detailInput.value = '';
         document.getElementById('preview-box').innerHTML = '<span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>';
+        
+        // เคลียร์ Memory พรีวิวเดิม
+        revokePreviousMediaUrl(processedMedia);
         processedMedia = { type: null, data: null, file: null };
+        
         clearValidationError();
         fetchInitialProducts();
 
@@ -791,6 +811,8 @@
       document.getElementById('edit-detail').value = item.detail;
       document.getElementById('view-mode').style.display = 'none';
       document.getElementById('edit-mode').style.display = 'block';
+      
+      revokePreviousMediaUrl(editProcessedMedia);
       editProcessedMedia = { type: null, data: null, file: null };
     }
 
@@ -801,6 +823,8 @@
       }
       document.getElementById('view-mode').style.display = 'block';
       document.getElementById('edit-mode').style.display = 'none';
+      
+      revokePreviousMediaUrl(editProcessedMedia);
       editProcessedMedia = { type: null, data: null, file: null };
     }
 
