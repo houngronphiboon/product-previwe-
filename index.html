@@ -26,34 +26,38 @@
 
     .container { width: 100%; max-width: 500px; margin-bottom: 20px; }
     
-    /* ===== Card หลัก กำหนด position: relative เพื่ออ้างอิงจุดไฟมุมขวาบน ===== */
     .card { 
       background: #ffffff; 
       border-radius: 16px; 
       padding: 20px; 
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); 
-      position: relative; 
     }
 
-    /* ชื่อร้านชิดซ้าย เว้นระยะขวาเผื่อจุดไฟ และเว้นระยะล่างดันกรอบรูป */
+    /* ===== กล่องส่วนหัว ครอบชื่อร้าน + ปุ่มสถานะซ้อนกัน ===== */
+    .header-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 16px; /* ดันกรอบรูปลงไปข้างล่าง ไม่ให้ทับกัน */
+    }
+
     .header-title { 
       font-size: 16px; 
       font-weight: 700; 
       color: #111827; 
-      margin: 0 0 16px 0; 
-      padding-right: 145px; /* เว้นพื้นที่ขวาไว้ไม่ให้ชื่อร้านยาวทับจุดไฟ */
+      margin: 0; 
       line-height: 1.4;
+      flex: 1;
     }
     
-    /* ล็อกจุดไฟไว้มุมขวาบนตรงข้ามชื่อร้าน */
+    /* ล็อกปุ่มสถานะให้ซ้อนกัน 2 บรรทัดแนวตั้ง (Column) ชิดขวา */
     .status-container { 
-      position: absolute;
-      top: 18px;
-      right: 18px;
       display: flex; 
-      align-items: center; 
+      flex-direction: column; /* เรียงซ้อนแนวตั้ง */
+      align-items: flex-end;   /* ชิดขวา */
       gap: 6px; 
-      z-index: 10;
+      flex-shrink: 0;
     }
 
     .status-badge { 
@@ -64,7 +68,7 @@
       font-weight: 600; 
       color: #4b5563; 
       background: #f8fafc; 
-      padding: 3px 7px; 
+      padding: 3px 8px; 
       border-radius: 12px; 
       border: 1px solid #e2e8f0; 
       white-space: nowrap;
@@ -75,13 +79,12 @@
     .status-dot.orange { background-color: #f59e0b; box-shadow: 0 0 6px #f59e0b; }
     .status-dot.red { background-color: #ef4444; box-shadow: 0 0 6px #ef4444; }
 
-    /* ===== กรอบแสดงรูปภาพ / วิดีโอ มีระยะบนพอดี ไม่ชนจุดไฟ ===== */
+    /* ===== กรอบแสดงรูปภาพ / วิดีโอ อยู่ต่อจากส่วนหัวพอดี ===== */
     .media-preview-box { 
       width: 100%; 
       height: 200px; 
       background-color: #1f2937; 
       border-radius: 12px; 
-      margin-top: 4px; 
       margin-bottom: 16px; 
       display: flex; 
       justify-content: center; 
@@ -89,7 +92,6 @@
       color: #9ca3af; 
       border: 2px dashed #374151; 
       overflow: hidden; 
-      clear: both;
     }
     .media-preview-box img, .media-preview-box video { max-width: 100%; max-height: 100%; object-fit: contain; }
     
@@ -157,22 +159,23 @@
   <div class="container">
     <div class="card">
       
-      <!-- จุดไฟแสดงสถานะ ล็อกไว้มุมขวาบน -->
-      <div class="status-container">
-        <div class="status-badge">
-          <span class="status-dot green" id="db-status-dot"></span>
-          <span id="db-status-text">DB: พร้อม</span>
-        </div>
-        <div class="status-badge">
-          <span class="status-dot green" id="ai-status-dot"></span>
-          <span id="ai-status-text">AI: Vision</span>
+      <!-- ส่วนหัว: ชื่อร้านฝั่งซ้าย + ปุ่มสถานะซ้อนกัน 2 บรรทัดฝั่งขวา -->
+      <div class="header-container">
+        <h1 class="header-title">หนึ่ง ร่อนพิบูลย์ อิเล็กทรอนิกส์</h1>
+        
+        <div class="status-container">
+          <div class="status-badge">
+            <span class="status-dot green" id="db-status-dot"></span>
+            <span id="db-status-text">DB: พร้อม</span>
+          </div>
+          <div class="status-badge">
+            <span class="status-dot green" id="ai-status-dot"></span>
+            <span id="ai-status-text">AI: Vision</span>
+          </div>
         </div>
       </div>
 
-      <!-- ชื่อร้านชิดซ้าย -->
-      <h1 class="header-title">หนึ่ง ร่อนพิบูลย์ อิเล็กทรอนิกส์</h1>
-
-      <!-- กรอบรูปแสดงอยู่ถัดลงมาจากหัวข้อพอดีเป๊ะ -->
+      <!-- กรอบแสดงรูปภาพ / วิดีโอ อยู่ต่อด้านล่างพอดี ไม่ทับแน่นอน -->
       <div class="media-preview-box" id="preview-box">
         <span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>
       </div>
