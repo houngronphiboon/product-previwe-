@@ -11,78 +11,104 @@
 
   <style>
     * { box-sizing: border-box; font-family: 'Sarabun', sans-serif; }
-    html { scroll-behavior: smooth; }
-    body { 
-      background-color: #f3f4f6; 
+    
+    /* 1. ปิด Scroll รวมของ Body ล็อกให้อยู่ในกรอบจอ 100vh ป้องกันคีย์บอร์ดดึงเด้ง */
+    html, body { 
+      height: 100%; 
       margin: 0; 
-      padding: 16px; 
-      padding-bottom: 20px; 
+      padding: 0; 
+      overflow: hidden; 
+      background-color: #f3f4f6; 
       color: #1f2937; 
-      display: flex; 
-      flex-direction: column; 
-      align-items: center; 
     }
-    body.modal-open { overflow: hidden; height: 100vh; position: fixed; width: 100%; }
+    body.modal-open { overflow: hidden; position: fixed; width: 100%; }
 
-    .container { width: 100%; max-width: 500px; margin-bottom: 20px; }
-    .card { background: #ffffff; border-radius: 16px; padding: 20px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); position: relative; }
-    .header-title { font-size: 16px; font-weight: 700; text-align: center; margin-bottom: 16px; color: #111827; padding-right: 90px; }
-    .status-container { position: absolute; top: 16px; right: 16px; display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
-    .status-badge { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; color: #4b5563; background: #f3f4f6; padding: 3px 8px; border-radius: 12px; border: 1px solid #e5e7eb; }
-    .status-dot { width: 8px; height: 8px; border-radius: 50%; background-color: #10b981; box-shadow: 0 0 6px #10b981; }
-    .media-preview-box { width: 100%; height: 200px; background-color: #1f2937; border-radius: 12px; margin-top: 10px; margin-bottom: 16px; display: flex; justify-content: center; align-items: center; color: #9ca3af; border: 2px dashed #d1d5db; overflow: hidden; }
+    /* 2. กรอบใหญ่รวมทั้งแอปให้อยู่ในหน้าจอเดียว */
+    .main-app-container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      max-width: 500px;
+      margin: 0 auto;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+
+    /* 3. การ์ดฟอร์มส่วนบน (สูงตามเนื้อหา) */
+    .form-card { 
+      background: #ffffff; 
+      border-radius: 12px; 
+      padding: 14px; 
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); 
+      position: relative;
+      flex-shrink: 0; 
+      margin-bottom: 8px;
+    }
+
+    .header-title { font-size: 15px; font-weight: 700; text-align: center; margin-bottom: 10px; color: #111827; padding-right: 90px; }
+    .status-container { position: absolute; top: 12px; right: 12px; display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
+    .status-badge { display: flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 600; color: #4b5563; background: #f3f4f6; padding: 2px 6px; border-radius: 10px; border: 1px solid #e5e7eb; }
+    .status-dot { width: 6px; height: 6px; border-radius: 50%; background-color: #10b981; box-shadow: 0 0 4px #10b981; }
+    
+    .media-preview-box { width: 100%; height: 120px; background-color: #1f2937; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: center; align-items: center; color: #9ca3af; border: 2px dashed #d1d5db; overflow: hidden; font-size: 13px; }
     .media-preview-box img, .media-preview-box video { max-width: 100%; max-height: 100%; object-fit: contain; }
-    .media-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
-    .btn { border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s; }
+    
+    .media-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+    .btn { border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: all 0.2s; }
     .btn:disabled { opacity: 0.6; cursor: not-allowed; }
-    .btn-media { background-color: #e5e7eb; color: #374151; padding: 12px 8px; }
-    .btn-camera { background-color: #007bff; color: white; padding: 12px 8px; }
-    .form-group { margin-bottom: 16px; }
-    .form-group label { display: block; font-size: 15px; font-weight: 700; margin-bottom: 6px; color: #374151; }
+    .btn-media { background-color: #e5e7eb; color: #374151; padding: 8px; }
+    .btn-camera { background-color: #007bff; color: white; padding: 8px; }
+    
+    .form-group { margin-bottom: 8px; }
+    .form-group label { display: block; font-size: 13px; font-weight: 700; margin-bottom: 4px; color: #374151; }
     .required { color: #dc2626; }
-    .form-control { width: 100%; padding: 12px; font-size: 15px; border: 1px solid #d1d5db; border-radius: 10px; outline: none; background-color: #ffffff; }
+    .form-control { width: 100%; padding: 8px 10px; font-size: 13px; border: 1px solid #d1d5db; border-radius: 8px; outline: none; background-color: #ffffff; }
     .form-control:focus { border-color: #2563eb; }
     .form-control.input-error { border-color: #dc2626 !important; background-color: #fef2f2; }
-    .error-msg { color: #dc2626; font-size: 13px; margin-top: 4px; display: none; }
-    textarea.form-control { resize: vertical; min-height: 110px; }
-    .btn-ai { width: 100%; background: #8b5cf6; color: white; padding: 14px; font-size: 15px; margin-bottom: 12px; box-shadow: 0 2px 4px rgba(139, 92, 246, 0.2); }
-    .btn-save { width: 100%; background-color: #86efac; color: #166534; padding: 14px; font-size: 16px; }
+    .error-msg { color: #dc2626; font-size: 11px; margin-top: 2px; display: none; }
+    textarea.form-control { resize: none; height: 50px; }
+    
+    .btn-ai { width: 100%; background: #8b5cf6; color: white; padding: 9px; font-size: 13px; margin-bottom: 6px; box-shadow: 0 2px 4px rgba(139, 92, 246, 0.2); }
+    .btn-save { width: 100%; background-color: #86efac; color: #166534; padding: 9px; font-size: 14px; }
     .btn-save.active { background-color: #22c55e; color: white; }
     
-    /* ปรับแต่งส่วนการ์ดรายการให้ดึงขึ้นชิดขอบบนสุดได้พอดี */
-    .list-container { 
-      width: 100%; 
-      max-width: 800px; 
-      scroll-margin-top: 10px; /* ให้เว้นระยะชิดขอบบนสุด */
-      margin-bottom: 10px; 
+    /* 4. การ์ดตารางส่วนล่าง (ขยายเต็มพื้นที่ที่เหลือในกรอบ) */
+    .list-card { 
+      background: #ffffff; 
+      border-radius: 12px; 
+      padding: 12px; 
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); 
+      flex: 1; 
+      display: flex; 
+      flex-direction: column; 
+      min-height: 0; /* ป้องกันไม่ให้ตารางดันกรอบหลุดหน้าจอ */
     }
-    
-    /* ปรับให้ตารางกินพื้นที่ความสูงส่วนใหญ่ของหน้าจอ (72vh) ให้แสดงรายการยาวลงมาเต็มตา */
+
     .table-container { 
-      width: 100%; 
-      height: 72vh; 
-      max-height: 700px;
+      flex: 1; 
       overflow-y: auto; 
       overflow-x: auto; 
       -webkit-overflow-scrolling: touch; 
       border-radius: 8px; 
       border: 1px solid #e5e7eb; 
     }
-    table { width: 100%; min-width: 480px; border-collapse: collapse; text-align: left; font-size: 14px; }
-    th { position: sticky; top: 0; background-color: #f9fafb; padding: 10px 12px; color: #374151; font-weight: 700; border-bottom: 1px solid #e5e7eb; z-index: 5; }
-    td { padding: 10px 12px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
+
+    table { width: 100%; min-width: 320px; border-collapse: collapse; text-align: left; font-size: 13px; }
+    th { position: sticky; top: 0; background-color: #f9fafb; padding: 8px 10px; color: #374151; font-weight: 700; border-bottom: 1px solid #e5e7eb; z-index: 5; }
+    td { padding: 8px 10px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
     .clickable-row { cursor: pointer; transition: background 0.15s; }
     .clickable-row:hover { background-color: #f0f9ff; }
-    .badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+    .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px; border-radius: 12px; font-size: 11px; font-weight: 600; white-space: nowrap; }
     .badge-video { background-color: #eff6ff; color: #2563eb; }
     .badge-image { background-color: #f0fdf4; color: #16a34a; }
     .badge-none { background-color: #f3f4f6; color: #6b7280; }
-    .text-truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; color: #6b7280; }
+    .text-truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; color: #6b7280; }
     
-    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; padding: 16px; -webkit-overflow-scrolling: touch; }
-    .modal-content { background-color: #fff; padding: 20px; border-radius: 16px; width: 100%; max-width: 480px; position: relative; max-height: 90vh; overflow-y: auto; -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }
+    /* Modal Styles */
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; padding: 16px; }
+    .modal-content { background-color: #fff; padding: 20px; border-radius: 16px; width: 100%; max-width: 480px; position: relative; max-height: 90vh; overflow-y: auto; }
     .close-btn { position: absolute; right: 15px; top: 10px; font-size: 24px; cursor: pointer; color: #9ca3af; z-index: 10; }
-    .modal-media-box { width: 100%; height: 230px; background: #111827; margin-bottom: 15px; border-radius: 10px; overflow: hidden; display: flex; justify-content: center; align-items: center; }
+    .modal-media-box { width: 100%; height: 200px; background: #111827; margin-bottom: 15px; border-radius: 10px; overflow: hidden; display: flex; justify-content: center; align-items: center; }
     .modal-media-box img, .modal-media-box video { max-width: 100%; max-height: 100%; object-fit: contain; }
     .modal-actions { display: flex; gap: 10px; margin-top: 15px; }
     .btn-edit { background-color: #f59e0b; color: #ffffff; flex: 1; padding: 10px; }
@@ -90,7 +116,8 @@
     .btn-update { background-color: #2563eb; color: #ffffff; width: 100%; margin-top: 10px; padding: 12px; }
     .btn-cancel { background-color: #6b7280; color: #ffffff; width: 100%; margin-top: 6px; padding: 10px; }
     .btn-quota { background-color: #8b5cf6; color: white; width: 100%; padding: 12px; margin-top: 10px; }
-    .toast { visibility: hidden; min-width: 250px; background-color: #1f2937; color: #fff; text-align: center; border-radius: 10px; padding: 12px 20px; position: fixed; z-index: 2000; bottom: 30px; font-size: 14px; }
+    
+    .toast { visibility: hidden; min-width: 250px; background-color: #1f2937; color: #fff; text-align: center; border-radius: 10px; padding: 12px 20px; position: fixed; z-index: 2000; bottom: 30px; left: 50%; transform: translateX(-50%); font-size: 14px; }
     .toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
     .toast.toast-error { background-color: #dc2626; }
     .toast.toast-success { background-color: #16a34a; }
@@ -101,8 +128,11 @@
 </head>
 <body>
 
-  <div class="container">
-    <div class="card">
+  <!-- กรอบหลักครอบทั้งแอป -->
+  <div class="main-app-container">
+    
+    <!-- ส่วนบน: ฟอร์มบันทึกสินค้า -->
+    <div class="form-card">
       <div class="status-container">
         <div class="status-badge">
           <span class="status-dot"></span>
@@ -114,7 +144,7 @@
         </div>
       </div>
 
-      <div class="header-title">ระบบบันทึกข้อมูลสินค้า - Nueng Ron Phibun Electronics</div>
+      <div class="header-title">ระบบบันทึกข้อมูลสินค้า</div>
 
       <div class="media-preview-box" id="preview-box">
         <span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>
@@ -134,13 +164,13 @@
 
       <div class="form-group">
         <label for="product-name">ชื่อ/รุ่น <span class="required">*</span></label>
-        <input type="text" id="product-name" class="form-control" placeholder="เช่น HR-907C NS, UA32N4003AK, TP.HV320.PB801" oninput="clearValidationError()">
+        <input type="text" id="product-name" class="form-control" placeholder="เช่น HR-907C NS, UA32N4003AK" oninput="clearValidationError()">
         <div class="error-msg" id="name-error-msg">กรุณากรอกชื่อหรือรุ่นสินค้า</div>
       </div>
 
       <div class="form-group">
         <label for="product-detail">รายละเอียด</label>
-        <textarea id="product-detail" class="form-control" placeholder="กรอกรายละเอียดสินค้า หรือแนบรูปเพลต/บอร์ดแล้วกดวิเคราะห์ด้วย AI"></textarea>
+        <textarea id="product-detail" class="form-control" placeholder="กรอกรายละเอียดสินค้า หรือแนบรูปเพลต/บอร์ดแล้วกด AI"></textarea>
       </div>
 
       <button class="btn btn-ai" id="btn-ai-search" onclick="generateAIDetails()">
@@ -151,32 +181,31 @@
         บันทึกสินค้าลงคลาวด์
       </button>
     </div>
-  </div>
 
-  <div class="list-container card" id="list-card">
-    <h3 style="margin: 0 0 14px 0; font-size: 18px; color: #111827; font-weight: 700;">
-      รายการสินค้าบน Cloud
-    </h3>
+    <!-- ส่วนล่าง: ตารางรายการสินค้า (อยู่ในกรอบความสูงที่เหลือพอดี) -->
+    <div class="list-card" id="list-card">
+      <div class="form-group" style="margin-bottom: 8px;">
+        <!-- ❌ ตัด event onfocus="scrollToListHeader()" ออกเรียบร้อย -->
+        <input type="text" id="search-input" class="form-control" placeholder="🔍 ค้นหาชื่อ/รุ่น หรือรายละเอียด..." oninput="handleSearch()">
+      </div>
 
-    <div class="form-group">
-      <input type="text" id="search-input" class="form-control" placeholder="🔍 พิมพ์ชื่อ/รุ่น หรือรายละเอียด เพื่อค้นหาในระบบทั้งหมด..." onfocus="scrollToListHeader()" oninput="handleSearch()">
+      <div class="table-container" id="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 25%;">ชนิดสื่อ</th>
+              <th style="width: 35%;">ชื่อ/รุ่น</th>
+              <th style="width: 40%;">รายละเอียด</th>
+            </tr>
+          </thead>
+          <tbody id="product-list"></tbody>
+        </table>
+      </div>
     </div>
 
-    <div class="table-container" id="table-container">
-      <table>
-        <thead>
-          <tr>
-            <th style="width: 25%;">ชนิดสื่อ</th>
-            <th style="width: 35%;">ชื่อ/รุ่น</th>
-            <th style="width: 40%;">รายละเอียด</th>
-          </tr>
-        </thead>
-        <tbody id="product-list"></tbody>
-      </table>
-    </div>
   </div>
 
-  <!-- Modal ดูรายละเอียด -->
+  <!-- Modal ดู/แก้ไข รายละเอียด -->
   <div class="modal" id="detail-modal">
     <div class="modal-content" id="modal-content-box">
       <span class="close-btn" onclick="closeModal()">&times;</span>
@@ -211,11 +240,11 @@
 
         <div class="form-group">
           <label for="edit-name">ชื่อ/รุ่น</label>
-          <input type="text" id="edit-name" class="form-control" onfocus="autoScrollFocus(this)">
+          <input type="text" id="edit-name" class="form-control">
         </div>
         <div class="form-group">
           <label for="edit-detail">รายละเอียด</label>
-          <textarea id="edit-detail" class="form-control" onfocus="autoScrollFocus(this)"></textarea>
+          <textarea id="edit-detail" class="form-control" style="height: 80px;"></textarea>
         </div>
         <button class="btn btn-update" id="btn-update-submit" onclick="saveEditProduct()">💾 บันทึกการแก้ไข</button>
         <button class="btn btn-cancel" onclick="cancelEditMode()">ยกเลิก</button>
@@ -272,20 +301,7 @@
     let isLoadingMore = false;
     let hasMoreData = true;
     let isSearchMode = false;
-
-    // ฟังก์ชันเลื่อนการ์ดรายการสินค้าขึ้นมาชิดขอบบนสุดของหน้าจอ
-    window.scrollToListHeader = function() {
-      const listCard = document.getElementById('list-card');
-      if (listCard) {
-        listCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    };
-
-    window.autoScrollFocus = function(element) {
-      setTimeout(() => {
-        element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }, 300);
-    };
+    let lastSearchQuery = null; // ป้องกัน re-render ช่องค้นหาซ้ำซ้อน
 
     function extractPublicIdFromUrl(url) {
       if (!url) return null;
@@ -394,6 +410,7 @@
 
         document.getElementById('search-input').value = '';
         isSearchMode = false;
+        lastSearchQuery = null;
         renderTable(productsList);
       } catch (error) {
         console.error("Fetch DB Error:", error);
@@ -451,7 +468,6 @@
 
     function setupScrollListener() {
       const tableContainer = document.getElementById('table-container');
-
       if (tableContainer) {
         tableContainer.addEventListener('scroll', () => {
           if (tableContainer.scrollTop + tableContainer.clientHeight >= tableContainer.scrollHeight - 50) {
@@ -461,10 +477,14 @@
       }
     }
 
+    /* ฟังก์ชันค้นหาปรับปรุงใหม่เพื่อป้องกันการ Re-render ซ้ำแล้วคีย์บอร์ดหลุด */
     window.handleSearch = async function() {
       const searchInput = document.getElementById('search-input');
       const queryStr = searchInput.value.trim().toLowerCase();
       
+      if (queryStr === lastSearchQuery) return;
+      lastSearchQuery = queryStr;
+
       if (!queryStr) {
         isSearchMode = false;
         renderTable(productsList);
@@ -771,73 +791,77 @@
       const item = itemData || productsList.find(p => p.id === id);
       if (!item) return;
 
+      const mediaContainer = document.getElementById('modal-media-container');
+      if (item.mediaUrl) {
+        if (item.mediaType === 'video') {
+          mediaContainer.innerHTML = `<video src="${item.mediaUrl}" controls></video>`;
+        } else {
+          mediaContainer.innerHTML = `<img src="${item.mediaUrl}" alt="${item.name}">`;
+        }
+      } else {
+        mediaContainer.innerHTML = `<span style="color: #9ca3af;">[ไม่มีภาพหรือวิดีโอ]</span>`;
+      }
+
       document.getElementById('modal-title').innerText = item.name;
-      document.getElementById('modal-detail-text').innerText = item.detail;
+      document.getElementById('modal-detail-text').innerText = item.detail || 'ไม่มีรายละเอียดเพิ่มเติม';
 
-      renderModalMedia(item.mediaType, item.mediaUrl);
+      document.getElementById('view-mode').style.display = 'block';
+      document.getElementById('edit-mode').style.display = 'none';
 
-      cancelEditMode();
       document.getElementById('detail-modal').style.display = 'flex';
       document.body.classList.add('modal-open');
-    }
-
-    function renderModalMedia(type, url) {
-      const mediaContainer = document.getElementById('modal-media-container');
-      mediaContainer.innerHTML = '';
-
-      if (type === 'image' && url) {
-        mediaContainer.innerHTML = `<img src="${url}">`;
-      } else if (type === 'video' && url) {
-        mediaContainer.innerHTML = `<video src="${url}" controls autoplay></video>`;
-      } else {
-        mediaContainer.innerHTML = `<span style="color:#9ca3af;">ไม่มีสื่อแนบไว้</span>`;
-      }
     }
 
     window.enableEditMode = function() {
       const item = productsList.find(p => p.id === activeProductId);
       if (!item) return;
-      document.getElementById('edit-name').value = item.name;
-      document.getElementById('edit-detail').value = item.detail;
+
+      document.getElementById('edit-name').value = item.name || '';
+      document.getElementById('edit-detail').value = item.detail || '';
+
       document.getElementById('view-mode').style.display = 'none';
       document.getElementById('edit-mode').style.display = 'block';
-      editProcessedMedia = { type: null, data: null, file: null };
-    }
+    };
 
     window.cancelEditMode = function() {
-      const item = productsList.find(p => p.id === activeProductId);
-      if (item) {
-        renderModalMedia(item.mediaType, item.mediaUrl);
-      }
       document.getElementById('view-mode').style.display = 'block';
       document.getElementById('edit-mode').style.display = 'none';
       editProcessedMedia = { type: null, data: null, file: null };
-    }
+      
+      const item = productsList.find(p => p.id === activeProductId);
+      if (item) openModal(activeProductId, item);
+    };
 
     window.saveEditProduct = async function() {
+      if (!activeProductId) return;
+
       const newName = document.getElementById('edit-name').value.trim();
       const newDetail = document.getElementById('edit-detail').value.trim();
       const updateBtn = document.getElementById('btn-update-submit');
 
       if (!newName) {
-        showToast("ชื่อ/รุ่น สินค้าห้ามเป็นค่าว่าง", "error");
+        showToast("กรุณากรอกชื่อ/รุ่นสินค้า", "error");
         return;
       }
+
+      updateBtn.disabled = true;
+      updateBtn.innerText = "กำลังตรวจสอบรุ่นซ้ำ...";
 
       const isDuplicate = await checkIsDuplicateModel(newName, activeProductId);
       if (isDuplicate) {
-        showToast(`❌ ชื่อรุ่น "${newName}" มีอยู่ในระบบแล้ว`, "error");
+        showToast(`❌ รุ่น "${newName}" มีอยู่ในระบบแล้ว`, "error");
+        updateBtn.disabled = false;
+        updateBtn.innerText = "💾 บันทึกการแก้ไข";
         return;
       }
 
-      const item = productsList.find(p => p.id === activeProductId);
-      if (!item) return;
-
-      updateBtn.disabled = true;
       updateBtn.innerText = "กำลังบันทึก...";
 
       try {
-        let updateData = {
+        const itemRef = doc(db, "products", activeProductId);
+        const currentItem = productsList.find(p => p.id === activeProductId);
+
+        let updatedData = {
           name: newName,
           detail: newDetail || "ไม่มีรายละเอียดเพิ่มเติม"
         };
@@ -846,48 +870,53 @@
           const resourceType = editProcessedMedia.type === 'video' ? 'video' : 'image';
           const newMediaUrl = await uploadToCloudinary(editProcessedMedia.file, resourceType);
 
-          if (item.mediaUrl) {
-            await deleteCloudinaryMedia(item.mediaUrl, item.mediaType);
+          if (currentItem && currentItem.mediaUrl) {
+            await deleteCloudinaryMedia(currentItem.mediaUrl, currentItem.mediaType);
           }
 
-          updateData.mediaUrl = newMediaUrl;
-          updateData.mediaType = editProcessedMedia.type;
+          updatedData.mediaUrl = newMediaUrl;
+          updatedData.mediaType = editProcessedMedia.type;
         }
 
-        const docRef = doc(db, "products", activeProductId);
-        await updateDoc(docRef, updateData);
-        
-        cancelEditMode();
+        await updateDoc(itemRef, updatedData);
+
+        showToast("แก้ไขข้อมูลเรียบร้อยแล้ว", "success");
         closeModal();
-        showToast("อัปเดตข้อมูลเรียบร้อย", "success");
         fetchInitialProducts();
-      } catch (e) {
-        console.error(e);
-        showToast("แก้ไขข้อมูลไม่สำเร็จ", "error");
+
+      } catch (error) {
+        console.error("Update Error:", error);
+        showToast("เกิดข้อผิดพลาดในการแก้ไขข้อมูล", "error");
       } finally {
         updateBtn.disabled = false;
         updateBtn.innerText = "💾 บันทึกการแก้ไข";
       }
-    }
+    };
 
     window.deleteProduct = async function() {
-      if (!confirm("คุณต้องการลบรายการนี้ใช่หรือไม่?")) return;
+      if (!activeProductId) return;
       
       const item = productsList.find(p => p.id === activeProductId);
-      
+      if (!item) return;
+
+      if (!confirm(`คุณต้องการลบรายการ "${item.name}" ใช่หรือไม่?`)) return;
+
       try {
-        if (item && item.mediaUrl) {
+        if (item.mediaUrl) {
           await deleteCloudinaryMedia(item.mediaUrl, item.mediaType);
         }
 
         await deleteDoc(doc(db, "products", activeProductId));
-        closeModal();
+
         showToast("ลบรายการสินค้าเรียบร้อยแล้ว", "success");
+        closeModal();
         fetchInitialProducts();
-      } catch (e) {
+
+      } catch (error) {
+        console.error("Delete Error:", error);
         showToast("เกิดข้อผิดพลาดในการลบรายการ", "error");
       }
-    }
+    };
   </script>
 </body>
 </html>
