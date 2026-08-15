@@ -191,7 +191,7 @@
 
       <div class="form-group">
         <label for="product-name">ชื่อ/รุ่น <span class="required">*</span></label>
-        <input type="text" id="product-name" class="form-control" placeholder="เช่น C-BZN100L5L, 43HS534AN, RT22FGRADSA" oninput="clearValidationError()">
+        <input type="text" id="product-name" class="form-control" placeholder="เช่น BSA075NHMV, C-BZN100L5L, 43HS534AN" oninput="clearValidationError()">
         <div class="error-msg" id="name-error-msg">กรุณากรอกชื่อหรือรุ่นสินค้า</div>
       </div>
 
@@ -694,7 +694,7 @@
         mediaContainer.innerHTML = `<img src="${compressed.dataUrl}">`;
       } else if (file.type.startsWith('video/')) {
         const videoUrl = URL.createObjectURL(file);
-        editProcessedMedia = { type: 'video', data: file };
+        editProcessedMedia = { type: 'video', data: videoUrl, file: file };
         mediaContainer.innerHTML = `<video src="${videoUrl}" controls autoplay muted></video>`;
       }
       event.target.value = '';
@@ -712,11 +712,16 @@
       return data.secure_url;
     }
 
-    /* ===== PROMPT AI: สรุปข้อมูลกระชับเฉพาะจุด • โดยไม่มีคำเกริ่นหัวข้อ ===== */
+    /* ===== AI Multimodal Call (Text + Image Fusion) ===== */
     window.generateAIDetails = async function() {
       const nameInput = document.getElementById('product-name');
       const detailInput = document.getElementById('product-detail');
       const name = nameInput.value.trim();
+
+      if (!name && processedMedia.type !== 'image') {
+        triggerValidationError("กรุณากรอกชื่อ/รุ่น หรืออัปโหลดรูปถ่ายเพลตสินค้าเพื่อวิเคราะห์");
+        return;
+      }
 
       const originalText = detailInput.value;
       detailInput.value = "กำลังประมวลผลวิเคราะห์ข้อมูลภาพและชื่อรุ่นร่วมกัน...";
@@ -724,49 +729,19 @@
       
       updateStatusUI('ai', 'orange', 'AI: กำลังคิด');
 
-      const systemInstructionPrompt = `คุณคือวิศวกรและช่างอิเล็กทรอนิกส์ผู้เชี่ยวชาญด้านอะไหล่ คอมเพรสเซอร์ เครื่องใช้ไฟฟ้า ตู้เย็น แอร์ และทีวีในประเทศไทย
-
-หลักการประมวลผลข้อมูล:
-1. นำข้อความในกล่อง [ชื่อ/รุ่น] และ รหัสที่อ่านได้จาก [รูปภาพ] มาวิเคราะห์ร่วมกันเพื่อความแม่นยำ
-2. หากเป็นคอมเพรสเซอร์ ให้วิเคราะห์หาขนาดแรงม้า (HP) จาก Databook/Catalog หรือเทียบคำนวณจาก WATT/BTU/Displacement cc. ได้ แต่หากอ้างอิงไม่ได้ให้ตัดเรื่องแรงม้าทิ้งทันที ห้ามเดาสุ่ม
-3. ดึงเฉพาะสเปกจริงที่อ้างอิงได้จาก Databook / Nameplate เท่านั้น
-4. กฎเหล็กเรื่องรูปแบบคำตอบ:
-   - ห้ามใส่คำกำกับหัวข้อ (เช่น สินค้า/แบรนด์, ระบบการทำงาน, สเปกเชิงลึก, การนำไปใช้)
-   - ห้ามใส่คำเกริ่นนำหรือหัวข้อใหญ่เด็ดขาด
-   - ทุกบรรทัดต้องขึ้นต้นด้วยจุด bullet point (•) ตามด้วยรายละเอียดทันที
-   - ห้ามใช้ตัวหนา Markdown (**...) ในคำตอบเด็ดขาด ให้ใช้ข้อความธรรมดาเท่านั้น
-
-ตัวอย่างรูปแบบคำตอบที่ถูกต้อง:
-• คอมเพรสเซอร์ Kulthorn รุ่น C-BZN100L5L
-• ขนาด 1/8 HP (ประมาณ 100-110 วัตต์), น้ำยา R134a
-• ไฟฟ้า 220-240V 50Hz, ใช้กับตู้เย็น 1 ประตู ขนาด 4-6 คิว`;
-
       try {
         let payload = { contents: [] };
+        let parts = [];
 
         if (processedMedia.type === 'image' && processedMedia.data) {
           const base64Data = processedMedia.data.split(',')[1];
-          const mimeType = processedMedia.data.split(';')[0].split(':')[1];
-
-          payload.contents.push({
-            parts: [
-              { inline_data: { mime_type: mimeType, data: base64Data } },
-              { text: `${systemInstructionPrompt}\n\n[ข้อมูลที่ผู้ใช้กรอกในช่อง ชื่อ/รุ่น]: "${name || ''}"` }
-            ]
-          });
-        } else {
-          if (!name) {
-            triggerValidationError("กรุณากรอกชื่อ/รุ่น หรืออัปโหลดรูปถ่ายเพลตสินค้า");
-            detailInput.value = originalText;
-            setFormButtonsDisabled(false, false);
-            updateStatusUI('ai', 'green', 'AI: Vision');
-            return;
-          }
-
-          payload.contents.push({
-            parts: [{ text: `${systemInstructionPrompt}\n\n[ข้อมูลที่ผู้ใช้กรอกในช่อง ชื่อ/รุ่น]: "${name}"` }]
-          });
+          const mimeType = processedMedia.data.split(';')[0].split(':')[1] || 'image/jpeg';
+          parts.push({ inline_data: { mime_type: mimeType, data: base64Data } });
         }
+
+        parts.push({ text: name || '' });
+
+        payload.contents.push({ parts: parts });
 
         const response = await fetch(WORKER_URL, {
           method: 'POST',
@@ -792,7 +767,7 @@
 
         if (resultText) {
           detailInput.value = resultText.trim();
-          showToast("วิเคราะห์สเปกตรงกันสำเร็จ!", "success");
+          showToast("วิเคราะห์สเปกสำเร็จ!", "success");
           updateStatusUI('ai', 'green', 'AI: Vision');
         } else {
           throw new Error("ไม่สามารถประมวลผลคำตอบจาก AI ได้");
@@ -815,7 +790,7 @@
       }
     };
 
-    /* ===== ฟังก์ชันเพิ่มสินค้าบันทึกคลาวด์ ===== */
+    /* ===== บันทึกสินค้าลง Firestore ===== */
     window.addProduct = async function() {
       const nameInput = document.getElementById('product-name');
       const detailInput = document.getElementById('product-detail');
@@ -871,7 +846,7 @@
       }
     };
 
-    /* ===== ฟังก์ชันเปิด Modal สื่อสารข้อมูล และ แก้ไข/ลบ ===== */
+    /* ===== เปิด/แก้ไข/ลบ ใน Modal ===== */
     function openDetailModal(id) {
       const product = productsList.find(p => p.id === id);
       if (!product) return;
