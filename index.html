@@ -11,15 +11,31 @@
 
   <style>
     * { box-sizing: border-box; font-family: 'Sarabun', sans-serif; }
-    body { background-color: #f3f4f6; margin: 0; padding: 16px; color: #1f2937; display: flex; flex-direction: column; align-items: center; }
+    html { scroll-behavior: smooth; }
+    body { 
+      background-color: #f3f4f6; 
+      margin: 0; 
+      padding: 16px; 
+      padding-bottom: 20px; 
+      color: #1f2937; 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+    }
     body.modal-open { overflow: hidden; height: 100vh; position: fixed; width: 100%; }
 
     .container { width: 100%; max-width: 500px; margin-bottom: 20px; }
     .card { background: #ffffff; border-radius: 16px; padding: 20px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); position: relative; }
     .header-title { font-size: 16px; font-weight: 700; text-align: center; margin-bottom: 16px; color: #111827; padding-right: 90px; }
+    
+    /* Status Badges Dynamic Style */
     .status-container { position: absolute; top: 16px; right: 16px; display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
     .status-badge { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; color: #4b5563; background: #f3f4f6; padding: 3px 8px; border-radius: 12px; border: 1px solid #e5e7eb; }
-    .status-dot { width: 8px; height: 8px; border-radius: 50%; background-color: #10b981; box-shadow: 0 0 6px #10b981; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; transition: all 0.3s ease; }
+    .status-dot.green { background-color: #10b981; box-shadow: 0 0 6px #10b981; }
+    .status-dot.orange { background-color: #f59e0b; box-shadow: 0 0 6px #f59e0b; }
+    .status-dot.red { background-color: #ef4444; box-shadow: 0 0 6px #ef4444; }
+
     .media-preview-box { width: 100%; height: 200px; background-color: #1f2937; border-radius: 12px; margin-top: 10px; margin-bottom: 16px; display: flex; justify-content: center; align-items: center; color: #9ca3af; border: 2px dashed #d1d5db; overflow: hidden; }
     .media-preview-box img, .media-preview-box video { max-width: 100%; max-height: 100%; object-fit: contain; }
     .media-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
@@ -38,13 +54,28 @@
     .btn-ai { width: 100%; background: #8b5cf6; color: white; padding: 14px; font-size: 15px; margin-bottom: 12px; box-shadow: 0 2px 4px rgba(139, 92, 246, 0.2); }
     .btn-save { width: 100%; background-color: #86efac; color: #166534; padding: 14px; font-size: 16px; }
     .btn-save.active { background-color: #22c55e; color: white; }
-    .list-container { width: 100%; max-width: 800px; }
-    .table-container { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 8px; border: 1px solid #e5e7eb; }
+    
+    .list-container { 
+      width: 100%; 
+      max-width: 800px; 
+      margin-bottom: 10px; 
+    }
+    
+    .table-container { 
+      width: 100%; 
+      height: 72vh; 
+      max-height: 700px;
+      overflow-y: auto; 
+      overflow-x: auto; 
+      -webkit-overflow-scrolling: touch; 
+      border-radius: 8px; 
+      border: 1px solid #e5e7eb; 
+    }
     table { width: 100%; min-width: 480px; border-collapse: collapse; text-align: left; font-size: 14px; }
-    th { background-color: #f9fafb; padding: 12px 14px; color: #374151; font-weight: 700; border-bottom: 1px solid #e5e7eb; }
-    td { padding: 12px 14px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
+    th { position: sticky; top: 0; background-color: #f9fafb; padding: 10px 12px; color: #374151; font-weight: 700; border-bottom: 1px solid #e5e7eb; z-index: 5; }
+    td { padding: 10px 12px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
     .clickable-row { cursor: pointer; transition: background 0.15s; }
-    .clickable-row:hover { background-color: #f0f9ff; }
+    .clickable-row:hover, .clickable-row:active { background-color: #e0f2fe; }
     .badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap; }
     .badge-video { background-color: #eff6ff; color: #2563eb; }
     .badge-image { background-color: #f0fdf4; color: #16a34a; }
@@ -77,12 +108,12 @@
     <div class="card">
       <div class="status-container">
         <div class="status-badge">
-          <span class="status-dot"></span>
-          <span>DB: พร้อม</span>
+          <span class="status-dot green" id="db-status-dot"></span>
+          <span id="db-status-text">DB: พร้อม</span>
         </div>
         <div class="status-badge">
-          <span class="status-dot"></span>
-          <span>AI: Vision</span>
+          <span class="status-dot green" id="ai-status-dot"></span>
+          <span id="ai-status-text">AI: Vision</span>
         </div>
       </div>
 
@@ -125,16 +156,16 @@
     </div>
   </div>
 
-  <div class="list-container card">
+  <div class="list-container card" id="list-card">
     <h3 style="margin: 0 0 14px 0; font-size: 18px; color: #111827; font-weight: 700;">
       รายการสินค้าบน Cloud
     </h3>
 
     <div class="form-group">
-      <input type="text" id="search-input" class="form-control" placeholder="🔍 พิมพ์ชื่อ/รุ่นเพื่อค้นหาทันที..." oninput="handleSearch()">
+      <input type="text" id="search-input" class="form-control" placeholder="🔍 พิมพ์ชื่อ/รุ่น หรือรายละเอียด เพื่อค้นหาในระบบทั้งหมด..." oninput="handleSearch()">
     </div>
 
-    <div class="table-container">
+    <div class="table-container" id="table-container">
       <table>
         <thead>
           <tr>
@@ -148,6 +179,7 @@
     </div>
   </div>
 
+  <!-- Modal ดูรายละเอียด -->
   <div class="modal" id="detail-modal">
     <div class="modal-content" id="modal-content-box">
       <span class="close-btn" onclick="closeModal()">&times;</span>
@@ -194,6 +226,7 @@
     </div>
   </div>
 
+  <!-- Modal แจ้งเตือนโควต้า AI -->
   <div class="modal" id="quota-modal">
     <div class="modal-content" style="text-align: center;">
       <div style="font-size: 40px; margin-bottom: 10px;">⚠️</div>
@@ -210,7 +243,10 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { 
+      getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, 
+      query, orderBy, limit, startAfter, getDocs 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const CLOUDINARY_CLOUD_NAME = "qxdbrnyx"; 
     const CLOUDINARY_UPLOAD_PRESET = "ainote_preset"; 
@@ -234,9 +270,32 @@
     let activeProductId = null;
     let productsList = [];
 
+    const PAGE_SIZE = 20;
+    let lastVisibleDoc = null;
+    let isLoadingMore = false;
+    let hasMoreData = true;
+    let isSearchMode = false;
+
+    // --- ฟังก์ชันอัปเดตสถานะไฟไฟเตือน (Status Badge Helper) ---
+    function updateStatusUI(target, state, text) {
+      const dot = document.getElementById(`${target}-status-dot`);
+      const txt = document.getElementById(`${target}-status-text`);
+      if (dot && txt) {
+        dot.className = `status-dot ${state}`;
+        txt.innerText = text;
+      }
+    }
+
+    // ฟังก์ชันช่วยเคลียร์ Blob URL ป้องกัน Memory Leak
+    function revokePreviousMediaUrl(mediaObj) {
+      if (mediaObj.type === 'video' && mediaObj.data && mediaObj.data.startsWith('blob:')) {
+        URL.revokeObjectURL(mediaObj.data);
+      }
+    }
+
     window.autoScrollFocus = function(element) {
       setTimeout(() => {
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }, 300);
     };
 
@@ -310,6 +369,7 @@
     window.closeModal = function() {
       document.getElementById('detail-modal').style.display = 'none';
       document.body.classList.remove('modal-open');
+      revokePreviousMediaUrl(editProcessedMedia);
       activeProductId = null;
       editProcessedMedia = { type: null, data: null, file: null };
     }
@@ -324,29 +384,133 @@
       closeQuotaModal();
     }
 
-    window.handleSearch = function() {
-      const queryStr = document.getElementById('search-input').value.trim().toLowerCase();
-      if (!queryStr) {
-        renderTable(productsList);
-        return;
-      }
-      const filtered = productsList.filter(item => (item.name || '').toLowerCase().includes(queryStr));
-      renderTable(filtered);
-    };
-
     async function fetchInitialProducts() {
+      updateStatusUI('db', 'orange', 'DB: กำลังโหลด');
       try {
-        const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
+        lastVisibleDoc = null;
+        hasMoreData = true;
+        productsList = [];
+
+        const q = query(
+          collection(db, "products"), 
+          orderBy("createdAt", "desc"), 
+          limit(PAGE_SIZE)
+        );
+
         const snapshot = await getDocs(q);
-        productsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        if (!snapshot.empty) {
+          lastVisibleDoc = snapshot.docs[snapshot.docs.length - 1];
+          productsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          if (snapshot.docs.length < PAGE_SIZE) hasMoreData = false;
+        } else {
+          hasMoreData = false;
+        }
+
         document.getElementById('search-input').value = '';
+        isSearchMode = false;
         renderTable(productsList);
+        
+        updateStatusUI('db', 'green', 'DB: พร้อม');
       } catch (error) {
         console.error("Fetch DB Error:", error);
+        updateStatusUI('db', 'red', 'DB: ขัดข้อง');
       }
     }
 
+    async function fetchMoreProducts() {
+      if (isLoadingMore || !hasMoreData || isSearchMode) return;
+
+      isLoadingMore = true;
+      showTableLoadingIndicator(true);
+
+      try {
+        const q = query(
+          collection(db, "products"),
+          orderBy("createdAt", "desc"),
+          startAfter(lastVisibleDoc),
+          limit(PAGE_SIZE)
+        );
+
+        const snapshot = await getDocs(q);
+        if (!snapshot.empty) {
+          lastVisibleDoc = snapshot.docs[snapshot.docs.length - 1];
+          const newProducts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          productsList = [...productsList, ...newProducts];
+
+          if (snapshot.docs.length < PAGE_SIZE) hasMoreData = false;
+          renderTable(productsList);
+        } else {
+          hasMoreData = false;
+        }
+      } catch (error) {
+        console.error("Fetch More Error:", error);
+      } finally {
+        isLoadingMore = false;
+        showTableLoadingIndicator(false);
+      }
+    }
+
+    function showTableLoadingIndicator(show) {
+      let loader = document.getElementById('table-loader-row');
+      const tbody = document.getElementById('product-list');
+      
+      if (show) {
+        if (!loader) {
+          loader = document.createElement('tr');
+          loader.id = 'table-loader-row';
+          loader.innerHTML = `<td colspan="3" style="text-align: center; padding: 12px; color: #6b7280; font-size: 13px;">⏳ กำลังโหลดรายการเพิ่มเติม...</td>`;
+          tbody.appendChild(loader);
+        }
+      } else if (loader) {
+        loader.remove();
+      }
+    }
+
+    function setupScrollListener() {
+      const tableContainer = document.getElementById('table-container');
+
+      if (tableContainer) {
+        tableContainer.addEventListener('scroll', () => {
+          if (tableContainer.scrollTop + tableContainer.clientHeight >= tableContainer.scrollHeight - 50) {
+            fetchMoreProducts();
+          }
+        });
+      }
+    }
+
+    window.handleSearch = async function() {
+      const searchInput = document.getElementById('search-input');
+      const queryStr = searchInput.value.trim().toLowerCase();
+      
+      if (!queryStr) {
+        isSearchMode = false;
+        renderTable(productsList);
+        return;
+      }
+
+      isSearchMode = true;
+
+      let searchPool = productsList;
+      if (hasMoreData) {
+        try {
+          const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
+          const snapshot = await getDocs(q);
+          searchPool = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        } catch (err) {
+          console.error("Search fetch all error:", err);
+        }
+      }
+
+      const filtered = searchPool.filter(item => 
+        (item.name || '').toLowerCase().includes(queryStr) ||
+        (item.detail || '').toLowerCase().includes(queryStr)
+      );
+
+      renderTable(filtered);
+    };
+
     fetchInitialProducts();
+    setupScrollListener();
 
     function setFormButtonsDisabled(disabled, isAnalyzing = false) {
       const aiBtn = document.getElementById('btn-ai-search');
@@ -387,6 +551,7 @@
       if (!file) return;
 
       const previewBox = document.getElementById('preview-box');
+      revokePreviousMediaUrl(processedMedia);
 
       if (file.type.startsWith('image/')) {
         const compressed = await compressImage(file);
@@ -405,6 +570,7 @@
       if (!file) return;
 
       const mediaContainer = document.getElementById('modal-media-container');
+      revokePreviousMediaUrl(editProcessedMedia);
 
       if (file.type.startsWith('image/')) {
         const compressed = await compressImage(file);
@@ -438,6 +604,9 @@
       const originalText = detailInput.value;
       detailInput.value = "กำลังส่งข้อมูลให้ AI อ่านเพลต/แผงวงจร และวิเคราะห์สเปก...";
       setFormButtonsDisabled(true, true);
+      
+      // เปลี่ยนไฟ AI เป็นสีส้มเพื่อบอกว่ากำลังประมวลผล
+      updateStatusUI('ai', 'orange', 'AI: กำลังคิด');
 
       try {
         let payload = {
@@ -467,6 +636,7 @@
             triggerValidationError("กรุณากรอกชื่อ/รุ่น หรืออัปโหลดรูปถ่ายเพลตสินค้า");
             detailInput.value = originalText;
             setFormButtonsDisabled(false, false);
+            updateStatusUI('ai', 'green', 'AI: Vision');
             return;
           }
 
@@ -500,6 +670,7 @@
         if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
           detailInput.value = data.candidates[0].content.parts[0].text;
           showToast("วิเคราะห์ข้อมูลสำเร็จ!", "success");
+          updateStatusUI('ai', 'green', 'AI: Vision');
         } else {
           throw new Error("ไม่ได้รับข้อมูลตอบกลับจาก AI");
         }
@@ -509,10 +680,12 @@
         detailInput.value = originalText;
 
         if (error.isQuotaError) {
+          updateStatusUI('ai', 'red', 'AI: โควต้าหมด');
           document.getElementById('quota-modal').style.display = 'flex';
           document.body.classList.add('modal-open');
           showToast("สิทธิ์การใช้งาน AI หมดแล้ว", "error");
         } else {
+          updateStatusUI('ai', 'red', 'AI: ขัดข้อง');
           showToast("เกิดข้อผิดพลาด: " + (error.message || error), "error");
         }
       } finally {
@@ -522,6 +695,25 @@
 
     function normalizeModelName(str) {
       return (str || '').replace(/\s+/g, '').toUpperCase();
+    }
+
+    async function checkIsDuplicateModel(name, excludeId = null) {
+      const targetName = normalizeModelName(name);
+      
+      const existsInLocal = productsList.some(item => 
+        item.id !== excludeId && normalizeModelName(item.name) === targetName
+      );
+      if (existsInLocal) return true;
+
+      if (hasMoreData) {
+        const q = query(collection(db, "products"));
+        const snapshot = await getDocs(q);
+        return snapshot.docs.some(doc => 
+          doc.id !== excludeId && normalizeModelName(doc.data().name) === targetName
+        );
+      }
+
+      return false;
     }
 
     window.addProduct = async function() {
@@ -536,17 +728,18 @@
         return;
       }
 
-      const isDuplicate = productsList.some(item => 
-        normalizeModelName(item.name) === normalizeModelName(name)
-      );
+      setFormButtonsDisabled(true, false);
+      saveBtn.innerText = "กำลังตรวจสอบรุ่นซ้ำ...";
 
+      const isDuplicate = await checkIsDuplicateModel(name);
       if (isDuplicate) {
         triggerValidationError(`รุ่น "${name}" มีอยู่ในระบบแล้ว`);
         showToast(`❌ ไม่สามารถบันทึกได้! รุ่น "${name}" มีในระบบแล้ว`, "error");
+        setFormButtonsDisabled(false, false);
+        saveBtn.innerText = "บันทึกสินค้าลงคลาวด์";
         return;
       }
 
-      setFormButtonsDisabled(true, false);
       saveBtn.innerText = "กำลังประมวลผลและบันทึก...";
 
       try {
@@ -569,7 +762,10 @@
         showToast("บันทึกข้อมูลสำเร็จเรียบร้อย", "success");
         nameInput.value = ''; detailInput.value = '';
         document.getElementById('preview-box').innerHTML = '<span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>';
+        
+        revokePreviousMediaUrl(processedMedia);
         processedMedia = { type: null, data: null, file: null };
+        
         clearValidationError();
         fetchInitialProducts();
 
@@ -634,6 +830,8 @@
       document.getElementById('edit-detail').value = item.detail;
       document.getElementById('view-mode').style.display = 'none';
       document.getElementById('edit-mode').style.display = 'block';
+      
+      revokePreviousMediaUrl(editProcessedMedia);
       editProcessedMedia = { type: null, data: null, file: null };
     }
 
@@ -644,6 +842,8 @@
       }
       document.getElementById('view-mode').style.display = 'block';
       document.getElementById('edit-mode').style.display = 'none';
+      
+      revokePreviousMediaUrl(editProcessedMedia);
       editProcessedMedia = { type: null, data: null, file: null };
     }
 
@@ -657,10 +857,7 @@
         return;
       }
 
-      const isDuplicate = productsList.some(item => 
-        item.id !== activeProductId && normalizeModelName(item.name) === normalizeModelName(newName)
-      );
-
+      const isDuplicate = await checkIsDuplicateModel(newName, activeProductId);
       if (isDuplicate) {
         showToast(`❌ ชื่อรุ่น "${newName}" มีอยู่ในระบบแล้ว`, "error");
         return;
