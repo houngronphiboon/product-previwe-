@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>ระบบบันทึกข้อมูลสินค้า - Nueng Ron Phibun Electronics</title>
+  <title>ระบบบันทึกข้อมูลสินค้า - หนึ่ง ร่อนพิบูลย์ อิเล็กทรอนิกส์</title>
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -25,19 +25,75 @@
     body.modal-open { overflow: hidden; height: 100vh; position: fixed; width: 100%; }
 
     .container { width: 100%; max-width: 500px; margin-bottom: 20px; }
-    .card { background: #ffffff; border-radius: 16px; padding: 20px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); position: relative; }
-    .header-title { font-size: 16px; font-weight: 700; text-align: center; margin-bottom: 16px; color: #111827; padding-right: 90px; }
     
-    /* Status Badges Dynamic Style */
-    .status-container { position: absolute; top: 16px; right: 16px; display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
-    .status-badge { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; color: #4b5563; background: #f3f4f6; padding: 3px 8px; border-radius: 12px; border: 1px solid #e5e7eb; }
-    .status-dot { width: 8px; height: 8px; border-radius: 50%; transition: all 0.3s ease; }
+    .card { 
+      background: #ffffff; 
+      border-radius: 16px; 
+      padding: 20px; 
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); 
+    }
+
+    /* ===== ส่วนหัว ชื่อร้าน + ปุ่มสถานะ ===== */
+    .header-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .header-title { 
+      font-size: 16px; 
+      font-weight: 700; 
+      color: #111827; 
+      margin: 0; 
+      line-height: 1.4;
+      flex: 1;
+    }
+    
+    .status-container { 
+      display: flex; 
+      flex-direction: column; 
+      align-items: flex-end;   
+      gap: 6px; 
+      flex-shrink: 0;
+    }
+
+    .status-badge { 
+      display: inline-flex; 
+      align-items: center; 
+      gap: 5px; 
+      font-size: 11px; 
+      font-weight: 600; 
+      color: #4b5563; 
+      background: #f8fafc; 
+      padding: 3px 8px; 
+      border-radius: 12px; 
+      border: 1px solid #e2e8f0; 
+      white-space: nowrap;
+    }
+
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; transition: all 0.3s ease; display: inline-block; }
     .status-dot.green { background-color: #10b981; box-shadow: 0 0 6px #10b981; }
     .status-dot.orange { background-color: #f59e0b; box-shadow: 0 0 6px #f59e0b; }
     .status-dot.red { background-color: #ef4444; box-shadow: 0 0 6px #ef4444; }
 
-    .media-preview-box { width: 100%; height: 200px; background-color: #1f2937; border-radius: 12px; margin-top: 10px; margin-bottom: 16px; display: flex; justify-content: center; align-items: center; color: #9ca3af; border: 2px dashed #d1d5db; overflow: hidden; }
+    /* ===== กรอบแสดงรูปภาพ / วิดีโอ ===== */
+    .media-preview-box { 
+      width: 100%; 
+      height: 200px; 
+      background-color: #1f2937; 
+      border-radius: 12px; 
+      margin-bottom: 16px; 
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      color: #9ca3af; 
+      border: 2px dashed #374151; 
+      overflow: hidden; 
+    }
     .media-preview-box img, .media-preview-box video { max-width: 100%; max-height: 100%; object-fit: contain; }
+    
     .media-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
     .btn { border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s; }
     .btn:disabled { opacity: 0.6; cursor: not-allowed; }
@@ -50,17 +106,12 @@
     .form-control:focus { border-color: #2563eb; }
     .form-control.input-error { border-color: #dc2626 !important; background-color: #fef2f2; }
     .error-msg { color: #dc2626; font-size: 13px; margin-top: 4px; display: none; }
-    textarea.form-control { resize: vertical; min-height: 110px; }
+    textarea.form-control { resize: vertical; min-height: 120px; }
     .btn-ai { width: 100%; background: #8b5cf6; color: white; padding: 14px; font-size: 15px; margin-bottom: 12px; box-shadow: 0 2px 4px rgba(139, 92, 246, 0.2); }
     .btn-save { width: 100%; background-color: #86efac; color: #166534; padding: 14px; font-size: 16px; }
     .btn-save.active { background-color: #22c55e; color: white; }
     
-    .list-container { 
-      width: 100%; 
-      max-width: 800px; 
-      margin-bottom: 10px; 
-    }
-    
+    .list-container { width: 100%; max-width: 800px; margin-bottom: 10px; }
     .table-container { 
       width: 100%; 
       height: 72vh; 
@@ -106,19 +157,24 @@
 
   <div class="container">
     <div class="card">
-      <div class="status-container">
-        <div class="status-badge">
-          <span class="status-dot green" id="db-status-dot"></span>
-          <span id="db-status-text">DB: พร้อม</span>
-        </div>
-        <div class="status-badge">
-          <span class="status-dot green" id="ai-status-dot"></span>
-          <span id="ai-status-text">AI: Vision</span>
+      
+      <!-- ส่วนหัว -->
+      <div class="header-container">
+        <h1 class="header-title">หนึ่ง ร่อนพิบูลย์ อิเล็กทรอนิกส์</h1>
+        
+        <div class="status-container">
+          <div class="status-badge">
+            <span class="status-dot green" id="db-status-dot"></span>
+            <span id="db-status-text">DB: พร้อม</span>
+          </div>
+          <div class="status-badge">
+            <span class="status-dot green" id="ai-status-dot"></span>
+            <span id="ai-status-text">AI: Vision</span>
+          </div>
         </div>
       </div>
 
-      <div class="header-title">ระบบบันทึกข้อมูลสินค้า - Nueng Ron Phibun Electronics</div>
-
+      <!-- กรอบแสดงรูปภาพ / วิดีโอ -->
       <div class="media-preview-box" id="preview-box">
         <span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>
       </div>
@@ -137,13 +193,13 @@
 
       <div class="form-group">
         <label for="product-name">ชื่อ/รุ่น <span class="required">*</span></label>
-        <input type="text" id="product-name" class="form-control" placeholder="เช่น HR-907C NS, UA32N4003AK, TP.HV320.PB801" oninput="clearValidationError()">
+        <input type="text" id="product-name" class="form-control" placeholder="เช่น C-BZN100L5L, 43HS534AN, RT22FGRADSA" oninput="clearValidationError()">
         <div class="error-msg" id="name-error-msg">กรุณากรอกชื่อหรือรุ่นสินค้า</div>
       </div>
 
       <div class="form-group">
-        <label for="product-detail">รายละเอียด</label>
-        <textarea id="product-detail" class="form-control" placeholder="กรอกรายละเอียดสินค้า หรือแนบรูปเพลต/บอร์ดแล้วกดวิเคราะห์ด้วย AI"></textarea>
+        <label for="product-detail">รายละเอียดสินค้า</label>
+        <textarea id="product-detail" class="form-control" placeholder="ระบุรายละเอียดสินค้า หรือแนบรูปเพลต/สินค้าแล้วกดให้ AI วิเคราะห์สเปก"></textarea>
       </div>
 
       <button class="btn btn-ai" id="btn-ai-search" onclick="generateAIDetails()">
@@ -232,7 +288,7 @@
       <div style="font-size: 40px; margin-bottom: 10px;">⚠️</div>
       <h3 style="margin-top: 0; color: #dc2626; font-weight: 700;">สิทธิ์วิเคราะห์ AI หมดแล้ว</h3>
       <p style="color: #4b5563; font-size: 14px; line-height: 1.5;" id="quota-modal-msg">
-        เครดิตหรือสิทธิ์การใช้งาน AI ของคุณหมดแล้ว ต้องการไปยังหน้าจัดการเพื่อเติมสิทธิ์หรือไม่?
+        โควต้าหรือสิทธิ์ใช้ AI ของคุณหมดแล้ว ต้องการไปยังหน้าจัดการเพื่อเติมสิทธิ์หรือไม่?
       </p>
       <button class="btn btn-quota" onclick="goToRecharge()">💳 ไปเติมสิทธิ์ (OpenRouter)</button>
       <button class="btn btn-cancel" onclick="closeQuotaModal()">ยกเลิก / ปิดหน้าต่าง</button>
@@ -245,7 +301,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { 
       getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, 
-      query, orderBy, limit, startAfter, getDocs, where 
+      query, orderBy, limit, startAfter, getDocs, where, serverTimestamp 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const CLOUDINARY_CLOUD_NAME = "qxdbrnyx"; 
@@ -277,7 +333,6 @@
     let isSearchMode = false;
     let searchDebounceTimer = null;
 
-    // --- ฟังก์ชันอัปเดตสถานะไฟเตือน (Status Badge Helper) ---
     function updateStatusUI(target, state, text) {
       const dot = document.getElementById(`${target}-status-dot`);
       const txt = document.getElementById(`${target}-status-text`);
@@ -287,7 +342,6 @@
       }
     }
 
-    // ฟังก์ชันช่วยเคลียร์ Blob URL ป้องกัน Memory Leak
     function revokePreviousMediaUrl(mediaObj) {
       if (mediaObj.type === 'video' && mediaObj.data && mediaObj.data.startsWith('blob:')) {
         URL.revokeObjectURL(mediaObj.data);
@@ -385,6 +439,33 @@
       closeQuotaModal();
     }
 
+    function renderTable(dataList) {
+      const tbody = document.getElementById('product-list');
+      tbody.innerHTML = '';
+
+      if (dataList.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #9ca3af; padding: 20px;">ไม่พบรายการสินค้า</td></tr>`;
+        return;
+      }
+
+      dataList.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.className = 'clickable-row';
+        tr.onclick = () => openDetailModal(item.id);
+
+        let mediaBadge = `<span class="badge badge-none">ไม่มี</span>`;
+        if (item.mediaType === 'image') mediaBadge = `<span class="badge badge-image">🖼️ รูปภาพ</span>`;
+        else if (item.mediaType === 'video') mediaBadge = `<span class="badge badge-video">🎥 วิดีโอ</span>`;
+
+        tr.innerHTML = `
+          <td>${mediaBadge}</td>
+          <td style="font-weight: 600; color: #111827;">${item.name || '-'}</td>
+          <td><div class="text-truncate">${item.detail || '-'}</div></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
     async function fetchInitialProducts() {
       updateStatusUI('db', 'orange', 'DB: กำลังโหลด');
       try {
@@ -479,12 +560,11 @@
       }
     }
 
-    // --- ปรับปรุงระบบ Search ค้นหาประสิทธิภาพสูง (Optimized Search) ---
     window.handleSearchDebounced = function() {
       clearTimeout(searchDebounceTimer);
       searchDebounceTimer = setTimeout(() => {
         executeOptimizedSearch();
-      }, 400); // หน่วงเวลา 400ms ลดภาระการยิง Database
+      }, 400);
     };
 
     async function executeOptimizedSearch() {
@@ -500,19 +580,16 @@
       isSearchMode = true;
       const lowerQuery = queryStr.toLowerCase();
 
-      // 1. ค้นหาจากข้อมูลที่มีอยู่บนหน้าจอเบื้องต้นก่อน (เพื่อความเร็ว)
       let matchedResults = productsList.filter(item => 
         (item.name || '').toLowerCase().includes(lowerQuery) ||
         (item.detail || '').toLowerCase().includes(lowerQuery)
       );
 
-      // 2. หากรายการในเครื่องมีน้อย และยังมีข้อมูลเหลือบน Cloud ให้ค้นหาแบบ Prefix ค้นตรงผ่าน Firestore
       if (matchedResults.length < 5 && hasMoreData) {
         try {
           updateStatusUI('db', 'orange', 'DB: กำลังค้นหา');
           const firestoreResults = await searchFirestoreDirectly(queryStr);
           
-          // รวมผลลัพธ์แบบไม่ให้มี ID ซ้ำ
           const combined = [...matchedResults];
           firestoreResults.forEach(item => {
             if (!combined.some(p => p.id === item.id)) {
@@ -532,7 +609,6 @@
 
     async function searchFirestoreDirectly(searchTerm) {
       try {
-        // ใช้เทคนิค Prefix Search บน Firestore (ช่วงตัวอักษร)
         const strFrontCode = searchTerm;
         const strEndCode = searchTerm + '\uf8ff';
 
@@ -546,7 +622,7 @@
         const snapshot = await getDocs(q);
         return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       } catch (e) {
-        console.warn("Direct Firestore search skipped/failed:", e);
+        console.warn("Direct Firestore search skipped:", e);
         return [];
       }
     }
@@ -562,7 +638,7 @@
       document.getElementById('btn-camera').disabled = disabled;
 
       if (isAnalyzing) {
-        aiBtn.innerText = "⏳ กำลังวิเคราะห์สเปกข้อมูลด้วย AI...";
+        aiBtn.innerText = "⏳ กำลังประมวลผลสเปกจริงร่วมกัน...";
       } else {
         aiBtn.innerText = "✨ วิเคราะห์ข้อมูลสินค้าด้วย AI (จากรูปถ่าย/ชื่อรุ่น)";
       }
@@ -638,22 +714,44 @@
       return data.secure_url;
     }
 
+    /* ===== PROMPT AI: ประมวลผลภาพและชื่อร่วมกัน + อ้างอิงสเปกจริง + สรุปกระชับ ===== */
     window.generateAIDetails = async function() {
       const nameInput = document.getElementById('product-name');
       const detailInput = document.getElementById('product-detail');
       const name = nameInput.value.trim();
 
       const originalText = detailInput.value;
-      detailInput.value = "กำลังส่งข้อมูลให้ AI อ่านเพลต/แผงวงจร และวิเคราะห์สเปก...";
+      detailInput.value = "กำลังประมวลผลวิเคราะห์ข้อมูลภาพและชื่อรุ่นร่วมกัน...";
       setFormButtonsDisabled(true, true);
       
       updateStatusUI('ai', 'orange', 'AI: กำลังคิด');
 
+      const systemInstructionPrompt = `คุณคือวิศวกรและช่างอิเล็กทรอนิกส์ผู้เชี่ยวชาญด้านอะไหล่ เครื่องใช้ไฟฟ้า ตู้เย็น แอร์ และทีวีในประเทศไทย
+
+หลักการประมวลผลข้อมูล (Multimodal Cross-Validation Rule):
+1. **ประมวลผลรูปภาพและชื่อรุ่นร่วมกัน (Cross-Match):** 
+   - นำข้อความในกล่อง [ชื่อ/รุ่น] และ รหัสที่อ่านได้จาก [รูปภาพ] มาวิเคราะห์ร่วมกันเพื่อความแม่นยำ
+   - เช่น รหัสบอร์ดที่เห็นในภาพคือ 6683M3C1 และ ชื่อ/รุ่น ที่ผู้ใช้กรอกคือ 43HS534AN ให้แมปร่วมกันทันทีว่าเป็น "เมนบอร์ดทีวี Aconatic ขนาด 43 นิ้ว"
+   - ตัวอย่างการแมปรหัสแบรนด์ยอดฮิต:
+     * รหัสที่ลงท้ายด้วย "HS...AN", "US...AN", "AN..." หรือตัวอย่าง 43HS534AN = **Aconatic**
+     * ขึ้นต้นด้วย LE... หรือ H... เช่น LE43K6600G = **Haier**
+     * ขึ้นต้นด้วย 43S6500, 55P615 = **TCL**
+     * ขึ้นต้นด้วย L43..., L32... = **Altron**
+     * คอมเพรสเซอร์ Kulthorn C-QN/BZN: 76 (1/10 HP), 90/100/101 (1/8 HP), 110 (1/7 HP), 123/125 (1/6 HP), 140/150/160 (1/5 HP), 176/202 (1/4 HP), 250 (1/3 HP)
+     * คอมเพรสเซอร์ Panasonic QB: 51 (1/10 HP), 57/66 (1/8 HP), 73 (1/6 HP), 91 (1/5 HP), 110 (1/4 HP)
+2. **ดึงสเปกจริงที่อ้างอิงได้ (Verified Technical Specs):**
+   - เมื่อแมปรหัสบอร์ดและรุ่นตรงกัน ให้ดึงสเปกจริงที่อ้างอิงได้มาใส่กระชับ เช่น ใช้กับ Smart TV / Android TV, ระบบไฟ AC Input, หรือรุ่นที่ใช้ร่วมกันได้
+3. **ตัดส่วนเกินทันที (Strict Concise Output):**
+   - แสดงเฉพาะข้อมูลที่ตรงกันและอ้างอิงได้จริงเท่านั้น
+   - หัวข้อไหนไม่แน่ใจ หรือ ไม่มีข้อมูลจริง **ให้ตัดหัวข้อนั้นทิ้งทันที** (ห้ามพิมพ์คำว่า "ไม่มี", "ไม่ระบุ", "ไม่พบข้อมูล" เด็ดขาด)
+
+รูปแบบการตอบ (เลือกแสดงเฉพาะข้อที่มีข้อมูลจริง):
+• ชนิดสินค้า / แบรนด์: [เช่น เมนบอร์ดทีวี Aconatic]
+• รุ่นที่ระบุ / รหัสบอร์ด: [ระบุรุ่นและรหัสบอร์ดที่ตรงกัน]
+• สเปกจริง & การนำไปใช้: [ระบุสเปกจริงอ้างอิงได้กระชับ เช่น ใช้กับ Smart TV Aconatic ขนาด 43 นิ้ว]`;
+
       try {
-        let payload = {
-          temperature: 0.0,
-          contents: []
-        };
+        let payload = { contents: [] };
 
         if (processedMedia.type === 'image' && processedMedia.data) {
           const base64Data = processedMedia.data.split(',')[1];
@@ -661,15 +759,8 @@
 
           payload.contents.push({
             parts: [
-              {
-                inline_data: {
-                  mime_type: mimeType,
-                  data: base64Data
-                }
-              },
-              {
-                text: `โปรดวิเคราะห์เพลต/สติกเกอร์/บอร์ดสินค้าในรูปภาพร่วมกับชื่อ/รุ่น "${name || 'ไม่ระบุ'}"`
-              }
+              { inline_data: { mime_type: mimeType, data: base64Data } },
+              { text: `${systemInstructionPrompt}\n\n[ข้อมูลที่ผู้ใช้กรอกในช่อง ชื่อ/รุ่น]: "${name || ''}"` }
             ]
           });
         } else {
@@ -682,9 +773,7 @@
           }
 
           payload.contents.push({
-            parts: [{
-              text: `วิเคราะห์รหัสสินค้า "${name}"`
-            }]
+            parts: [{ text: `${systemInstructionPrompt}\n\n[ข้อมูลที่ผู้ใช้กรอกในช่อง ชื่อ/รุ่น]: "${name}"` }]
           });
         }
 
@@ -708,260 +797,220 @@
           throw new Error(errMsg || "ไม่สามารถวิเคราะห์ข้อมูลได้");
         }
 
-        if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
-          detailInput.value = data.candidates[0].content.parts[0].text;
-          showToast("วิเคราะห์ข้อมูลสำเร็จ!", "success");
+        const resultText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (resultText) {
+          detailInput.value = resultText.trim();
+          showToast("วิเคราะห์สเปกตรงกันสำเร็จ!", "success");
           updateStatusUI('ai', 'green', 'AI: Vision');
         } else {
-          throw new Error("ไม่ได้รับข้อมูลตอบกลับจาก AI");
+          throw new Error("ไม่สามารถประมวลผลคำตอบจาก AI ได้");
         }
 
-      } catch (error) {
-        console.error("AI Error:", error);
-        detailInput.value = originalText;
+      } catch (err) {
+        console.error("AI Error:", err);
+        updateStatusUI('ai', 'red', 'AI: ขัดข้อง');
 
-        if (error.isQuotaError) {
-          updateStatusUI('ai', 'red', 'AI: โควต้าหมด');
+        if (err.isQuotaError) {
+          document.getElementById('quota-modal-msg').innerText = err.message || "โควต้าหรือสิทธิ์ใช้ AI ของคุณหมดแล้ว ต้องการไปยังหน้าจัดการเพื่อเติมสิทธิ์หรือไม่?";
           document.getElementById('quota-modal').style.display = 'flex';
           document.body.classList.add('modal-open');
-          showToast("สิทธิ์การใช้งาน AI หมดแล้ว", "error");
         } else {
-          updateStatusUI('ai', 'red', 'AI: ขัดข้อง');
-          showToast("เกิดข้อผิดพลาด: " + (error.message || error), "error");
+          showToast(err.message || "เกิดข้อผิดพลาดในการวิเคราะห์ AI", "error");
         }
+        detailInput.value = originalText;
       } finally {
         setFormButtonsDisabled(false, false);
       }
-    }
+    };
 
-    function normalizeModelName(str) {
-      return (str || '').replace(/\s+/g, '').toUpperCase();
-    }
-
-    async function checkIsDuplicateModel(name, excludeId = null) {
-      const targetName = normalizeModelName(name);
-      
-      const existsInLocal = productsList.some(item => 
-        item.id !== excludeId && normalizeModelName(item.name) === targetName
-      );
-      if (existsInLocal) return true;
-
-      if (hasMoreData) {
-        const q = query(collection(db, "products"));
-        const snapshot = await getDocs(q);
-        return snapshot.docs.some(doc => 
-          doc.id !== excludeId && normalizeModelName(doc.data().name) === targetName
-        );
-      }
-
-      return false;
-    }
-
+    /* ===== ฟังก์ชันเพิ่มสินค้าบันทึกคลาวด์ ===== */
     window.addProduct = async function() {
       const nameInput = document.getElementById('product-name');
       const detailInput = document.getElementById('product-detail');
       const saveBtn = document.getElementById('btn-save');
+
       const name = nameInput.value.trim();
       const detail = detailInput.value.trim();
 
       if (!name) {
-        triggerValidationError("กรุณากรอกชื่อสินค้า");
+        triggerValidationError("กรุณากรอกชื่อหรือรุ่นสินค้าก่อนบันทึก");
         return;
       }
 
-      setFormButtonsDisabled(true, false);
-      saveBtn.innerText = "กำลังตรวจสอบรุ่นซ้ำ...";
-
-      const isDuplicate = await checkIsDuplicateModel(name);
-      if (isDuplicate) {
-        triggerValidationError(`รุ่น "${name}" มีอยู่ในระบบแล้ว`);
-        showToast(`❌ ไม่สามารถบันทึกได้! รุ่น "${name}" มีในระบบแล้ว`, "error");
-        setFormButtonsDisabled(false, false);
-        saveBtn.innerText = "บันทึกสินค้าลงคลาวด์";
-        return;
-      }
-
-      saveBtn.innerText = "กำลังประมวลผลและบันทึก...";
+      saveBtn.disabled = true;
+      saveBtn.innerText = "⏳ กำลังบันทึกลง Cloud...";
+      updateStatusUI('db', 'orange', 'DB: กำลังบันทึก');
 
       try {
-        let mediaUrl = "";
+        let mediaUrl = null;
         let mediaType = processedMedia.type;
 
         if (processedMedia.file) {
-          const resourceType = mediaType === 'video' ? 'video' : 'image';
-          mediaUrl = await uploadToCloudinary(processedMedia.file, resourceType);
+          showToast("กำลังอัปโหลดไฟล์สื่อ...", "info");
+          mediaUrl = await uploadToCloudinary(processedMedia.file, mediaType === 'video' ? 'video' : 'image');
         }
 
         await addDoc(collection(db, "products"), {
           name: name,
-          detail: detail || "ไม่มีรายละเอียดเพิ่มเติม",
-          mediaType: mediaType,
+          detail: detail,
           mediaUrl: mediaUrl,
-          createdAt: Date.now()
+          mediaType: mediaType,
+          createdAt: serverTimestamp()
         });
 
-        showToast("บันทึกข้อมูลสำเร็จเรียบร้อย", "success");
-        nameInput.value = ''; detailInput.value = '';
+        showToast("บันทึกข้อมูลเรียบร้อยแล้ว!", "success");
+
+        // รีเซ็ตฟอร์ม
+        nameInput.value = '';
+        detailInput.value = '';
         document.getElementById('preview-box').innerHTML = '<span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>';
-        
         revokePreviousMediaUrl(processedMedia);
         processedMedia = { type: null, data: null, file: null };
-        
         clearValidationError();
-        fetchInitialProducts();
 
-      } catch (e) {
-        console.error(e);
+        await fetchInitialProducts();
+
+      } catch (err) {
+        console.error("Add Product Error:", err);
         showToast("เกิดข้อผิดพลาดในการบันทึกข้อมูล", "error");
+        updateStatusUI('db', 'red', 'DB: ขัดข้อง');
       } finally {
-        setFormButtonsDisabled(false, false);
+        saveBtn.disabled = false;
         saveBtn.innerText = "บันทึกสินค้าลงคลาวด์";
       }
-    }
+    };
 
-    function renderTable(dataList) {
-      const tbody = document.getElementById('product-list');
-      tbody.innerHTML = '';
-      if (dataList.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; padding: 20px; color: #9ca3af;">ไม่พบข้อมูลสินค้า</td></tr>`;
-        return;
-      }
-      dataList.forEach((item) => {
-        const tr = document.createElement('tr');
-        tr.className = 'clickable-row';
-        tr.onclick = () => openModal(item.id, item);
-        const badge = item.mediaType === 'video' ? '<span class="badge badge-video">🎥 วิดีโอ</span>' : (item.mediaType === 'image' ? '<span class="badge badge-image">🖼️ รูปภาพ</span>' : '<span class="badge badge-none">📷 ไม่มีสื่อ</span>');
-        tr.innerHTML = `<td>${badge}</td><td style="font-weight: 700;">${item.name}</td><td class="text-truncate">${item.detail}</td>`;
-        tbody.appendChild(tr);
-      });
-    }
+    /* ===== ฟังก์ชันเปิด Modal สื่อสารข้อมูล และ แก้ไข/ลบ ===== */
+    function openDetailModal(id) {
+      const product = productsList.find(p => p.id === id);
+      if (!product) return;
 
-    function openModal(id, itemData = null) {
       activeProductId = id;
-      const item = itemData || productsList.find(p => p.id === id);
-      if (!item) return;
+      document.getElementById('modal-title').innerText = product.name || 'ไม่ระบุชื่อ/รุ่น';
+      document.getElementById('modal-detail-text').innerText = product.detail || 'ไม่มีรายละเอียด';
 
-      document.getElementById('modal-title').innerText = item.name;
-      document.getElementById('modal-detail-text').innerText = item.detail;
+      const mediaBox = document.getElementById('modal-media-container');
+      mediaBox.innerHTML = '';
 
-      renderModalMedia(item.mediaType, item.mediaUrl);
+      if (product.mediaUrl) {
+        if (product.mediaType === 'image') {
+          mediaBox.innerHTML = `<img src="${product.mediaUrl}" alt="Product Image">`;
+        } else if (product.mediaType === 'video') {
+          mediaBox.innerHTML = `<video src="${product.mediaUrl}" controls></video>`;
+        }
+      } else {
+        mediaBox.innerHTML = `<span style="color: #6b7280;">ไม่มีรูปภาพ/วิดีโอประกอบ</span>`;
+      }
 
-      cancelEditMode();
+      document.getElementById('view-mode').style.display = 'block';
+      document.getElementById('edit-mode').style.display = 'none';
+
       document.getElementById('detail-modal').style.display = 'flex';
       document.body.classList.add('modal-open');
     }
 
-    function renderModalMedia(type, url) {
-      const mediaContainer = document.getElementById('modal-media-container');
-      mediaContainer.innerHTML = '';
-
-      if (type === 'image' && url) {
-        mediaContainer.innerHTML = `<img src="${url}">`;
-      } else if (type === 'video' && url) {
-        mediaContainer.innerHTML = `<video src="${url}" controls autoplay></video>`;
-      } else {
-        mediaContainer.innerHTML = `<span style="color:#9ca3af;">ไม่มีสื่อแนบไว้</span>`;
-      }
-    }
-
     window.enableEditMode = function() {
-      const item = productsList.find(p => p.id === activeProductId);
-      if (!item) return;
-      document.getElementById('edit-name').value = item.name;
-      document.getElementById('edit-detail').value = item.detail;
+      const product = productsList.find(p => p.id === activeProductId);
+      if (!product) return;
+
+      document.getElementById('edit-name').value = product.name || '';
+      document.getElementById('edit-detail').value = product.detail || '';
+      editProcessedMedia = { type: product.mediaType, data: product.mediaUrl, file: null };
+
       document.getElementById('view-mode').style.display = 'none';
       document.getElementById('edit-mode').style.display = 'block';
-      
-      revokePreviousMediaUrl(editProcessedMedia);
-      editProcessedMedia = { type: null, data: null, file: null };
-    }
+    };
 
     window.cancelEditMode = function() {
-      const item = productsList.find(p => p.id === activeProductId);
-      if (item) {
-        renderModalMedia(item.mediaType, item.mediaUrl);
-      }
-      document.getElementById('view-mode').style.display = 'block';
-      document.getElementById('edit-mode').style.display = 'none';
-      
       revokePreviousMediaUrl(editProcessedMedia);
       editProcessedMedia = { type: null, data: null, file: null };
-    }
+      document.getElementById('view-mode').style.display = 'block';
+      document.getElementById('edit-mode').style.display = 'none';
+    };
 
     window.saveEditProduct = async function() {
-      const newName = document.getElementById('edit-name').value.trim();
-      const newDetail = document.getElementById('edit-detail').value.trim();
+      if (!activeProductId) return;
+
+      const editName = document.getElementById('edit-name').value.trim();
+      const editDetail = document.getElementById('edit-detail').value.trim();
       const updateBtn = document.getElementById('btn-update-submit');
 
-      if (!newName) {
-        showToast("ชื่อ/รุ่น สินค้าห้ามเป็นค่าว่าง", "error");
+      if (!editName) {
+        showToast("กรุณากรอกชื่อ/รุ่นสินค้า", "error");
         return;
       }
 
-      const isDuplicate = await checkIsDuplicateModel(newName, activeProductId);
-      if (isDuplicate) {
-        showToast(`❌ ชื่อรุ่น "${newName}" มีอยู่ในระบบแล้ว`, "error");
-        return;
-      }
-
-      const item = productsList.find(p => p.id === activeProductId);
-      if (!item) return;
+      const product = productsList.find(p => p.id === activeProductId);
 
       updateBtn.disabled = true;
-      updateBtn.innerText = "กำลังบันทึก...";
+      updateBtn.innerText = "⏳ กำลังบันทึกการแก้ไข...";
+      updateStatusUI('db', 'orange', 'DB: กำลังอัปเดต');
 
       try {
-        let updateData = {
-          name: newName,
-          detail: newDetail || "ไม่มีรายละเอียดเพิ่มเติม"
-        };
+        let finalMediaUrl = product.mediaUrl;
+        let finalMediaType = product.mediaType;
 
         if (editProcessedMedia.file) {
-          const resourceType = editProcessedMedia.type === 'video' ? 'video' : 'image';
-          const newMediaUrl = await uploadToCloudinary(editProcessedMedia.file, resourceType);
-
-          if (item.mediaUrl) {
-            await deleteCloudinaryMedia(item.mediaUrl, item.mediaType);
+          showToast("กำลังอัปโหลดสื่อใหม่...", "info");
+          
+          if (product.mediaUrl) {
+            await deleteCloudinaryMedia(product.mediaUrl, product.mediaType);
           }
 
-          updateData.mediaUrl = newMediaUrl;
-          updateData.mediaType = editProcessedMedia.type;
+          finalMediaUrl = await uploadToCloudinary(editProcessedMedia.file, editProcessedMedia.type === 'video' ? 'video' : 'image');
+          finalMediaType = editProcessedMedia.type;
         }
 
         const docRef = doc(db, "products", activeProductId);
-        await updateDoc(docRef, updateData);
-        
-        cancelEditMode();
+        await updateDoc(docRef, {
+          name: editName,
+          detail: editDetail,
+          mediaUrl: finalMediaUrl,
+          mediaType: finalMediaType,
+          updatedAt: serverTimestamp()
+        });
+
+        showToast("แก้ไขข้อมูลสำเร็จ!", "success");
         closeModal();
-        showToast("อัปเดตข้อมูลเรียบร้อย", "success");
-        fetchInitialProducts();
-      } catch (e) {
-        console.error(e);
-        showToast("แก้ไขข้อมูลไม่สำเร็จ", "error");
+        await fetchInitialProducts();
+
+      } catch (err) {
+        console.error("Save Edit Error:", err);
+        showToast("เกิดข้อผิดพลาดในการแก้ไขข้อมูล", "error");
+        updateStatusUI('db', 'red', 'DB: ขัดข้อง');
       } finally {
         updateBtn.disabled = false;
         updateBtn.innerText = "💾 บันทึกการแก้ไข";
       }
-    }
+    };
 
     window.deleteProduct = async function() {
-      if (!confirm("คุณต้องการลบรายการนี้ใช่หรือไม่?")) return;
-      
-      const item = productsList.find(p => p.id === activeProductId);
-      
+      if (!activeProductId) return;
+
+      if (!confirm("คุณต้องการลบรายการนี้ใช่หรือไม่? ข้อมูลและสื่อบน Cloud จะถูกลบอย่างถาวร")) {
+        return;
+      }
+
+      const product = productsList.find(p => p.id === activeProductId);
+      updateStatusUI('db', 'orange', 'DB: กำลังลบ');
+
       try {
-        if (item && item.mediaUrl) {
-          await deleteCloudinaryMedia(item.mediaUrl, item.mediaType);
+        if (product && product.mediaUrl) {
+          await deleteCloudinaryMedia(product.mediaUrl, product.mediaType);
         }
 
         await deleteDoc(doc(db, "products", activeProductId));
+        showToast("ลบรายการสำเร็จแล้ว", "success");
         closeModal();
-        showToast("ลบรายการสินค้าเรียบร้อยแล้ว", "success");
-        fetchInitialProducts();
-      } catch (e) {
+        await fetchInitialProducts();
+
+      } catch (err) {
+        console.error("Delete Error:", err);
         showToast("เกิดข้อผิดพลาดในการลบรายการ", "error");
+        updateStatusUI('db', 'red', 'DB: ขัดข้อง');
       }
-    }
+    };
   </script>
 </body>
 </html>
