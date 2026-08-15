@@ -694,7 +694,7 @@
         mediaContainer.innerHTML = `<img src="${compressed.dataUrl}">`;
       } else if (file.type.startsWith('video/')) {
         const videoUrl = URL.createObjectURL(file);
-        editProcessedMedia = { type: 'video', data: videoUrl, file: file };
+        editProcessedMedia = { type: 'video', data: file };
         mediaContainer.innerHTML = `<video src="${videoUrl}" controls autoplay muted></video>`;
       }
       event.target.value = '';
@@ -724,23 +724,22 @@
       
       updateStatusUI('ai', 'orange', 'AI: กำลังคิด');
 
-      const systemInstructionPrompt = `คุณคือวิศวกรและช่างอิเล็กทรอนิกส์ผู้เชี่ยวชาญด้านอะไหล่ เครื่องใช้ไฟฟ้า ตู้เย็น แอร์ และทีวีในประเทศไทย
+      const systemInstructionPrompt = `คุณคือวิศวกรและช่างอิเล็กทรอนิกส์ผู้เชี่ยวชาญด้านอะไหล่ คอมเพรสเซอร์ เครื่องใช้ไฟฟ้า ตู้เย็น แอร์ และทีวีในประเทศไทย
 
 หลักการประมวลผลข้อมูล:
 1. นำข้อความในกล่อง [ชื่อ/รุ่น] และ รหัสที่อ่านได้จาก [รูปภาพ] มาวิเคราะห์ร่วมกันเพื่อความแม่นยำ
-   - ตัวอย่างแบรนด์: HS...AN/US...AN = Aconatic, LE.../H... = Haier, S6500/P615 = TCL, L43/L32 = Altron
-   - ตัวอย่างคอมเพรสเซอร์ Kulthorn C-QN/BZN: 76 (1/10 HP), 90/100/101 (1/8 HP), 110 (1/7 HP), 123/125 (1/6 HP), 140/150/160 (1/5 HP), 176/202 (1/4 HP), 250 (1/3 HP)
-2. ดึงเฉพาะสเปกจริงที่อ้างอิงได้จาก Databook / Nameplate
-3. กฎเหล็กเรื่องรูปแบบคำตอบ:
+2. หากเป็นคอมเพรสเซอร์ ให้วิเคราะห์หาขนาดแรงม้า (HP) จาก Databook/Catalog หรือเทียบคำนวณจาก WATT/BTU/Displacement cc. ได้ แต่หากอ้างอิงไม่ได้ให้ตัดเรื่องแรงม้าทิ้งทันที ห้ามเดาสุ่ม
+3. ดึงเฉพาะสเปกจริงที่อ้างอิงได้จาก Databook / Nameplate เท่านั้น
+4. กฎเหล็กเรื่องรูปแบบคำตอบ:
    - ห้ามใส่คำกำกับหัวข้อ (เช่น สินค้า/แบรนด์, ระบบการทำงาน, สเปกเชิงลึก, การนำไปใช้)
    - ห้ามใส่คำเกริ่นนำหรือหัวข้อใหญ่เด็ดขาด
    - ทุกบรรทัดต้องขึ้นต้นด้วยจุด bullet point (•) ตามด้วยรายละเอียดทันที
    - ห้ามใช้ตัวหนา Markdown (**...) ในคำตอบเด็ดขาด ให้ใช้ข้อความธรรมดาเท่านั้น
 
 ตัวอย่างรูปแบบคำตอบที่ถูกต้อง:
-• เมนบอร์ดทีวี Aconatic รุ่น 43HS534AN รหัสบอร์ด 6683M3C1
-• ระบบ Smart TV Android, ไฟเข้า AC 100-240V 50/60Hz
-• ใช้กับทีวี Aconatic ขนาด 43 นิ้ว รุ่น 43HS534AN และรุ่นที่ใช้บอร์ดสเปกเดียวกัน`;
+• คอมเพรสเซอร์ Kulthorn รุ่น C-BZN100L5L
+• ขนาด 1/8 HP (ประมาณ 100-110 วัตต์), น้ำยา R134a
+• ไฟฟ้า 220-240V 50Hz, ใช้กับตู้เย็น 1 ประตู ขนาด 4-6 คิว`;
 
       try {
         let payload = { contents: [] };
