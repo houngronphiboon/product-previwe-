@@ -10,33 +10,27 @@
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <style>
-    * { 
-      box-sizing: border-box; 
-      font-family: 'Sarabun', sans-serif; 
-      -webkit-tap-highlight-color: transparent;
-    }
-    
+    * { box-sizing: border-box; font-family: 'Sarabun', sans-serif; }
+    html { scroll-behavior: smooth; }
     body { 
       background-color: #f3f4f6; 
       margin: 0; 
       padding: 16px; 
+      padding-bottom: 20px; 
       color: #1f2937; 
       display: flex; 
       flex-direction: column; 
       align-items: center; 
     }
+    body.modal-open { overflow: hidden; height: 100vh; position: fixed; width: 100%; }
 
-    .container { width: 100%; max-width: 500px; margin-bottom: 20px; box-sizing: border-box; }
+    .container { width: 100%; max-width: 500px; margin-bottom: 20px; }
     
     .card { 
       background: #ffffff; 
       border-radius: 16px; 
       padding: 20px; 
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); 
-      width: 100%;
-      max-width: 100%;
-      box-sizing: border-box;
-      overflow: hidden;
     }
 
     /* ===== ส่วนหัว ชื่อร้าน + ปุ่มสถานะ ===== */
@@ -117,33 +111,18 @@
     .btn-save { width: 100%; background-color: #86efac; color: #166534; padding: 14px; font-size: 16px; }
     .btn-save.active { background-color: #22c55e; color: white; }
     
-    .list-container { width: 100%; max-width: 800px; margin-bottom: 20px; box-sizing: border-box; overflow: hidden; }
-    
-    /* ===== แก้ไขเฉพาะส่วนนี้: กรอบตาราง ล็อกการเด้งยืดหลุดขอบ ===== */
+    .list-container { width: 100%; max-width: 800px; margin-bottom: 10px; }
     .table-container { 
       width: 100%; 
-      max-width: 100%;
-      max-height: 500px; /* กำหนดความสูงให้ตารางแสดงผลได้พอดี ไม่โดนบีบหาย */
+      height: 72vh; 
+      max-height: 700px;
       overflow-y: auto; 
       overflow-x: auto; 
-      overscroll-behavior: contain; /* บล็อกแรงสไลด์ไม่ให้ทะลุออกไปดึงตัว Body */
       -webkit-overflow-scrolling: touch; 
       border-radius: 8px; 
       border: 1px solid #e5e7eb; 
-      box-sizing: border-box;
-      touch-action: pan-x pan-y; /* อนุญาตให้สกรอลล์ได้เฉพาะภายในตาราง */
     }
-
-    table { 
-      width: 100%; 
-      min-width: 500px; 
-      max-width: 500px;
-      border-collapse: collapse; 
-      text-align: left; 
-      font-size: 14px; 
-      table-layout: fixed;
-    }
-
+    table { width: 100%; min-width: 480px; border-collapse: collapse; text-align: left; font-size: 14px; }
     th { position: sticky; top: 0; background-color: #f9fafb; padding: 10px 12px; color: #374151; font-weight: 700; border-bottom: 1px solid #e5e7eb; z-index: 5; }
     td { padding: 10px 12px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
     .clickable-row { cursor: pointer; transition: background 0.15s; }
@@ -152,10 +131,10 @@
     .badge-video { background-color: #eff6ff; color: #2563eb; }
     .badge-image { background-color: #f0fdf4; color: #16a34a; }
     .badge-none { background-color: #f3f4f6; color: #6b7280; }
-    .text-truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; color: #6b7280; }
+    .text-truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; color: #6b7280; }
     
-    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; padding: 16px; overscroll-behavior: contain; }
-    .modal-content { background-color: #fff; padding: 20px; border-radius: 16px; width: 100%; max-width: 480px; position: relative; max-height: 90vh; overflow-y: auto; -webkit-overflow-scrolling: touch; scroll-behavior: smooth; overscroll-behavior: contain; }
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; padding: 16px; -webkit-overflow-scrolling: touch; }
+    .modal-content { background-color: #fff; padding: 20px; border-radius: 16px; width: 100%; max-width: 480px; position: relative; max-height: 90vh; overflow-y: auto; -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }
     .close-btn { position: absolute; right: 15px; top: 10px; font-size: 24px; cursor: pointer; color: #9ca3af; z-index: 10; }
     .modal-media-box { width: 100%; height: 230px; background: #111827; margin-bottom: 15px; border-radius: 10px; overflow: hidden; display: flex; justify-content: center; align-items: center; }
     .modal-media-box img, .modal-media-box video { max-width: 100%; max-height: 100%; object-fit: contain; }
@@ -242,14 +221,13 @@
       <input type="text" id="search-input" class="form-control" placeholder="🔍 พิมพ์ชื่อ/รุ่น เพื่อค้นหาในระบบ..." oninput="handleSearchDebounced()">
     </div>
 
-    <!-- กรอบตารางรายการสินค้า -->
     <div class="table-container" id="table-container">
       <table>
         <thead>
           <tr>
-            <th style="width: 100px;">ชนิดสื่อ</th>
-            <th style="width: 150px;">ชื่อ/รุ่น</th>
-            <th style="width: 250px;">รายละเอียด</th>
+            <th style="width: 25%;">ชนิดสื่อ</th>
+            <th style="width: 35%;">ชื่อ/รุ่น</th>
+            <th style="width: 40%;">รายละเอียด</th>
           </tr>
         </thead>
         <tbody id="product-list"></tbody>
@@ -292,11 +270,11 @@
 
         <div class="form-group">
           <label for="edit-name">ชื่อ/รุ่น</label>
-          <input type="text" id="edit-name" class="form-control">
+          <input type="text" id="edit-name" class="form-control" onfocus="autoScrollFocus(this)">
         </div>
         <div class="form-group">
           <label for="edit-detail">รายละเอียด</label>
-          <textarea id="edit-detail" class="form-control"></textarea>
+          <textarea id="edit-detail" class="form-control" onfocus="autoScrollFocus(this)"></textarea>
         </div>
         <button class="btn btn-update" id="btn-update-submit" onclick="saveEditProduct()">💾 บันทึกการแก้ไข</button>
         <button class="btn btn-cancel" onclick="cancelEditMode()">ยกเลิก</button>
@@ -355,22 +333,6 @@
     let isSearchMode = false;
     let searchDebounceTimer = null;
 
-    /* ===== ป้องกันการลากเด้งหลุดขอบเฉพาะพื้นที่ตาราง (iOS Safari) ===== */
-    const tableContainer = document.getElementById('table-container');
-    if (tableContainer) {
-      tableContainer.addEventListener('touchstart', (e) => {
-        const top = tableContainer.scrollTop;
-        const totalScroll = tableContainer.scrollHeight;
-        const currentScroll = top + tableContainer.offsetHeight;
-
-        if (top === 0) {
-          tableContainer.scrollTop = 1; // ดันลงมา 1px กันชนขอบบนสุด
-        } else if (currentScroll >= totalScroll) {
-          tableContainer.scrollTop = top - 1; // ดันขึ้น 1px กันชนขอบล่างสุด
-        }
-      }, { passive: true });
-    }
-
     function updateStatusUI(target, state, text) {
       const dot = document.getElementById(`${target}-status-dot`);
       const txt = document.getElementById(`${target}-status-text`);
@@ -385,6 +347,12 @@
         URL.revokeObjectURL(mediaObj.data);
       }
     }
+
+    window.autoScrollFocus = function(element) {
+      setTimeout(() => {
+        element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 300);
+    };
 
     function extractPublicIdFromUrl(url) {
       if (!url) return null;
@@ -455,6 +423,7 @@
 
     window.closeModal = function() {
       document.getElementById('detail-modal').style.display = 'none';
+      document.body.classList.remove('modal-open');
       revokePreviousMediaUrl(editProcessedMedia);
       activeProductId = null;
       editProcessedMedia = { type: null, data: null, file: null };
@@ -462,6 +431,7 @@
 
     window.closeQuotaModal = function() {
       document.getElementById('quota-modal').style.display = 'none';
+      document.body.classList.remove('modal-open');
     }
 
     window.goToRecharge = function() {
@@ -579,6 +549,8 @@
     }
 
     function setupScrollListener() {
+      const tableContainer = document.getElementById('table-container');
+
       if (tableContainer) {
         tableContainer.addEventListener('scroll', () => {
           if (tableContainer.scrollTop + tableContainer.clientHeight >= tableContainer.scrollHeight - 50) {
@@ -742,6 +714,7 @@
       return data.secure_url;
     }
 
+    /* ===== PROMPT AI: วิเคราะห์ชื่อรุ่น + ภาพ ส่งไปยัง Worker Backend ===== */
     window.generateAIDetails = async function() {
       const nameInput = document.getElementById('product-name');
       const detailInput = document.getElementById('product-detail');
@@ -817,6 +790,7 @@
         if (err.isQuotaError) {
           document.getElementById('quota-modal-msg').innerText = err.message || "โควต้าหรือสิทธิ์ใช้ AI ของคุณหมดแล้ว ต้องการไปยังหน้าจัดการเพื่อเติมสิทธิ์หรือไม่?";
           document.getElementById('quota-modal').style.display = 'flex';
+          document.body.classList.add('modal-open');
         } else {
           showToast(err.message || "เกิดข้อผิดพลาดในการวิเคราะห์ AI", "error");
         }
@@ -826,6 +800,7 @@
       }
     };
 
+    /* ===== ฟังก์ชันเพิ่มสินค้าบันทึกคลาวด์ ===== */
     window.addProduct = async function() {
       const nameInput = document.getElementById('product-name');
       const detailInput = document.getElementById('product-detail');
@@ -862,6 +837,7 @@
 
         showToast("บันทึกข้อมูลเรียบร้อยแล้ว!", "success");
 
+        // รีเซ็ตฟอร์ม
         nameInput.value = '';
         detailInput.value = '';
         document.getElementById('preview-box').innerHTML = '<span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>';
@@ -881,6 +857,7 @@
       }
     };
 
+    /* ===== ฟังก์ชันเปิด Modal สื่อสารข้อมูล และ แก้ไข/ลบ ===== */
     function openDetailModal(id) {
       const product = productsList.find(p => p.id === id);
       if (!product) return;
@@ -906,6 +883,7 @@
       document.getElementById('edit-mode').style.display = 'none';
 
       document.getElementById('detail-modal').style.display = 'flex';
+      document.body.classList.add('modal-open');
     }
 
     window.enableEditMode = function() {
