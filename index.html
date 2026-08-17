@@ -342,8 +342,9 @@
       }
     }
 
+    // [แก้ไขบัค] คืน Memory Blob ทั้งวิดีโอและรูปภาพชั่วคราวอย่างรัดกุม
     function revokePreviousMediaUrl(mediaObj) {
-      if (mediaObj.type === 'video' && mediaObj.data && mediaObj.data.startsWith('blob:')) {
+      if (mediaObj && mediaObj.data && mediaObj.data.startsWith('blob:')) {
         URL.revokeObjectURL(mediaObj.data);
       }
     }
@@ -567,6 +568,7 @@
       }, 400);
     };
 
+    // [แก้ไขบัค] ระบบค้นหา ยิง Query ไป Firestore โดยตรงเสมอเมื่อมีการพิมพ์คำค้นหา
     async function executeOptimizedSearch() {
       const searchInput = document.getElementById('search-input');
       const queryStr = searchInput.value.trim();
@@ -578,33 +580,29 @@
       }
 
       isSearchMode = true;
-      const lowerQuery = queryStr.toLowerCase();
+      updateStatusUI('db', 'orange', 'DB: กำลังค้นหา');
 
-      let matchedResults = productsList.filter(item => 
-        (item.name || '').toLowerCase().includes(lowerQuery) ||
-        (item.detail || '').toLowerCase().includes(lowerQuery)
-      );
+      try {
+        const lowerQuery = queryStr.toLowerCase();
+        let matchedResults = productsList.filter(item => 
+          (item.name || '').toLowerCase().includes(lowerQuery) ||
+          (item.detail || '').toLowerCase().includes(lowerQuery)
+        );
 
-      if (matchedResults.length < 5 && hasMoreData) {
-        try {
-          updateStatusUI('db', 'orange', 'DB: กำลังค้นหา');
-          const firestoreResults = await searchFirestoreDirectly(queryStr);
-          
-          const combined = [...matchedResults];
-          firestoreResults.forEach(item => {
-            if (!combined.some(p => p.id === item.id)) {
-              combined.push(item);
-            }
-          });
-          matchedResults = combined;
-          updateStatusUI('db', 'green', 'DB: พร้อม');
-        } catch (err) {
-          console.error("Firestore Prefix Search Error:", err);
-          updateStatusUI('db', 'green', 'DB: พร้อม');
-        }
+        const firestoreResults = await searchFirestoreDirectly(queryStr);
+        
+        const combinedMap = new Map();
+        matchedResults.forEach(item => combinedMap.set(item.id, item));
+        firestoreResults.forEach(item => combinedMap.set(item.id, item));
+        
+        const finalResults = Array.from(combinedMap.values());
+
+        renderTable(finalResults);
+        updateStatusUI('db', 'green', 'DB: พร้อม');
+      } catch (err) {
+        console.error("Search Error:", err);
+        updateStatusUI('db', 'red', 'DB: ขัดข้อง');
       }
-
-      renderTable(matchedResults);
     }
 
     async function searchFirestoreDirectly(searchTerm) {
@@ -616,13 +614,13 @@
           collection(db, "products"),
           where("name", ">=", strFrontCode),
           where("name", "<=", strEndCode),
-          limit(20)
+          limit(50)
         );
 
         const snapshot = await getDocs(q);
         return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       } catch (e) {
-        console.warn("Direct Firestore search skipped:", e);
+        console.warn("Direct Firestore search skipped/error:", e);
         return [];
       }
     }
