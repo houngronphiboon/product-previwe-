@@ -111,27 +111,33 @@
     .btn-save { width: 100%; background-color: #86efac; color: #166534; padding: 14px; font-size: 16px; }
     .btn-save.active { background-color: #22c55e; color: white; }
     
-    .list-container { width: 100%; max-width: 800px; margin-bottom: 10px; }
+    /* ===== ส่วนการจัดการตารางแบบ Responsive ล็อกไม่ให้เลื่อนหลุดกรอบ ===== */
+    .list-container { width: 100%; max-width: 500px; margin-bottom: 10px; }
     .table-container { 
       width: 100%; 
-      height: 72vh; 
-      max-height: 700px;
+      height: 65vh; 
+      max-height: 600px;
       overflow-y: auto; 
-      overflow-x: auto; 
-      -webkit-overflow-scrolling: touch; 
+      overflow-x: hidden; /* ป้องกันไม่ให้ตารางดันออกข้าง */
       border-radius: 8px; 
       border: 1px solid #e5e7eb; 
     }
-    table { width: 100%; min-width: 480px; border-collapse: collapse; text-align: left; font-size: 14px; }
-    th { position: sticky; top: 0; background-color: #f9fafb; padding: 10px 12px; color: #374151; font-weight: 700; border-bottom: 1px solid #e5e7eb; z-index: 5; }
-    td { padding: 10px 12px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
+    table { 
+      width: 100%; 
+      border-collapse: collapse; 
+      text-align: left; 
+      font-size: 13px; 
+      table-layout: fixed; /* บังคับคำนวณความกว้างคอลัมน์ไม่ให้ล้น */
+    }
+    th { position: sticky; top: 0; background-color: #f9fafb; padding: 10px 8px; color: #374151; font-weight: 700; border-bottom: 1px solid #e5e7eb; z-index: 5; }
+    td { padding: 10px 8px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; word-wrap: break-word; }
     .clickable-row { cursor: pointer; transition: background 0.15s; }
     .clickable-row:hover, .clickable-row:active { background-color: #e0f2fe; }
-    .badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+    .badge { display: inline-flex; align-items: center; gap: 2px; padding: 4px 6px; border-radius: 12px; font-size: 11px; font-weight: 600; white-space: nowrap; }
     .badge-video { background-color: #eff6ff; color: #2563eb; }
     .badge-image { background-color: #f0fdf4; color: #16a34a; }
     .badge-none { background-color: #f3f4f6; color: #6b7280; }
-    .text-truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; color: #6b7280; }
+    .text-truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; color: #6b7280; }
     
     .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; padding: 16px; -webkit-overflow-scrolling: touch; }
     .modal-content { background-color: #fff; padding: 20px; border-radius: 16px; width: 100%; max-width: 480px; position: relative; max-height: 90vh; overflow-y: auto; -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }
@@ -225,9 +231,9 @@
       <table>
         <thead>
           <tr>
-            <th style="width: 25%;">ชนิดสื่อ</th>
-            <th style="width: 35%;">ชื่อ/รุ่น</th>
-            <th style="width: 40%;">รายละเอียด</th>
+            <th style="width: 28%;">ชนิดสื่อ</th>
+            <th style="width: 37%;">ชื่อ/รุ่น</th>
+            <th style="width: 35%;">รายละเอียด</th>
           </tr>
         </thead>
         <tbody id="product-list"></tbody>
@@ -800,12 +806,12 @@
       }
     };
 
-    /* ===== ฟังก์ชันเพิ่มสินค้าบันทึกคลาวด์ ===== */
+    /* ===== ข้อ 1: ฟังก์ชันเพิ่มสินค้าบันทึกคลาวด์ ===== */
     window.addProduct = async function() {
       const nameInput = document.getElementById('product-name');
       const detailInput = document.getElementById('product-detail');
       const saveBtn = document.getElementById('btn-save');
-
+      
       const name = nameInput.value.trim();
       const detail = detailInput.value.trim();
 
@@ -814,85 +820,90 @@
         return;
       }
 
-      saveBtn.disabled = true;
-      saveBtn.innerText = "⏳ กำลังบันทึกลง Cloud...";
-      updateStatusUI('db', 'orange', 'DB: กำลังบันทึก');
+      setFormButtonsDisabled(true);
+      saveBtn.innerText = "⏳ กำลังบันทึกข้อมูลลง Cloud...";
+      updateStatusUI('db', 'orange', 'DB: บันทึก...');
 
       try {
         let mediaUrl = null;
-        let mediaType = processedMedia.type;
+        let mediaType = processedMedia.type || 'none';
 
         if (processedMedia.file) {
-          showToast("กำลังอัปโหลดไฟล์สื่อ...", "info");
-          mediaUrl = await uploadToCloudinary(processedMedia.file, mediaType === 'video' ? 'video' : 'image');
+          const resType = processedMedia.type === 'video' ? 'video' : 'image';
+          mediaUrl = await uploadToCloudinary(processedMedia.file, resType);
         }
 
-        await addDoc(collection(db, "products"), {
+        const newDoc = {
           name: name,
           detail: detail,
-          mediaUrl: mediaUrl,
           mediaType: mediaType,
-          createdAt: serverTimestamp()
-        });
+          mediaUrl: mediaUrl,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        };
 
-        showToast("บันทึกข้อมูลเรียบร้อยแล้ว!", "success");
+        const docRef = await addDoc(collection(db, "products"), newDoc);
 
-        // รีเซ็ตฟอร์ม
+        const addedProduct = { id: docRef.id, ...newDoc, createdAt: new Date() };
+        productsList.unshift(addedProduct);
+        renderTable(productsList);
+
         nameInput.value = '';
         detailInput.value = '';
-        document.getElementById('preview-box').innerHTML = '<span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>';
         revokePreviousMediaUrl(processedMedia);
         processedMedia = { type: null, data: null, file: null };
-        clearValidationError();
+        document.getElementById('preview-box').innerHTML = `<span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>`;
 
-        await fetchInitialProducts();
+        showToast("บันทึกข้อมูลสินค้าเรียบร้อยแล้ว!", "success");
+        updateStatusUI('db', 'green', 'DB: พร้อม');
 
       } catch (err) {
         console.error("Add Product Error:", err);
-        showToast("เกิดข้อผิดพลาดในการบันทึกข้อมูล", "error");
+        showToast("เกิดข้อผิดพลาดในการบันทึกข้อมูล: " + err.message, "error");
         updateStatusUI('db', 'red', 'DB: ขัดข้อง');
       } finally {
-        saveBtn.disabled = false;
+        setFormButtonsDisabled(false);
         saveBtn.innerText = "บันทึกสินค้าลงคลาวด์";
       }
     };
 
-    /* ===== ฟังก์ชันเปิด Modal สื่อสารข้อมูล และ แก้ไข/ลบ ===== */
-    function openDetailModal(id) {
-      const product = productsList.find(p => p.id === id);
+    /* ===== ข้อ 2: ฟังก์ชันเปิด Modal แสดงรายละเอียดสินค้า ===== */
+    window.openDetailModal = function(id) {
+      const product = productsList.find(item => item.id === id);
       if (!product) return;
 
       activeProductId = id;
-      document.getElementById('modal-title').innerText = product.name || 'ไม่ระบุชื่อ/รุ่น';
+      document.getElementById('modal-title').innerText = product.name || 'ไม่มีชื่อรุ่น';
       document.getElementById('modal-detail-text').innerText = product.detail || 'ไม่มีรายละเอียด';
 
-      const mediaBox = document.getElementById('modal-media-container');
-      mediaBox.innerHTML = '';
+      const mediaContainer = document.getElementById('modal-media-container');
+      mediaContainer.innerHTML = '';
 
-      if (product.mediaUrl) {
-        if (product.mediaType === 'image') {
-          mediaBox.innerHTML = `<img src="${product.mediaUrl}" alt="Product Image">`;
-        } else if (product.mediaType === 'video') {
-          mediaBox.innerHTML = `<video src="${product.mediaUrl}" controls></video>`;
-        }
+      if (product.mediaType === 'image' && product.mediaUrl) {
+        mediaContainer.innerHTML = `<img src="${product.mediaUrl}" alt="${product.name}">`;
+      } else if (product.mediaType === 'video' && product.mediaUrl) {
+        mediaContainer.innerHTML = `<video src="${product.mediaUrl}" controls></video>`;
       } else {
-        mediaBox.innerHTML = `<span style="color: #6b7280;">ไม่มีรูปภาพ/วิดีโอประกอบ</span>`;
+        mediaContainer.innerHTML = `<span style="color: #6b7280; font-size: 14px;">ไม่มีไฟล์สื่อ</span>`;
       }
 
       document.getElementById('view-mode').style.display = 'block';
       document.getElementById('edit-mode').style.display = 'none';
-
-      document.getElementById('detail-modal').style.display = 'flex';
+      
+      const detailModal = document.getElementById('detail-modal');
+      detailModal.style.display = 'flex';
       document.body.classList.add('modal-open');
-    }
+    };
 
+    /* ===== ข้อ 3: ฟังก์ชันแก้ไขข้อมูลสินค้า ===== */
     window.enableEditMode = function() {
-      const product = productsList.find(p => p.id === activeProductId);
+      const product = productsList.find(item => item.id === activeProductId);
       if (!product) return;
 
       document.getElementById('edit-name').value = product.name || '';
       document.getElementById('edit-detail').value = product.detail || '';
-      editProcessedMedia = { type: product.mediaType, data: product.mediaUrl, file: null };
+      
+      editProcessedMedia = { type: null, data: null, file: null };
 
       document.getElementById('view-mode').style.display = 'none';
       document.getElementById('edit-mode').style.display = 'block';
@@ -901,90 +912,103 @@
     window.cancelEditMode = function() {
       revokePreviousMediaUrl(editProcessedMedia);
       editProcessedMedia = { type: null, data: null, file: null };
-      document.getElementById('view-mode').style.display = 'block';
+
       document.getElementById('edit-mode').style.display = 'none';
+      document.getElementById('view-mode').style.display = 'block';
+
+      if (activeProductId) {
+        openDetailModal(activeProductId);
+      }
     };
 
     window.saveEditProduct = async function() {
       if (!activeProductId) return;
 
-      const editName = document.getElementById('edit-name').value.trim();
-      const editDetail = document.getElementById('edit-detail').value.trim();
-      const updateBtn = document.getElementById('btn-update-submit');
+      const product = productsList.find(item => item.id === activeProductId);
+      if (!product) return;
 
-      if (!editName) {
-        showToast("กรุณากรอกชื่อ/รุ่นสินค้า", "error");
+      const newName = document.getElementById('edit-name').value.trim();
+      const newDetail = document.getElementById('edit-detail').value.trim();
+
+      if (!newName) {
+        showToast("กรุณากรอกชื่อหรือรุ่นสินค้า", "error");
         return;
       }
 
-      const product = productsList.find(p => p.id === activeProductId);
-
-      updateBtn.disabled = true;
-      updateBtn.innerText = "⏳ กำลังบันทึกการแก้ไข...";
-      updateStatusUI('db', 'orange', 'DB: กำลังอัปเดต');
+      const btnUpdate = document.getElementById('btn-update-submit');
+      btnUpdate.disabled = true;
+      btnUpdate.innerText = "⏳ กำลังบันทึกการแก้ไข...";
 
       try {
-        let finalMediaUrl = product.mediaUrl;
-        let finalMediaType = product.mediaType;
+        let finalMediaUrl = product.mediaUrl || null;
+        let finalMediaType = product.mediaType || 'none';
 
         if (editProcessedMedia.file) {
-          showToast("กำลังอัปโหลดสื่อใหม่...", "info");
-          
           if (product.mediaUrl) {
             await deleteCloudinaryMedia(product.mediaUrl, product.mediaType);
           }
 
-          finalMediaUrl = await uploadToCloudinary(editProcessedMedia.file, editProcessedMedia.type === 'video' ? 'video' : 'image');
+          const resType = editProcessedMedia.type === 'video' ? 'video' : 'image';
+          finalMediaUrl = await uploadToCloudinary(editProcessedMedia.file, resType);
           finalMediaType = editProcessedMedia.type;
         }
 
-        const docRef = doc(db, "products", activeProductId);
-        await updateDoc(docRef, {
-          name: editName,
-          detail: editDetail,
-          mediaUrl: finalMediaUrl,
+        const updateData = {
+          name: newName,
+          detail: newDetail,
           mediaType: finalMediaType,
+          mediaUrl: finalMediaUrl,
           updatedAt: serverTimestamp()
-        });
+        };
 
-        showToast("แก้ไขข้อมูลสำเร็จ!", "success");
+        const docRef = doc(db, "products", activeProductId);
+        await updateDoc(docRef, updateData);
+
+        const index = productsList.findIndex(item => item.id === activeProductId);
+        if (index !== -1) {
+          productsList[index] = { ...productsList[index], ...updateData };
+        }
+
+        renderTable(productsList);
         closeModal();
-        await fetchInitialProducts();
+        showToast("อัปเดตข้อมูลสินค้าสำเร็จ!", "success");
 
       } catch (err) {
         console.error("Save Edit Error:", err);
-        showToast("เกิดข้อผิดพลาดในการแก้ไขข้อมูล", "error");
-        updateStatusUI('db', 'red', 'DB: ขัดข้อง');
+        showToast("แก้ไขข้อมูลไม่สำเร็จ: " + err.message, "error");
       } finally {
-        updateBtn.disabled = false;
-        updateBtn.innerText = "💾 บันทึกการแก้ไข";
+        btnUpdate.disabled = false;
+        btnUpdate.innerText = "💾 บันทึกการแก้ไข";
       }
     };
 
+    /* ===== ข้อ 4: ฟังก์ชันลบรายการสินค้า ===== */
     window.deleteProduct = async function() {
       if (!activeProductId) return;
 
-      if (!confirm("คุณต้องการลบรายการนี้ใช่หรือไม่? ข้อมูลและสื่อบน Cloud จะถูกลบอย่างถาวร")) {
+      const product = productsList.find(item => item.id === activeProductId);
+      if (!product) return;
+
+      if (!confirm(`คุณต้องการลบรายการ "${product.name}" ใช่หรือไม่?`)) {
         return;
       }
 
-      const product = productsList.find(p => p.id === activeProductId);
-      updateStatusUI('db', 'orange', 'DB: กำลังลบ');
-
       try {
-        if (product && product.mediaUrl) {
+        if (product.mediaUrl) {
           await deleteCloudinaryMedia(product.mediaUrl, product.mediaType);
         }
 
         await deleteDoc(doc(db, "products", activeProductId));
-        showToast("ลบรายการสำเร็จแล้ว", "success");
+
+        productsList = productsList.filter(item => item.id !== activeProductId);
+        renderTable(productsList);
+
         closeModal();
-        await fetchInitialProducts();
+        showToast("ลบรายการสินค้าเรียบร้อยแล้ว", "success");
 
       } catch (err) {
-        console.error("Delete Error:", err);
-        showToast("เกิดข้อผิดพลาดในการลบรายการ", "error");
-        updateStatusUI('db', 'red', 'DB: ขัดข้อง');
+        console.error("Delete Product Error:", err);
+        showToast("เกิดข้อผิดพลาดในการลบสินค้า: " + err.message, "error");
       }
     };
   </script>
