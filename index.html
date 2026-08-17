@@ -12,11 +12,12 @@
   <style>
     * { box-sizing: border-box; font-family: 'Sarabun', sans-serif; }
     
-    /* บล็อกการเด้งยืด (Elastic Scroll / Rubber-banding) ระดับหน้าจอ */
+    /* บล็อกการเด้งยืด (Elastic Scroll / Rubber-banding) ทั้งขอบบน ซ้าย ขวา */
     html { 
       scroll-behavior: smooth; 
-      overscroll-behavior-x: none; 
+      overscroll-behavior: none; /* ป้องกัน rubber-band ทุกทิศทางระดับหน้าจอ */
       height: 100%;
+      overflow-x: hidden;
     }
     
     body { 
@@ -29,8 +30,10 @@
       flex-direction: column; 
       align-items: center; 
       overflow-x: hidden; 
-      overscroll-behavior-x: none; /* ล็อกขอบซ้าย-ขวา ระดับ Body */
-      touch-action: pan-y; /* อนุญาตให้สไลด์แค่แนวตั้งเท่านั้นในหน้าหลัก */
+      overscroll-behavior-y: none; /* ล็อกการยืดหลุดขอบบน-ล่างระดับ Body */
+      overscroll-behavior-x: none; 
+      touch-action: pan-y; /* อนุญาตให้สไลด์แค่แนวตั้งเท่านั้น */
+      min-height: 100vh;
     }
     
     body.modal-open { overflow: hidden; height: 100vh; position: fixed; width: 100%; }
@@ -128,7 +131,7 @@
     
     .list-container { width: 100%; max-width: 800px; margin-bottom: 10px; box-sizing: border-box; overflow: hidden; }
     
-    /* ล็อกพื้นที่ตาราง สไลด์ซ้าย-ขวาได้เฉพาะภายในกรอบ ไม่ให้ลากเด้งหลุด */
+    /* ล็อกพื้นที่ตาราง สไลด์ซ้าย-ขวา/บน-ล่าง ได้เฉพาะภายในกรอบ */
     .table-container { 
       width: 100%; 
       max-width: 100%;
@@ -136,24 +139,23 @@
       max-height: 700px;
       overflow-y: auto; 
       overflow-x: auto; 
-      overscroll-behavior-x: none; /* ห้ามเด้งหลุดแนวนอน */
-      overscroll-behavior-y: contain; /* ควบคุมสไลด์แนวตั้งให้อยู่ในกรอบ */
+      overscroll-behavior: contain; /* ป้องกันการลากยืดทะลุออกไปนอกตารางทั้ง 4 ทิศ */
       -webkit-overflow-scrolling: touch; 
       border-radius: 8px; 
       border: 1px solid #e5e7eb; 
       box-sizing: border-box;
       position: relative;
-      touch-action: pan-x pan-y; /* อนุญาตให้ปัดได้ทั้ง 2 แนวภายในพื้นที่นี้เท่านั้น */
+      touch-action: pan-x pan-y;
     }
 
     table { 
       width: 100%; 
       min-width: 500px; 
-      max-width: 500px; /* ล็อกไม่ให้ตารางขยายความกว้างเกินจนหลุด */
+      max-width: 500px;
       border-collapse: collapse; 
       text-align: left; 
       font-size: 14px; 
-      table-layout: fixed; /* ล็อกขนาดคอลัมน์ให้อยู่กับที่ */
+      table-layout: fixed;
     }
 
     th { position: sticky; top: 0; background-color: #f9fafb; padding: 10px 12px; color: #374151; font-weight: 700; border-bottom: 1px solid #e5e7eb; z-index: 5; }
@@ -166,8 +168,8 @@
     .badge-none { background-color: #f3f4f6; color: #6b7280; }
     .text-truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; color: #6b7280; }
     
-    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; padding: 16px; -webkit-overflow-scrolling: touch; }
-    .modal-content { background-color: #fff; padding: 20px; border-radius: 16px; width: 100%; max-width: 480px; position: relative; max-height: 90vh; overflow-y: auto; -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; padding: 16px; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+    .modal-content { background-color: #fff; padding: 20px; border-radius: 16px; width: 100%; max-width: 480px; position: relative; max-height: 90vh; overflow-y: auto; -webkit-overflow-scrolling: touch; scroll-behavior: smooth; overscroll-behavior: contain; }
     .close-btn { position: absolute; right: 15px; top: 10px; font-size: 24px; cursor: pointer; color: #9ca3af; z-index: 10; }
     .modal-media-box { width: 100%; height: 230px; background: #111827; margin-bottom: 15px; border-radius: 10px; overflow: hidden; display: flex; justify-content: center; align-items: center; }
     .modal-media-box img, .modal-media-box video { max-width: 100%; max-height: 100%; object-fit: contain; }
