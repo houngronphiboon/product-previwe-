@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>ระบบบันทึกข้อมูลสินค้า - หนึ่ง ร่อนพิบูลย์ อิเล็กทรอนิกส์</title>
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -16,43 +16,14 @@
       -webkit-tap-highlight-color: transparent;
     }
     
-    /* ล็อกหน้าจอหลักไม่ให้เด้ง ยืด หรือหลุดขอบบน iOS และ Android */
-    html {
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      position: fixed;
-    }
-    
     body { 
       background-color: #f3f4f6; 
       margin: 0; 
-      padding: 0; 
+      padding: 16px; 
       color: #1f2937; 
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      position: fixed; /* ป้องกัน iOS Rubber-band ระดับ Body */
-      left: 0;
-      top: 0;
-      touch-action: none; /* บล็อก Gesture การลากหลุดขอบทุกทิศทาง */
-    }
-
-    /* ครอบเนื้อหาทั้งหมดสำหรับควบคุมการ Scroll แนวลึก */
-    .app-wrapper {
-      width: 100%;
-      height: 100%;
-      overflow-y: auto;
-      overflow-x: hidden;
-      -webkit-overflow-scrolling: touch;
-      overscroll-behavior: none;
-      padding: 16px;
-      padding-bottom: 30px;
-      box-sizing: border-box;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      touch-action: pan-y; /* อนุญาตให้สกรอลล์เฉพาะแนวตั้ง */
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
     }
 
     .container { width: 100%; max-width: 500px; margin-bottom: 20px; box-sizing: border-box; }
@@ -146,23 +117,21 @@
     .btn-save { width: 100%; background-color: #86efac; color: #166534; padding: 14px; font-size: 16px; }
     .btn-save.active { background-color: #22c55e; color: white; }
     
-    .list-container { width: 100%; max-width: 800px; margin-bottom: 10px; box-sizing: border-box; overflow: hidden; }
+    .list-container { width: 100%; max-width: 800px; margin-bottom: 20px; box-sizing: border-box; overflow: hidden; }
     
-    /* ล็อกกรอบตาราง ป้องกันแรงลากสไลด์หลุดขอบ (Scroll Chaining) */
+    /* ===== แก้ไขเฉพาะส่วนนี้: กรอบตาราง ล็อกการเด้งยืดหลุดขอบ ===== */
     .table-container { 
       width: 100%; 
       max-width: 100%;
-      height: 60vh; 
-      max-height: 600px;
+      max-height: 500px; /* กำหนดความสูงให้ตารางแสดงผลได้พอดี ไม่โดนบีบหาย */
       overflow-y: auto; 
       overflow-x: auto; 
-      overscroll-behavior: contain; /* บล็อกแรงสไลด์ไม่ให้ทะลุออกข้างนอก */
+      overscroll-behavior: contain; /* บล็อกแรงสไลด์ไม่ให้ทะลุออกไปดึงตัว Body */
       -webkit-overflow-scrolling: touch; 
       border-radius: 8px; 
       border: 1px solid #e5e7eb; 
       box-sizing: border-box;
-      position: relative;
-      touch-action: pan-x pan-y;
+      touch-action: pan-x pan-y; /* อนุญาตให้สกรอลล์ได้เฉพาะภายในตาราง */
     }
 
     table { 
@@ -207,85 +176,84 @@
 </head>
 <body>
 
-  <div class="app-wrapper" id="app-wrapper">
-    <div class="container">
-      <div class="card">
+  <div class="container">
+    <div class="card">
+      
+      <!-- ส่วนหัว -->
+      <div class="header-container">
+        <h1 class="header-title">หนึ่ง ร่อนพิบูลย์ อิเล็กทรอนิกส์</h1>
         
-        <!-- ส่วนหัว -->
-        <div class="header-container">
-          <h1 class="header-title">หนึ่ง ร่อนพิบูลย์ อิเล็กทรอนิกส์</h1>
-          
-          <div class="status-container">
-            <div class="status-badge">
-              <span class="status-dot green" id="db-status-dot"></span>
-              <span id="db-status-text">DB: พร้อม</span>
-            </div>
-            <div class="status-badge">
-              <span class="status-dot green" id="ai-status-dot"></span>
-              <span id="ai-status-text">AI: Vision</span>
-            </div>
+        <div class="status-container">
+          <div class="status-badge">
+            <span class="status-dot green" id="db-status-dot"></span>
+            <span id="db-status-text">DB: พร้อม</span>
+          </div>
+          <div class="status-badge">
+            <span class="status-dot green" id="ai-status-dot"></span>
+            <span id="ai-status-text">AI: Vision</span>
           </div>
         </div>
+      </div>
 
-        <!-- กรอบแสดงรูปภาพ / วิดีโอ -->
-        <div class="media-preview-box" id="preview-box">
-          <span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>
-        </div>
+      <!-- กรอบแสดงรูปภาพ / วิดีโอ -->
+      <div class="media-preview-box" id="preview-box">
+        <span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>
+      </div>
 
-        <div class="media-buttons">
-          <button class="btn btn-media" id="btn-file-select" onclick="document.getElementById('media-input').click()">
-            📁 เลือกรูป / วิดีโอ
-          </button>
-          <button class="btn btn-camera" id="btn-camera" onclick="document.getElementById('camera-input').click()">
-            📷 ถ่ายรูป
-          </button>
-        </div>
-
-        <input type="file" id="media-input" accept="image/*,video/*" style="display: none;" onchange="handleFileSelect(event)">
-        <input type="file" id="camera-input" accept="image/*" capture="environment" style="display: none;" onchange="handleFileSelect(event)">
-
-        <div class="form-group">
-          <label for="product-name">ชื่อ/รุ่น <span class="required">*</span></label>
-          <input type="text" id="product-name" class="form-control" placeholder="เช่น C-BZN100L5L, 43HS534AN, RT22FGRADSA" oninput="clearValidationError()">
-          <div class="error-msg" id="name-error-msg">กรุณากรอกชื่อหรือรุ่นสินค้า</div>
-        </div>
-
-        <div class="form-group">
-          <label for="product-detail">รายละเอียดสินค้า</label>
-          <textarea id="product-detail" class="form-control" placeholder="ระบุรายละเอียดสินค้า หรือแนบรูปเพลต/สินค้าแล้วกดให้ AI วิเคราะห์สเปก"></textarea>
-        </div>
-
-        <button class="btn btn-ai" id="btn-ai-search" onclick="generateAIDetails()">
-          ✨ วิเคราะห์ข้อมูลสินค้าด้วย AI (จากรูปถ่าย/ชื่อรุ่น)
+      <div class="media-buttons">
+        <button class="btn btn-media" id="btn-file-select" onclick="document.getElementById('media-input').click()">
+          📁 เลือกรูป / วิดีโอ
         </button>
-
-        <button class="btn btn-save active" id="btn-save" onclick="addProduct()">
-          บันทึกสินค้าลงคลาวด์
+        <button class="btn btn-camera" id="btn-camera" onclick="document.getElementById('camera-input').click()">
+          📷 ถ่ายรูป
         </button>
       </div>
-    </div>
 
-    <div class="list-container card" id="list-card">
-      <h3 style="margin: 0 0 14px 0; font-size: 18px; color: #111827; font-weight: 700;">
-        รายการสินค้าบน Cloud
-      </h3>
+      <input type="file" id="media-input" accept="image/*,video/*" style="display: none;" onchange="handleFileSelect(event)">
+      <input type="file" id="camera-input" accept="image/*" capture="environment" style="display: none;" onchange="handleFileSelect(event)">
 
       <div class="form-group">
-        <input type="text" id="search-input" class="form-control" placeholder="🔍 พิมพ์ชื่อ/รุ่น เพื่อค้นหาในระบบ..." oninput="handleSearchDebounced()">
+        <label for="product-name">ชื่อ/รุ่น <span class="required">*</span></label>
+        <input type="text" id="product-name" class="form-control" placeholder="เช่น C-BZN100L5L, 43HS534AN, RT22FGRADSA" oninput="clearValidationError()">
+        <div class="error-msg" id="name-error-msg">กรุณากรอกชื่อหรือรุ่นสินค้า</div>
       </div>
 
-      <div class="table-container" id="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th style="width: 100px;">ชนิดสื่อ</th>
-              <th style="width: 150px;">ชื่อ/รุ่น</th>
-              <th style="width: 250px;">รายละเอียด</th>
-            </tr>
-          </thead>
-          <tbody id="product-list"></tbody>
-        </table>
+      <div class="form-group">
+        <label for="product-detail">รายละเอียดสินค้า</label>
+        <textarea id="product-detail" class="form-control" placeholder="ระบุรายละเอียดสินค้า หรือแนบรูปเพลต/สินค้าแล้วกดให้ AI วิเคราะห์สเปก"></textarea>
       </div>
+
+      <button class="btn btn-ai" id="btn-ai-search" onclick="generateAIDetails()">
+        ✨ วิเคราะห์ข้อมูลสินค้าด้วย AI (จากรูปถ่าย/ชื่อรุ่น)
+      </button>
+
+      <button class="btn btn-save active" id="btn-save" onclick="addProduct()">
+        บันทึกสินค้าลงคลาวด์
+      </button>
+    </div>
+  </div>
+
+  <div class="list-container card" id="list-card">
+    <h3 style="margin: 0 0 14px 0; font-size: 18px; color: #111827; font-weight: 700;">
+      รายการสินค้าบน Cloud
+    </h3>
+
+    <div class="form-group">
+      <input type="text" id="search-input" class="form-control" placeholder="🔍 พิมพ์ชื่อ/รุ่น เพื่อค้นหาในระบบ..." oninput="handleSearchDebounced()">
+    </div>
+
+    <!-- กรอบตารางรายการสินค้า -->
+    <div class="table-container" id="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 100px;">ชนิดสื่อ</th>
+            <th style="width: 150px;">ชื่อ/รุ่น</th>
+            <th style="width: 250px;">รายละเอียด</th>
+          </tr>
+        </thead>
+        <tbody id="product-list"></tbody>
+      </table>
     </div>
   </div>
 
@@ -324,11 +292,11 @@
 
         <div class="form-group">
           <label for="edit-name">ชื่อ/รุ่น</label>
-          <input type="text" id="edit-name" class="form-control" onfocus="autoScrollFocus(this)">
+          <input type="text" id="edit-name" class="form-control">
         </div>
         <div class="form-group">
           <label for="edit-detail">รายละเอียด</label>
-          <textarea id="edit-detail" class="form-control" onfocus="autoScrollFocus(this)"></textarea>
+          <textarea id="edit-detail" class="form-control"></textarea>
         </div>
         <button class="btn btn-update" id="btn-update-submit" onclick="saveEditProduct()">💾 บันทึกการแก้ไข</button>
         <button class="btn btn-cancel" onclick="cancelEditMode()">ยกเลิก</button>
@@ -387,24 +355,21 @@
     let isSearchMode = false;
     let searchDebounceTimer = null;
 
-    /* ===== สคริปต์ดักขอบ iOS Rubber-Band ไม่ให้เด้งหลุดขอบทุกกรณี ===== */
-    function attachRubberBandPreventer(element) {
-      if (!element) return;
-      element.addEventListener('touchstart', (e) => {
-        const top = element.scrollTop;
-        const totalScroll = element.scrollHeight;
-        const currentScroll = top + element.offsetHeight;
+    /* ===== ป้องกันการลากเด้งหลุดขอบเฉพาะพื้นที่ตาราง (iOS Safari) ===== */
+    const tableContainer = document.getElementById('table-container');
+    if (tableContainer) {
+      tableContainer.addEventListener('touchstart', (e) => {
+        const top = tableContainer.scrollTop;
+        const totalScroll = tableContainer.scrollHeight;
+        const currentScroll = top + tableContainer.offsetHeight;
 
         if (top === 0) {
-          element.scrollTop = 1;
+          tableContainer.scrollTop = 1; // ดันลงมา 1px กันชนขอบบนสุด
         } else if (currentScroll >= totalScroll) {
-          element.scrollTop = top - 1;
+          tableContainer.scrollTop = top - 1; // ดันขึ้น 1px กันชนขอบล่างสุด
         }
       }, { passive: true });
     }
-
-    attachRubberBandPreventer(document.getElementById('app-wrapper'));
-    attachRubberBandPreventer(document.getElementById('table-container'));
 
     function updateStatusUI(target, state, text) {
       const dot = document.getElementById(`${target}-status-dot`);
@@ -420,12 +385,6 @@
         URL.revokeObjectURL(mediaObj.data);
       }
     }
-
-    window.autoScrollFocus = function(element) {
-      setTimeout(() => {
-        element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }, 300);
-    };
 
     function extractPublicIdFromUrl(url) {
       if (!url) return null;
@@ -620,8 +579,6 @@
     }
 
     function setupScrollListener() {
-      const tableContainer = document.getElementById('table-container');
-
       if (tableContainer) {
         tableContainer.addEventListener('scroll', () => {
           if (tableContainer.scrollTop + tableContainer.clientHeight >= tableContainer.scrollHeight - 50) {
@@ -949,7 +906,6 @@
       document.getElementById('edit-mode').style.display = 'none';
 
       document.getElementById('detail-modal').style.display = 'flex';
-      attachRubberBandPreventer(document.getElementById('modal-content-box'));
     }
 
     window.enableEditMode = function() {
