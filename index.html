@@ -111,26 +111,55 @@
     .btn-save { width: 100%; background-color: #86efac; color: #166534; padding: 14px; font-size: 16px; }
     .btn-save.active { background-color: #22c55e; color: white; }
     
-    /* ===== ส่วนการจัดการตารางแบบ Responsive ล็อกไม่ให้เลื่อนหลุดกรอบ ===== */
+    /* ===== จุดแก้ไข: ล็อกหัวตาราง + ป้องกันการซ้อนและเลื่อนทะลุ ===== */
     .list-container { width: 100%; max-width: 500px; margin-bottom: 10px; }
+    
     .table-container { 
       width: 100%; 
-      height: 65vh; 
-      max-height: 600px;
+      height: 60vh; 
+      max-height: 550px;
       overflow-y: auto; 
-      overflow-x: hidden; /* ป้องกันไม่ให้ตารางดันออกข้าง */
+      overflow-x: hidden;
       border-radius: 8px; 
       border: 1px solid #e5e7eb; 
+      position: relative;
     }
+
     table { 
       width: 100%; 
-      border-collapse: collapse; 
+      border-collapse: separate; /* ใช้ separate เพื่อให้ sticky header ของ <th> ทำงานสมบูรณ์ */
+      border-spacing: 0;
       text-align: left; 
       font-size: 13px; 
-      table-layout: fixed; /* บังคับคำนวณความกว้างคอลัมน์ไม่ให้ล้น */
+      table-layout: fixed;
     }
-    th { position: sticky; top: 0; background-color: #f9fafb; padding: 10px 8px; color: #374151; font-weight: 700; border-bottom: 1px solid #e5e7eb; z-index: 5; }
-    td { padding: 10px 8px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; word-wrap: break-word; }
+
+    thead {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    th { 
+      position: sticky; 
+      top: 0; 
+      background-color: #f9fafb !important; 
+      color: #374151; 
+      font-weight: 700; 
+      padding: 12px 8px;
+      border-bottom: 2px solid #e5e7eb; 
+      z-index: 10;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); /* สร้างมิติไม่ให้เนื้อหาด้านล่างโผล่ทะลุ */
+    }
+
+    td { 
+      padding: 10px 8px; 
+      border-bottom: 1px solid #f3f4f6; 
+      vertical-align: middle; 
+      word-wrap: break-word; 
+      background-color: #ffffff;
+    }
+
     .clickable-row { cursor: pointer; transition: background 0.15s; }
     .clickable-row:hover, .clickable-row:active { background-color: #e0f2fe; }
     .badge { display: inline-flex; align-items: center; gap: 2px; padding: 4px 6px; border-radius: 12px; font-size: 11px; font-weight: 600; white-space: nowrap; }
@@ -139,6 +168,7 @@
     .badge-none { background-color: #f3f4f6; color: #6b7280; }
     .text-truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; color: #6b7280; }
     
+    /* ===== Modal & Toast ===== */
     .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; padding: 16px; -webkit-overflow-scrolling: touch; }
     .modal-content { background-color: #fff; padding: 20px; border-radius: 16px; width: 100%; max-width: 480px; position: relative; max-height: 90vh; overflow-y: auto; -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }
     .close-btn { position: absolute; right: 15px; top: 10px; font-size: 24px; cursor: pointer; color: #9ca3af; z-index: 10; }
@@ -720,7 +750,6 @@
       return data.secure_url;
     }
 
-    /* ===== PROMPT AI: วิเคราะห์ชื่อรุ่น + ภาพ ส่งไปยัง Worker Backend ===== */
     window.generateAIDetails = async function() {
       const nameInput = document.getElementById('product-name');
       const detailInput = document.getElementById('product-detail');
@@ -806,7 +835,6 @@
       }
     };
 
-    /* ===== ข้อ 1: ฟังก์ชันเพิ่มสินค้าบันทึกคลาวด์ ===== */
     window.addProduct = async function() {
       const nameInput = document.getElementById('product-name');
       const detailInput = document.getElementById('product-detail');
@@ -867,7 +895,6 @@
       }
     };
 
-    /* ===== ข้อ 2: ฟังก์ชันเปิด Modal แสดงรายละเอียดสินค้า ===== */
     window.openDetailModal = function(id) {
       const product = productsList.find(item => item.id === id);
       if (!product) return;
@@ -895,7 +922,6 @@
       document.body.classList.add('modal-open');
     };
 
-    /* ===== ข้อ 3: ฟังก์ชันแก้ไขข้อมูลสินค้า ===== */
     window.enableEditMode = function() {
       const product = productsList.find(item => item.id === activeProductId);
       if (!product) return;
@@ -982,7 +1008,6 @@
       }
     };
 
-    /* ===== ข้อ 4: ฟังก์ชันลบรายการสินค้า ===== */
     window.deleteProduct = async function() {
       if (!activeProductId) return;
 
