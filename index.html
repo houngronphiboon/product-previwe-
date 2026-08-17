@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>ระบบบันทึกข้อมูลสินค้า - หนึ่ง ร่อนพิบูลย์ อิเล็กทรอนิกส์</title>
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -10,33 +10,50 @@
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <style>
-    * { box-sizing: border-box; font-family: 'Sarabun', sans-serif; }
+    * { 
+      box-sizing: border-box; 
+      font-family: 'Sarabun', sans-serif; 
+      -webkit-tap-highlight-color: transparent;
+    }
     
-    /* บล็อกการเด้งยืด (Elastic Scroll / Rubber-banding) ทั้งขอบบน ซ้าย ขวา */
-    html { 
-      scroll-behavior: smooth; 
-      overscroll-behavior: none; /* ป้องกัน rubber-band ทุกทิศทางระดับหน้าจอ */
+    /* ล็อกหน้าจอหลักไม่ให้เด้ง ยืด หรือหลุดขอบบน iOS และ Android */
+    html {
+      width: 100%;
       height: 100%;
-      overflow-x: hidden;
+      overflow: hidden;
+      position: fixed;
     }
     
     body { 
       background-color: #f3f4f6; 
       margin: 0; 
-      padding: 16px; 
-      padding-bottom: 20px; 
+      padding: 0; 
       color: #1f2937; 
-      display: flex; 
-      flex-direction: column; 
-      align-items: center; 
-      overflow-x: hidden; 
-      overscroll-behavior-y: none; /* ล็อกการยืดหลุดขอบบน-ล่างระดับ Body */
-      overscroll-behavior-x: none; 
-      touch-action: pan-y; /* อนุญาตให้สไลด์แค่แนวตั้งเท่านั้น */
-      min-height: 100vh;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      position: fixed; /* ป้องกัน iOS Rubber-band ระดับ Body */
+      left: 0;
+      top: 0;
+      touch-action: none; /* บล็อก Gesture การลากหลุดขอบทุกทิศทาง */
     }
-    
-    body.modal-open { overflow: hidden; height: 100vh; position: fixed; width: 100%; }
+
+    /* ครอบเนื้อหาทั้งหมดสำหรับควบคุมการ Scroll แนวลึก */
+    .app-wrapper {
+      width: 100%;
+      height: 100%;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: none;
+      padding: 16px;
+      padding-bottom: 30px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      touch-action: pan-y; /* อนุญาตให้สกรอลล์เฉพาะแนวตั้ง */
+    }
 
     .container { width: 100%; max-width: 500px; margin-bottom: 20px; box-sizing: border-box; }
     
@@ -131,15 +148,15 @@
     
     .list-container { width: 100%; max-width: 800px; margin-bottom: 10px; box-sizing: border-box; overflow: hidden; }
     
-    /* ล็อกพื้นที่ตาราง สไลด์ซ้าย-ขวา/บน-ล่าง ได้เฉพาะภายในกรอบ */
+    /* ล็อกกรอบตาราง ป้องกันแรงลากสไลด์หลุดขอบ (Scroll Chaining) */
     .table-container { 
       width: 100%; 
       max-width: 100%;
-      height: 72vh; 
-      max-height: 700px;
+      height: 60vh; 
+      max-height: 600px;
       overflow-y: auto; 
       overflow-x: auto; 
-      overscroll-behavior: contain; /* ป้องกันการลากยืดทะลุออกไปนอกตารางทั้ง 4 ทิศ */
+      overscroll-behavior: contain; /* บล็อกแรงสไลด์ไม่ให้ทะลุออกข้างนอก */
       -webkit-overflow-scrolling: touch; 
       border-radius: 8px; 
       border: 1px solid #e5e7eb; 
@@ -168,7 +185,7 @@
     .badge-none { background-color: #f3f4f6; color: #6b7280; }
     .text-truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; color: #6b7280; }
     
-    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; padding: 16px; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; padding: 16px; overscroll-behavior: contain; }
     .modal-content { background-color: #fff; padding: 20px; border-radius: 16px; width: 100%; max-width: 480px; position: relative; max-height: 90vh; overflow-y: auto; -webkit-overflow-scrolling: touch; scroll-behavior: smooth; overscroll-behavior: contain; }
     .close-btn { position: absolute; right: 15px; top: 10px; font-size: 24px; cursor: pointer; color: #9ca3af; z-index: 10; }
     .modal-media-box { width: 100%; height: 230px; background: #111827; margin-bottom: 15px; border-radius: 10px; overflow: hidden; display: flex; justify-content: center; align-items: center; }
@@ -190,83 +207,85 @@
 </head>
 <body>
 
-  <div class="container">
-    <div class="card">
-      
-      <!-- ส่วนหัว -->
-      <div class="header-container">
-        <h1 class="header-title">หนึ่ง ร่อนพิบูลย์ อิเล็กทรอนิกส์</h1>
+  <div class="app-wrapper" id="app-wrapper">
+    <div class="container">
+      <div class="card">
         
-        <div class="status-container">
-          <div class="status-badge">
-            <span class="status-dot green" id="db-status-dot"></span>
-            <span id="db-status-text">DB: พร้อม</span>
-          </div>
-          <div class="status-badge">
-            <span class="status-dot green" id="ai-status-dot"></span>
-            <span id="ai-status-text">AI: Vision</span>
+        <!-- ส่วนหัว -->
+        <div class="header-container">
+          <h1 class="header-title">หนึ่ง ร่อนพิบูลย์ อิเล็กทรอนิกส์</h1>
+          
+          <div class="status-container">
+            <div class="status-badge">
+              <span class="status-dot green" id="db-status-dot"></span>
+              <span id="db-status-text">DB: พร้อม</span>
+            </div>
+            <div class="status-badge">
+              <span class="status-dot green" id="ai-status-dot"></span>
+              <span id="ai-status-text">AI: Vision</span>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- กรอบแสดงรูปภาพ / วิดีโอ -->
-      <div class="media-preview-box" id="preview-box">
-        <span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>
-      </div>
+        <!-- กรอบแสดงรูปภาพ / วิดีโอ -->
+        <div class="media-preview-box" id="preview-box">
+          <span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>
+        </div>
 
-      <div class="media-buttons">
-        <button class="btn btn-media" id="btn-file-select" onclick="document.getElementById('media-input').click()">
-          📁 เลือกรูป / วิดีโอ
+        <div class="media-buttons">
+          <button class="btn btn-media" id="btn-file-select" onclick="document.getElementById('media-input').click()">
+            📁 เลือกรูป / วิดีโอ
+          </button>
+          <button class="btn btn-camera" id="btn-camera" onclick="document.getElementById('camera-input').click()">
+            📷 ถ่ายรูป
+          </button>
+        </div>
+
+        <input type="file" id="media-input" accept="image/*,video/*" style="display: none;" onchange="handleFileSelect(event)">
+        <input type="file" id="camera-input" accept="image/*" capture="environment" style="display: none;" onchange="handleFileSelect(event)">
+
+        <div class="form-group">
+          <label for="product-name">ชื่อ/รุ่น <span class="required">*</span></label>
+          <input type="text" id="product-name" class="form-control" placeholder="เช่น C-BZN100L5L, 43HS534AN, RT22FGRADSA" oninput="clearValidationError()">
+          <div class="error-msg" id="name-error-msg">กรุณากรอกชื่อหรือรุ่นสินค้า</div>
+        </div>
+
+        <div class="form-group">
+          <label for="product-detail">รายละเอียดสินค้า</label>
+          <textarea id="product-detail" class="form-control" placeholder="ระบุรายละเอียดสินค้า หรือแนบรูปเพลต/สินค้าแล้วกดให้ AI วิเคราะห์สเปก"></textarea>
+        </div>
+
+        <button class="btn btn-ai" id="btn-ai-search" onclick="generateAIDetails()">
+          ✨ วิเคราะห์ข้อมูลสินค้าด้วย AI (จากรูปถ่าย/ชื่อรุ่น)
         </button>
-        <button class="btn btn-camera" id="btn-camera" onclick="document.getElementById('camera-input').click()">
-          📷 ถ่ายรูป
+
+        <button class="btn btn-save active" id="btn-save" onclick="addProduct()">
+          บันทึกสินค้าลงคลาวด์
         </button>
       </div>
-
-      <input type="file" id="media-input" accept="image/*,video/*" style="display: none;" onchange="handleFileSelect(event)">
-      <input type="file" id="camera-input" accept="image/*" capture="environment" style="display: none;" onchange="handleFileSelect(event)">
-
-      <div class="form-group">
-        <label for="product-name">ชื่อ/รุ่น <span class="required">*</span></label>
-        <input type="text" id="product-name" class="form-control" placeholder="เช่น C-BZN100L5L, 43HS534AN, RT22FGRADSA" oninput="clearValidationError()">
-        <div class="error-msg" id="name-error-msg">กรุณากรอกชื่อหรือรุ่นสินค้า</div>
-      </div>
-
-      <div class="form-group">
-        <label for="product-detail">รายละเอียดสินค้า</label>
-        <textarea id="product-detail" class="form-control" placeholder="ระบุรายละเอียดสินค้า หรือแนบรูปเพลต/สินค้าแล้วกดให้ AI วิเคราะห์สเปก"></textarea>
-      </div>
-
-      <button class="btn btn-ai" id="btn-ai-search" onclick="generateAIDetails()">
-        ✨ วิเคราะห์ข้อมูลสินค้าด้วย AI (จากรูปถ่าย/ชื่อรุ่น)
-      </button>
-
-      <button class="btn btn-save active" id="btn-save" onclick="addProduct()">
-        บันทึกสินค้าลงคลาวด์
-      </button>
-    </div>
-  </div>
-
-  <div class="list-container card" id="list-card">
-    <h3 style="margin: 0 0 14px 0; font-size: 18px; color: #111827; font-weight: 700;">
-      รายการสินค้าบน Cloud
-    </h3>
-
-    <div class="form-group">
-      <input type="text" id="search-input" class="form-control" placeholder="🔍 พิมพ์ชื่อ/รุ่น เพื่อค้นหาในระบบ..." oninput="handleSearchDebounced()">
     </div>
 
-    <div class="table-container" id="table-container">
-      <table>
-        <thead>
-          <tr>
-            <th style="width: 100px;">ชนิดสื่อ</th>
-            <th style="width: 150px;">ชื่อ/รุ่น</th>
-            <th style="width: 250px;">รายละเอียด</th>
-          </tr>
-        </thead>
-        <tbody id="product-list"></tbody>
-      </table>
+    <div class="list-container card" id="list-card">
+      <h3 style="margin: 0 0 14px 0; font-size: 18px; color: #111827; font-weight: 700;">
+        รายการสินค้าบน Cloud
+      </h3>
+
+      <div class="form-group">
+        <input type="text" id="search-input" class="form-control" placeholder="🔍 พิมพ์ชื่อ/รุ่น เพื่อค้นหาในระบบ..." oninput="handleSearchDebounced()">
+      </div>
+
+      <div class="table-container" id="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 100px;">ชนิดสื่อ</th>
+              <th style="width: 150px;">ชื่อ/รุ่น</th>
+              <th style="width: 250px;">รายละเอียด</th>
+            </tr>
+          </thead>
+          <tbody id="product-list"></tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -368,6 +387,25 @@
     let isSearchMode = false;
     let searchDebounceTimer = null;
 
+    /* ===== สคริปต์ดักขอบ iOS Rubber-Band ไม่ให้เด้งหลุดขอบทุกกรณี ===== */
+    function attachRubberBandPreventer(element) {
+      if (!element) return;
+      element.addEventListener('touchstart', (e) => {
+        const top = element.scrollTop;
+        const totalScroll = element.scrollHeight;
+        const currentScroll = top + element.offsetHeight;
+
+        if (top === 0) {
+          element.scrollTop = 1;
+        } else if (currentScroll >= totalScroll) {
+          element.scrollTop = top - 1;
+        }
+      }, { passive: true });
+    }
+
+    attachRubberBandPreventer(document.getElementById('app-wrapper'));
+    attachRubberBandPreventer(document.getElementById('table-container'));
+
     function updateStatusUI(target, state, text) {
       const dot = document.getElementById(`${target}-status-dot`);
       const txt = document.getElementById(`${target}-status-text`);
@@ -458,7 +496,6 @@
 
     window.closeModal = function() {
       document.getElementById('detail-modal').style.display = 'none';
-      document.body.classList.remove('modal-open');
       revokePreviousMediaUrl(editProcessedMedia);
       activeProductId = null;
       editProcessedMedia = { type: null, data: null, file: null };
@@ -466,7 +503,6 @@
 
     window.closeQuotaModal = function() {
       document.getElementById('quota-modal').style.display = 'none';
-      document.body.classList.remove('modal-open');
     }
 
     window.goToRecharge = function() {
@@ -824,7 +860,6 @@
         if (err.isQuotaError) {
           document.getElementById('quota-modal-msg').innerText = err.message || "โควต้าหรือสิทธิ์ใช้ AI ของคุณหมดแล้ว ต้องการไปยังหน้าจัดการเพื่อเติมสิทธิ์หรือไม่?";
           document.getElementById('quota-modal').style.display = 'flex';
-          document.body.classList.add('modal-open');
         } else {
           showToast(err.message || "เกิดข้อผิดพลาดในการวิเคราะห์ AI", "error");
         }
@@ -914,7 +949,7 @@
       document.getElementById('edit-mode').style.display = 'none';
 
       document.getElementById('detail-modal').style.display = 'flex';
-      document.body.classList.add('modal-open');
+      attachRubberBandPreventer(document.getElementById('modal-content-box'));
     }
 
     window.enableEditMode = function() {
