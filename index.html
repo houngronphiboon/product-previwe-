@@ -94,11 +94,12 @@
     }
     .media-preview-box img, .media-preview-box video { max-width: 100%; max-height: 100%; object-fit: contain; }
     
-    .media-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
-    .btn { border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s; }
+    .media-buttons { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+    .btn { border: none; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: all 0.2s; }
     .btn:disabled { opacity: 0.6; cursor: not-allowed; }
-    .btn-media { background-color: #e5e7eb; color: #374151; padding: 12px 8px; }
-    .btn-camera { background-color: #007bff; color: white; padding: 12px 8px; }
+    .btn-media { background-color: #e5e7eb; color: #374151; padding: 12px 6px; }
+    .btn-camera { background-color: #007bff; color: white; padding: 12px 6px; }
+    .btn-video-cam { background-color: #dc2626; color: white; padding: 12px 6px; }
     .form-group { margin-bottom: 16px; }
     .form-group label { display: block; font-size: 15px; font-weight: 700; margin-bottom: 6px; color: #374151; }
     .required { color: #dc2626; }
@@ -181,15 +182,19 @@
 
       <div class="media-buttons">
         <button class="btn btn-media" id="btn-file-select" onclick="document.getElementById('media-input').click()">
-          📁 เลือกรูป / วิดีโอ
+          📁 เลือกไฟล์
         </button>
         <button class="btn btn-camera" id="btn-camera" onclick="document.getElementById('camera-input').click()">
           📷 ถ่ายรูป
+        </button>
+        <button class="btn btn-video-cam" id="btn-video-camera" onclick="document.getElementById('video-camera-input').click()">
+          🎥 อัดวิดีโอ
         </button>
       </div>
 
       <input type="file" id="media-input" accept="image/*,video/*" style="display: none;" onchange="handleFileSelect(event)">
       <input type="file" id="camera-input" accept="image/*" capture="environment" style="display: none;" onchange="handleFileSelect(event)">
+      <input type="file" id="video-camera-input" accept="video/*" capture="environment" style="display: none;" onchange="handleFileSelect(event)">
 
       <div class="form-group">
         <label for="product-name">ชื่อ/รุ่น <span class="required">*</span></label>
@@ -258,15 +263,19 @@
 
         <div class="media-buttons">
           <button class="btn btn-media" onclick="document.getElementById('edit-media-input').click()">
-            📁 เปลี่ยนรูป / วิดีโอ
+            📁 เปลี่ยนไฟล์
           </button>
           <button class="btn btn-camera" onclick="document.getElementById('edit-camera-input').click()">
             📷 ถ่ายรูปใหม่
+          </button>
+          <button class="btn btn-video-cam" onclick="document.getElementById('edit-video-camera-input').click()">
+            🎥 อัดวิดีโอใหม่
           </button>
         </div>
 
         <input type="file" id="edit-media-input" accept="image/*,video/*" style="display: none;" onchange="handleEditFileSelect(event)">
         <input type="file" id="edit-camera-input" accept="image/*" capture="environment" style="display: none;" onchange="handleEditFileSelect(event)">
+        <input type="file" id="edit-video-camera-input" accept="video/*" capture="environment" style="display: none;" onchange="handleEditFileSelect(event)">
 
         <div class="form-group">
           <label for="edit-name">ชื่อ/รุ่น</label>
@@ -714,7 +723,7 @@
       return data.secure_url;
     }
 
-    /* ===== PROMPT AI: วิเคราะห์ชื่อรุ่น + ภาพ ส่งไปยัง Worker Backend ===== */
+    /* ===== PROMPT AI: วิเคราะห์ชื่อรุ่น + ภาพ (ยกเว้นวิดีโอ) ===== */
     window.generateAIDetails = async function() {
       const nameInput = document.getElementById('product-name');
       const detailInput = document.getElementById('product-detail');
@@ -728,6 +737,11 @@
 
       try {
         let payload = { contents: [] };
+
+        // หากสื่อเป็นวิดีโอ ให้ข้ามการส่งไฟล์สื่อเข้า AI Vision แล้วใช้วิเคราะห์จากชื่อรุ่นอย่างเดียว
+        if (processedMedia.type === 'video') {
+          showToast("วิดีโอไม่รองรับการวิเคราะห์ด้วย AI Vision ระบบจะวิเคราะห์จากชื่อรุ่นแทน", "info");
+        }
 
         if (processedMedia.type === 'image' && processedMedia.data) {
           const base64Data = processedMedia.data.split(',')[1];
