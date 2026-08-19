@@ -688,7 +688,6 @@
       });
     }
 
-    // ฟังก์ชันสร้าง Thumbnail เฟรมแรกจากไฟล์วิดีโอ
     function generateVideoThumbnail(file) {
       return new Promise((resolve, reject) => {
         const video = document.createElement('video');
@@ -725,7 +724,7 @@
     }
 
     // ==========================================
-    // บีบอัดวิดีโอบนเครื่อง โดยคงระบบสัญญาณเสียงไว้
+    // บีบอัดวิดีโอบนเครื่อง (ปิดเสียงระหว่างเรนเดอร์เพื่อไม่ให้เสียงดัง)
     // ==========================================
     async function compressVideo(file, maxWidth = 1280, maxHeight = 720) {
       return new Promise((resolve, reject) => {
@@ -734,7 +733,8 @@
         const video = document.createElement('video');
         video.src = URL.createObjectURL(file);
         video.playsInline = true;
-        video.muted = false;
+        video.muted = true; // ปิดเสียงไม่ให้ดังออกลำโพงขณะบีบอัด
+        video.volume = 0;
 
         video.onloadeddata = () => video.play();
         video.onerror = (err) => {
@@ -784,6 +784,7 @@
           };
 
           mediaRecorder.onstop = () => {
+            video.pause();
             URL.revokeObjectURL(video.src);
             const compressedBlob = new Blob(chunks, { type: 'video/webm' });
             const compressedFile = new File([compressedBlob], `compressed_${Date.now()}.webm`, {
@@ -807,9 +808,6 @@
       });
     }
 
-    // ==========================================
-    // อัปเดต Preview (เอาแถบสีเขียวออก)
-    // ==========================================
     window.handleFileSelect = async function(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -1026,6 +1024,13 @@
 
         const newDocId = docRef.id;
 
+        // สั่งหยุดการเล่นวิดีโอบนกรอบ พรีวิว ก่อนล้างข้อมูล
+        const previewVid = document.querySelector('#preview-box video');
+        if (previewVid) {
+          previewVid.pause();
+          previewVid.src = "";
+        }
+
         nameInput.value = "";
         detailInput.value = "";
         document.getElementById('preview-box').innerHTML = "<span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>";
@@ -1033,12 +1038,16 @@
         processedMedia = { type: null, data: null, file: null };
         clearValidationError();
 
-        showToast("⚡ บันทึกสำเร็จ! (กำลังอัปโหลดสื่อหลังบ้าน)", "success");
-        fetchInitialProducts();
-
         if (tempMedia.file) {
+          // สลับสถานะไฟ DB เป็นสีส้มทันทีที่กดบันทึก
+          updateStatusUI('db', 'orange', 'DB: กำลังอัปโหลดสื่อ...');
+          showToast("⚡ บันทึกสำเร็จ! (กำลังอัปโหลดสื่อหลังบ้าน)", "success");
           processMediaInBackground(newDocId, tempMedia);
+        } else {
+          showToast("⚡ บันทึกสำเร็จ!", "success");
         }
+
+        fetchInitialProducts();
 
       } catch (error) {
         console.error("Add Product Error:", error);
@@ -1051,8 +1060,6 @@
 
     async function processMediaInBackground(docId, mediaObj) {
       try {
-        updateStatusUI('db', 'orange', 'DB: กำลังอัปโหลดสื่อ...');
-
         const uploadedUrl = await uploadToCloudinary(mediaObj.file, mediaObj.type);
 
         const productRef = doc(db, "products", docId);
