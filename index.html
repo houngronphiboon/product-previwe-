@@ -132,6 +132,7 @@
     .badge-video { background-color: #eff6ff; color: #2563eb; }
     .badge-image { background-color: #f0fdf4; color: #16a34a; }
     .badge-none { background-color: #f3f4f6; color: #6b7280; }
+    .badge-loading { background-color: #fef3c7; color: #d97706; }
     .text-truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; color: #6b7280; }
     
     .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; padding: 16px; -webkit-overflow-scrolling: touch; }
@@ -463,8 +464,13 @@
         tr.onclick = () => openDetailModal(item.id);
 
         let mediaBadge = `<span class="badge badge-none">ไม่มี</span>`;
-        if (item.mediaType === 'image') mediaBadge = `<span class="badge badge-image">🖼️ รูปภาพ</span>`;
-        else if (item.mediaType === 'video') mediaBadge = `<span class="badge badge-video">🎥 วิดีโอ</span>`;
+        if (item.uploadStatus === 'processing') {
+          mediaBadge = `<span class="badge badge-loading">⏳ กำลังอัปโหลด...</span>`;
+        } else if (item.mediaType === 'image') {
+          mediaBadge = `<span class="badge badge-image">🖼️ รูปภาพ</span>`;
+        } else if (item.mediaType === 'video') {
+          mediaBadge = `<span class="badge badge-video">🎥 วิดีโอ</span>`;
+        }
 
         tr.innerHTML = `
           <td>${mediaBadge}</td>
@@ -675,16 +681,16 @@
     }
 
     // ==========================================
-    // ฟังก์ชันบีบอัดวิดีโอบนเครื่อง (Client-Side Video Compression)
+    // บีบอัดวิดีโอบนเครื่อง โดยคงระบบสัญญาณเสียงไว้ (Audio Stream preserved)
     // ==========================================
     async function compressVideo(file, maxWidth = 1280, maxHeight = 720) {
       return new Promise((resolve, reject) => {
-        showToast("⏳ กำลังบีบอัดวิดีโอเพื่อความเร็วในการอัปโหลด...", "info");
+        showToast("⏳ กำลังเตรียมไฟล์วิดีโอพร้อมสัญญาณเสียง...", "info");
         
         const video = document.createElement('video');
         video.src = URL.createObjectURL(file);
-        video.muted = true;
         video.playsInline = true;
+        video.muted = false; // เปิดเสียงเพื่อให้จับสัญญาณ Audio Track ได้
 
         video.onloadeddata = () => video.play();
         video.onerror = (err) => {
@@ -710,14 +716,23 @@
           canvas.height = height;
           const ctx = canvas.getContext('2d');
 
-          const stream = canvas.captureStream(25); // ล็อกที่ 25 FPS
-          const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8') 
-            ? 'video/webm;codecs=vp8' 
+          // ดึงสัญญาณวิดีโอจาก Canvas + ดึงสัญญาณเสียงต้นฉบับจากตัววิดีโอ
+          const canvasStream = canvas.captureStream(25);
+          const videoAudioStream = video.captureStream ? video.captureStream() : (video.mozCaptureStream ? video.mozCaptureStream() : null);
+
+          let combinedStream = canvasStream;
+          if (videoAudioStream && videoAudioStream.getAudioTracks().length > 0) {
+            const audioTrack = videoAudioStream.getAudioTracks()[0];
+            combinedStream.addTrack(audioTrack); // ผนวกสัญญาณเสียง
+          }
+
+          const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus') 
+            ? 'video/webm;codecs=vp8,opus' 
             : 'video/webm';
 
-          const mediaRecorder = new MediaRecorder(stream, {
+          const mediaRecorder = new MediaRecorder(combinedStream, {
             mimeType: mimeType,
-            videoBitsPerSecond: 1200000 // คุม Bitrate ที่ 1.2 Mbps
+            videoBitsPerSecond: 1200000 
           });
 
           const chunks = [];
@@ -763,7 +778,8 @@
       } else if (file.type.startsWith('video/')) {
         const videoUrl = URL.createObjectURL(file);
         processedMedia = { type: 'video', data: videoUrl, file: file };
-        previewBox.innerHTML = `<video src="${videoUrl}" controls autoplay muted></video>`;
+        // ปลดคำสั่ง muted ออก เพื่อให้เล่นเสียงได้สมบูรณ์
+        previewBox.innerHTML = `<video src="${videoUrl}" controls playsinline></video>`;
       }
       event.target.value = '';
     }
@@ -782,19 +798,15 @@
       } else if (file.type.startsWith('video/')) {
         const videoUrl = URL.createObjectURL(file);
         editProcessedMedia = { type: 'video', data: videoUrl, file: file };
-        mediaContainer.innerHTML = `<video src="${videoUrl}" controls autoplay muted></video>`;
+        mediaContainer.innerHTML = `<video src="${videoUrl}" controls playsinline></video>`;
       }
       event.target.value = '';
     }
 
-    // ==========================================
-    // อัปโหลดไฟล์ไป Cloudinary (บีบอัด + Chunked Upload)
-    // ==========================================
     async function uploadToCloudinary(file, resourceType = 'auto') {
       let fileToUpload = file;
       const isVideo = file.type.startsWith('video/');
 
-      // หากเป็นวิดีโอ ให้บีบอัดฝั่ง Client ก่อนเริ่มอัปโหลด
       if (isVideo) {
         try {
           fileToUpload = await compressVideo(file);
@@ -804,7 +816,6 @@
         }
       }
 
-      // ใช้อัปโหลด Chunked สำหรับวิดีโอ เพื่อป้องกัน Timeout
       const endpoint = isVideo 
         ? `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/video/upload_chunked`
         : `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
@@ -826,7 +837,7 @@
       return data.secure_url;
     }
 
-    /* ===== PROMPT AI: วิเคราะห์ชื่อรุ่น + ภาพ (ยกเว้นวิดีโอ) ===== */
+    /* ===== PROMPT AI ===== */
     window.generateAIDetails = async function() {
       const nameInput = document.getElementById('product-name');
       const detailInput = document.getElementById('product-detail');
@@ -918,7 +929,7 @@
     };
 
     // ==========================================
-    // บันทึกสินค้าใหม่ลง Firestore
+    // บันทึกสินค้าแบบ Instant + Background Media Process
     // ==========================================
     window.addProduct = async function() {
       const nameInput = document.getElementById('product-name');
@@ -934,30 +945,22 @@
       }
 
       saveBtn.disabled = true;
-      saveBtn.innerText = "⏳ กำลังบันทึกข้อมูล...";
-      updateStatusUI('db', 'orange', 'DB: กำลังบันทึก');
+      const tempMedia = { ...processedMedia };
 
       try {
-        let mediaUrl = "";
-        let mediaType = "none";
-
-        if (processedMedia.file) {
-          showToast("🚀 กำลังอัปโหลดไฟล์สื่อ...", "info");
-          mediaUrl = await uploadToCloudinary(processedMedia.file, processedMedia.type);
-          mediaType = processedMedia.type;
-        }
-
+        // 1. บันทึกเข้า DB ทันที
         const docRef = await addDoc(collection(db, "products"), {
           name: name,
           detail: detail,
-          mediaUrl: mediaUrl,
-          mediaType: mediaType,
+          mediaUrl: "",
+          mediaType: tempMedia.file ? tempMedia.type : "none",
+          uploadStatus: tempMedia.file ? "processing" : "completed",
           createdAt: serverTimestamp()
         });
 
-        showToast("✅ บันทึกสินค้าเรียบร้อยแล้ว!", "success");
-        
-        // ล้างฟอร์ม
+        const newDocId = docRef.id;
+
+        // 2. เคลียร์ฟอร์ม
         nameInput.value = "";
         detailInput.value = "";
         document.getElementById('preview-box').innerHTML = "<span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>";
@@ -965,7 +968,13 @@
         processedMedia = { type: null, data: null, file: null };
         clearValidationError();
 
+        showToast("⚡ บันทึกสำเร็จ! (กำลังอัปโหลดสื่อหลังบ้าน)", "success");
         fetchInitialProducts();
+
+        // 3. ทำงานส่งสื่อในฉากหลัง
+        if (tempMedia.file) {
+          processMediaInBackground(newDocId, tempMedia);
+        }
 
       } catch (error) {
         console.error("Add Product Error:", error);
@@ -973,9 +982,34 @@
         updateStatusUI('db', 'red', 'DB: ขัดข้อง');
       } finally {
         saveBtn.disabled = false;
-        saveBtn.innerText = "บันทึกสินค้าลงคลาวด์";
       }
     };
+
+    async function processMediaInBackground(docId, mediaObj) {
+      try {
+        updateStatusUI('db', 'orange', 'DB: อัปโหลดสื่อ');
+
+        const uploadedUrl = await uploadToCloudinary(mediaObj.file, mediaObj.type);
+
+        const productRef = doc(db, "products", docId);
+        await updateDoc(productRef, {
+          mediaUrl: uploadedUrl,
+          uploadStatus: "completed",
+          updatedAt: serverTimestamp()
+        });
+
+        updateStatusUI('db', 'green', 'DB: พร้อม');
+        showToast("☁️ อัปโหลดวิดีโอ/รูปภาพเรียบร้อยแล้ว", "info");
+        fetchInitialProducts();
+
+      } catch (err) {
+        console.error("Background Upload Failed:", err);
+        updateStatusUI('db', 'red', 'DB: สื่อล้มเหลว');
+        
+        const productRef = doc(db, "products", docId);
+        await updateDoc(productRef, { uploadStatus: "failed" });
+      }
+    }
 
     // ==========================================
     // เปิด Modal ดูรายละเอียด
@@ -992,7 +1026,8 @@
       if (item.mediaType === 'image' && item.mediaUrl) {
         mediaContainer.innerHTML = `<img src="${item.mediaUrl}">`;
       } else if (item.mediaType === 'video' && item.mediaUrl) {
-        mediaContainer.innerHTML = `<video src="${item.mediaUrl}" controls autoplay muted></video>`;
+        // เอา muted ออก เพื่อให้ได้ยินเสียงเมื่อเปิดวิดีโอ
+        mediaContainer.innerHTML = `<video src="${item.mediaUrl}" controls playsinline></video>`;
       } else {
         mediaContainer.innerHTML = `<span style="color: #9ca3af;">ไม่มีไฟล์สื่อ</span>`;
       }
@@ -1026,7 +1061,7 @@
     };
 
     // ==========================================
-    // บันทึกการแก้ไขข้อมูลลง Firestore
+    // บันทึกการแก้ไขข้อมูล
     // ==========================================
     window.saveEditProduct = async function() {
       if (!activeProductId) return;
@@ -1050,11 +1085,9 @@
         let mediaUrl = item.mediaUrl || "";
         let mediaType = item.mediaType || "none";
 
-        // หากมีการเปลี่ยนไฟล์สื่อใหม่
         if (editProcessedMedia.file) {
           showToast("🚀 กำลังอัปโหลดสื่อใหม่...", "info");
           
-          // ลบไฟล์เก่าใน Cloudinary
           if (item.mediaUrl) {
             await deleteCloudinaryMedia(item.mediaUrl, item.mediaType);
           }
@@ -1069,6 +1102,7 @@
           detail: editDetail,
           mediaUrl: mediaUrl,
           mediaType: mediaType,
+          uploadStatus: "completed",
           updatedAt: serverTimestamp()
         });
 
@@ -1097,12 +1131,10 @@
       if (!confirm(`คุณต้องการลบรายการ "${item.name}" ใช่หรือไม่?`)) return;
 
       try {
-        // ลบไฟล์ใน Cloudinary
         if (item.mediaUrl) {
           await deleteCloudinaryMedia(item.mediaUrl, item.mediaType);
         }
 
-        // ลบข้อมูลใน Firestore
         await deleteDoc(doc(db, "products", activeProductId));
 
         showToast("🗑️ ลบรายการเรียบร้อยแล้ว", "success");
