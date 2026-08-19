@@ -728,106 +728,6 @@
       });
     }
 
-    async function compressVideo(file, maxWidth = 1280, maxHeight = 720) {
-      return new Promise((resolve, reject) => {
-        showToast("⏳ กำลังประมวลผลไฟล์วิดีโอพร้อมสัญญาณเสียง...", "info");
-        
-        const video = document.createElement('video');
-        video.src = URL.createObjectURL(file);
-        video.playsInline = true;
-        video.muted = true;
-
-        video.onerror = (err) => {
-          URL.revokeObjectURL(video.src);
-          reject(err);
-        };
-
-        video.onloadedmetadata = () => {
-          let width = video.videoWidth || 640;
-          let height = video.videoHeight || 360;
-
-          if (width > maxWidth) {
-            height = Math.round((height * maxWidth) / width);
-            width = maxWidth;
-          }
-          if (height > maxHeight) {
-            width = Math.round((width * maxHeight) / height);
-            height = maxHeight;
-          }
-
-          const canvas = document.createElement('canvas');
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-
-          const canvasStream = canvas.captureStream(25);
-          let combinedStream = canvasStream;
-          let audioCtx;
-
-          try {
-            const AudioContext = window.AudioContext || window.webkitAudioContext;
-            audioCtx = new AudioContext();
-            const source = audioCtx.createMediaElementSource(video);
-            const destination = audioCtx.createMediaStreamDestination();
-            source.connect(destination);
-
-            combinedStream = new MediaStream([
-              ...canvasStream.getVideoTracks(),
-              ...destination.stream.getAudioTracks()
-            ]);
-          } catch (err) {
-            console.warn("ไม่สามารถดึง Audio Track แยกได้ จะใช้ Video Stream หลักแทน:", err);
-          }
-
-          const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus') 
-            ? 'video/webm;codecs=vp8,opus' 
-            : 'video/webm';
-
-          const mediaRecorder = new MediaRecorder(combinedStream, {
-            mimeType: mimeType,
-            videoBitsPerSecond: 1200000 
-          });
-
-          const chunks = [];
-          mediaRecorder.ondataavailable = (e) => {
-            if (e.data && e.data.size > 0) chunks.push(e.data);
-          };
-
-          mediaRecorder.onstop = () => {
-            video.pause();
-            URL.revokeObjectURL(video.src);
-            video.src = '';
-            if (audioCtx && audioCtx.state !== 'closed') {
-              audioCtx.close();
-            }
-
-            const compressedBlob = new Blob(chunks, { type: 'video/webm' });
-            const compressedFile = new File([compressedBlob], `compressed_${Date.now()}.webm`, {
-              type: 'video/webm'
-            });
-            resolve(compressedFile);
-          };
-
-          mediaRecorder.start(100);
-          video.play();
-
-          function drawFrame() {
-            if (!video.paused && !video.ended) {
-              ctx.drawImage(video, 0, 0, width, height);
-              requestAnimationFrame(drawFrame);
-            }
-          }
-          drawFrame();
-
-          video.onended = () => {
-            if (mediaRecorder.state !== 'inactive') {
-              mediaRecorder.stop();
-            }
-          };
-        };
-      });
-    }
-
     window.handleFileSelect = async function(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -888,30 +788,19 @@
       event.target.value = '';
     }
 
+    // ==========================================
+    // อัปโหลดเข้า Cloudinary โดยตรง (แก้ปัญหาเรื่องเสียงตัด)
+    // ==========================================
     async function uploadToCloudinary(file, resourceType = 'auto') {
-      let fileToUpload = file;
       const isVideo = file.type.startsWith('video/');
 
-      if (isVideo) {
-        try {
-          fileToUpload = await compressVideo(file);
-        } catch (err) {
-          console.warn("การบีบอัดวิดีโอล้มเหลว ใช้ไฟล์ต้นฉบับแทน:", err);
-          fileToUpload = file;
-        }
-      }
-
       const endpoint = isVideo 
-        ? `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/video/upload_chunked`
+        ? `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/video/upload`
         : `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
 
       const formData = new FormData();
-      formData.append('file', fileToUpload);
+      formData.append('file', file);
       formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-
-      if (isVideo) {
-        formData.append('quality', 'auto:eco');
-      }
 
       const res = await fetch(endpoint, { method: 'POST', body: formData });
       if (!res.ok) {
@@ -1148,8 +1037,14 @@
       if (item.mediaType === 'image' && item.mediaUrl) {
         mediaContainer.innerHTML = `<img src="${item.mediaUrl}">`;
       } else if (item.mediaType === 'video' && item.mediaUrl) {
+        // ใช้การปรับจูนความละเอียดอัตโนมัติจาก Cloudinary โดยไม่ตัดเสียง
+        let optimizedVideoUrl = item.mediaUrl;
+        if (item.mediaUrl.includes('cloudinary.com')) {
+          optimizedVideoUrl = item.mediaUrl.replace('/upload/', '/upload/q_auto,f_auto/');
+        }
+
         let posterUrl = item.mediaUrl.replace(/\.[^/.]+$/, ".jpg");
-        mediaContainer.innerHTML = `<video id="modalVideoPlayer" src="${item.mediaUrl}" poster="${posterUrl}" controls playsinline preload="metadata"></video>`;
+        mediaContainer.innerHTML = `<video id="modalVideoPlayer" src="${optimizedVideoUrl}" poster="${posterUrl}" controls playsinline preload="metadata"></video>`;
         
         setTimeout(() => {
           const player = document.getElementById('modalVideoPlayer');
