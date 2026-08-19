@@ -238,8 +238,8 @@
       <table>
         <thead>
           <tr>
-            <th style="width: 25%;">ชนิดสื่อ</th>
-            <th style="width: 35%;">ชื่อ/รุ่น</th>
+            <th style="width: 28%;">ชนิดสื่อ</th>
+            <th style="width: 32%;">ชื่อ/รุ่น</th>
             <th style="width: 40%;">รายละเอียด</th>
           </tr>
         </thead>
@@ -728,9 +728,6 @@
       });
     }
 
-    // ==========================================
-    // บีบอัดวิดีโอบนเครื่อง (พร้อมรวม Audio Track)
-    // ==========================================
     async function compressVideo(file, maxWidth = 1280, maxHeight = 720) {
       return new Promise((resolve, reject) => {
         showToast("⏳ กำลังประมวลผลไฟล์วิดีโอพร้อมสัญญาณเสียง...", "info");
@@ -738,7 +735,7 @@
         const video = document.createElement('video');
         video.src = URL.createObjectURL(file);
         video.playsInline = true;
-        video.muted = true; // ปิดเสียงฝั่ง Render ชั่วคราวเพื่อไม่ให้ส่งเสียงแทรกระหว่างบีบอัด
+        video.muted = true;
 
         video.onerror = (err) => {
           URL.revokeObjectURL(video.src);
@@ -767,7 +764,6 @@
           let combinedStream = canvasStream;
           let audioCtx;
 
-          // ดึงสัญญาณเสียงอย่างสมบูรณ์ผ่าน Web Audio API
           try {
             const AudioContext = window.AudioContext || window.webkitAudioContext;
             audioCtx = new AudioContext();
@@ -1037,18 +1033,35 @@
       const tempMedia = { ...processedMedia };
 
       try {
+        const hasMedia = !!tempMedia.file;
+        const initialStatus = hasMedia ? "processing" : "completed";
+
+        // 1. บันทึกลง Firestore
         const docRef = await addDoc(collection(db, "products"), {
           name: name,
           detail: detail,
           mediaUrl: "",
           mediaType: tempMedia.file ? tempMedia.type : "none",
-          uploadStatus: tempMedia.file ? "processing" : "completed",
+          uploadStatus: initialStatus,
           createdAt: serverTimestamp()
         });
 
         const newDocId = docRef.id;
 
-        // สั่งหยุดการเล่นวิดีโอบนกรอบ พรีวิว ก่อนล้างข้อมูล
+        // 2. แทรกเข้ารายการในหน้าเว็บ และ Render ตารางทันที
+        const newProductObj = {
+          id: newDocId,
+          name: name,
+          detail: detail,
+          mediaUrl: "",
+          mediaType: tempMedia.file ? tempMedia.type : "none",
+          uploadStatus: initialStatus
+        };
+
+        productsList.unshift(newProductObj);
+        renderTable(productsList);
+
+        // 3. รีเซ็ต ฟอร์มรับข้อมูล
         const previewVid = document.querySelector('#preview-box video');
         if (previewVid) {
           previewVid.pause();
@@ -1062,16 +1075,15 @@
         processedMedia = { type: null, data: null, file: null };
         clearValidationError();
 
-        if (tempMedia.file) {
-          // สลับสถานะไฟ DB เป็นสีส้มทันทีที่กดบันทึก
+        // 4. ถ้ามีไฟล์สื่อ ให้เริ่มกระบวนการอัปโหลดเบื้องหลังและตั้งไฟ DB เป็น สีส้ม
+        if (hasMedia) {
           updateStatusUI('db', 'orange', 'DB: กำลังอัปโหลดสื่อ...');
-          showToast("⚡ บันทึกสำเร็จ! (กำลังอัปโหลดสื่อหลังบ้าน)", "success");
+          showToast("⚡ บันทึกสำเร็จ! (กำลังอัปโหลดสื่อหลังบ้าน)", "info");
           processMediaInBackground(newDocId, tempMedia);
         } else {
+          updateStatusUI('db', 'green', 'DB: พร้อม');
           showToast("⚡ บันทึกสำเร็จ!", "success");
         }
-
-        fetchInitialProducts();
 
       } catch (error) {
         console.error("Add Product Error:", error);
@@ -1086,6 +1098,7 @@
       try {
         const uploadedUrl = await uploadToCloudinary(mediaObj.file, mediaObj.type);
 
+        // อัปเดตข้อมูลบน Firestore เมื่ออัปโหลดเสร็จสมบูรณ์
         const productRef = doc(db, "products", docId);
         await updateDoc(productRef, {
           mediaUrl: uploadedUrl,
@@ -1093,9 +1106,17 @@
           updatedAt: serverTimestamp()
         });
 
+        // อัปเดตสถานะในตัวแปร Local Array และสั่ง Render ตารางใหม่
+        const pIndex = productsList.findIndex(p => p.id === docId);
+        if (pIndex !== -1) {
+          productsList[pIndex].mediaUrl = uploadedUrl;
+          productsList[pIndex].uploadStatus = "completed";
+          renderTable(productsList);
+        }
+
+        // เมื่ออัปโหลดเสร็จสมบูรณ์ -> ไฟ DB เปลี่ยนเป็นสีเขียว
         updateStatusUI('db', 'green', 'DB: พร้อม');
-        showToast("☁️ อัปโหลดวิดีโอ/รูปภาพเรียบร้อยแล้ว", "info");
-        fetchInitialProducts();
+        showToast("☁️ อัปโหลดไฟล์สื่อเรียบร้อยแล้ว", "success");
 
       } catch (err) {
         console.error("Background Upload Failed:", err);
@@ -1103,6 +1124,12 @@
         
         const productRef = doc(db, "products", docId);
         await updateDoc(productRef, { uploadStatus: "failed" });
+
+        const pIndex = productsList.findIndex(p => p.id === docId);
+        if (pIndex !== -1) {
+          productsList[pIndex].uploadStatus = "failed";
+          renderTable(productsList);
+        }
       }
     }
 
@@ -1124,7 +1151,6 @@
         let posterUrl = item.mediaUrl.replace(/\.[^/.]+$/, ".jpg");
         mediaContainer.innerHTML = `<video id="modalVideoPlayer" src="${item.mediaUrl}" poster="${posterUrl}" controls playsinline preload="metadata"></video>`;
         
-        // ปลดล็อกการปิดเสียง เพื่อเปิดเสียงในวิดีโอ
         setTimeout(() => {
           const player = document.getElementById('modalVideoPlayer');
           if (player) {
@@ -1132,6 +1158,8 @@
             player.volume = 1.0;
           }
         }, 100);
+      } else if (item.uploadStatus === 'processing') {
+        mediaContainer.innerHTML = `<span style="color: #f59e0b;">⏳ กำลังประมวลผลการอัปโหลดวิดีโอ/รูปภาพ...</span>`;
       } else {
         mediaContainer.innerHTML = `<span style="color: #9ca3af;">ไม่มีไฟล์สื่อ</span>`;
       }
