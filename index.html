@@ -75,8 +75,13 @@
 
     .status-dot { width: 8px; height: 8px; border-radius: 50%; transition: all 0.3s ease; display: inline-block; }
     .status-dot.green { background-color: #10b981; box-shadow: 0 0 6px #10b981; }
-    .status-dot.orange { background-color: #f59e0b; box-shadow: 0 0 6px #f59e0b; }
+    .status-dot.orange { background-color: #f59e0b; box-shadow: 0 0 6px #f59e0b; animation: statusBlink 1s infinite alternate; }
     .status-dot.red { background-color: #ef4444; box-shadow: 0 0 6px #ef4444; }
+
+    @keyframes statusBlink {
+      0% { opacity: 1; transform: scale(1); }
+      100% { opacity: 0.3; transform: scale(0.8); }
+    }
 
     /* ===== กรอบแสดงรูปภาพ / วิดีโอ ===== */
     .media-preview-box { 
@@ -167,7 +172,7 @@
         <h1 class="header-title">หนึ่ง ร่อนพิบูลย์ อิเล็กทรอนิกส์</h1>
         
         <div class="status-container">
-          <div class="status-badge">
+          <div class="status-badge" id="dbStatusBadge">
             <span class="status-dot green" id="db-status-dot"></span>
             <span id="db-status-text">DB: พร้อม</span>
           </div>
@@ -724,27 +729,25 @@
     }
 
     // ==========================================
-    // บีบอัดวิดีโอบนเครื่อง (ปิดเสียงระหว่างเรนเดอร์เพื่อไม่ให้เสียงดัง)
+    // บีบอัดวิดีโอบนเครื่อง (พร้อมรวม Audio Track)
     // ==========================================
     async function compressVideo(file, maxWidth = 1280, maxHeight = 720) {
       return new Promise((resolve, reject) => {
-        showToast("⏳ กำลังเตรียมไฟล์วิดีโอพร้อมสัญญาณเสียง...", "info");
+        showToast("⏳ กำลังประมวลผลไฟล์วิดีโอพร้อมสัญญาณเสียง...", "info");
         
         const video = document.createElement('video');
         video.src = URL.createObjectURL(file);
         video.playsInline = true;
-        video.muted = true; // ปิดเสียงไม่ให้ดังออกลำโพงขณะบีบอัด
-        video.volume = 0;
+        video.muted = true; // ปิดเสียงฝั่ง Render ชั่วคราวเพื่อไม่ให้ส่งเสียงแทรกระหว่างบีบอัด
 
-        video.onloadeddata = () => video.play();
         video.onerror = (err) => {
           URL.revokeObjectURL(video.src);
           reject(err);
         };
 
-        video.onplaying = () => {
-          let width = video.videoWidth;
-          let height = video.videoHeight;
+        video.onloadedmetadata = () => {
+          let width = video.videoWidth || 640;
+          let height = video.videoHeight || 360;
 
           if (width > maxWidth) {
             height = Math.round((height * maxWidth) / width);
@@ -761,12 +764,23 @@
           const ctx = canvas.getContext('2d');
 
           const canvasStream = canvas.captureStream(25);
-          const videoAudioStream = video.captureStream ? video.captureStream() : (video.mozCaptureStream ? video.mozCaptureStream() : null);
-
           let combinedStream = canvasStream;
-          if (videoAudioStream && videoAudioStream.getAudioTracks().length > 0) {
-            const audioTrack = videoAudioStream.getAudioTracks()[0];
-            combinedStream.addTrack(audioTrack);
+          let audioCtx;
+
+          // ดึงสัญญาณเสียงอย่างสมบูรณ์ผ่าน Web Audio API
+          try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            audioCtx = new AudioContext();
+            const source = audioCtx.createMediaElementSource(video);
+            const destination = audioCtx.createMediaStreamDestination();
+            source.connect(destination);
+
+            combinedStream = new MediaStream([
+              ...canvasStream.getVideoTracks(),
+              ...destination.stream.getAudioTracks()
+            ]);
+          } catch (err) {
+            console.warn("ไม่สามารถดึง Audio Track แยกได้ จะใช้ Video Stream หลักแทน:", err);
           }
 
           const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus') 
@@ -780,12 +794,17 @@
 
           const chunks = [];
           mediaRecorder.ondataavailable = (e) => {
-            if (e.data.size > 0) chunks.push(e.data);
+            if (e.data && e.data.size > 0) chunks.push(e.data);
           };
 
           mediaRecorder.onstop = () => {
             video.pause();
             URL.revokeObjectURL(video.src);
+            video.src = '';
+            if (audioCtx && audioCtx.state !== 'closed') {
+              audioCtx.close();
+            }
+
             const compressedBlob = new Blob(chunks, { type: 'video/webm' });
             const compressedFile = new File([compressedBlob], `compressed_${Date.now()}.webm`, {
               type: 'video/webm'
@@ -794,16 +813,21 @@
           };
 
           mediaRecorder.start(100);
+          video.play();
 
           function drawFrame() {
             if (!video.paused && !video.ended) {
               ctx.drawImage(video, 0, 0, width, height);
               requestAnimationFrame(drawFrame);
-            } else {
-              mediaRecorder.stop();
             }
           }
           drawFrame();
+
+          video.onended = () => {
+            if (mediaRecorder.state !== 'inactive') {
+              mediaRecorder.stop();
+            }
+          };
         };
       });
     }
@@ -1098,7 +1122,16 @@
         mediaContainer.innerHTML = `<img src="${item.mediaUrl}">`;
       } else if (item.mediaType === 'video' && item.mediaUrl) {
         let posterUrl = item.mediaUrl.replace(/\.[^/.]+$/, ".jpg");
-        mediaContainer.innerHTML = `<video src="${item.mediaUrl}" poster="${posterUrl}" controls playsinline preload="metadata"></video>`;
+        mediaContainer.innerHTML = `<video id="modalVideoPlayer" src="${item.mediaUrl}" poster="${posterUrl}" controls playsinline preload="metadata"></video>`;
+        
+        // ปลดล็อกการปิดเสียง เพื่อเปิดเสียงในวิดีโอ
+        setTimeout(() => {
+          const player = document.getElementById('modalVideoPlayer');
+          if (player) {
+            player.muted = false;
+            player.volume = 1.0;
+          }
+        }, 100);
       } else {
         mediaContainer.innerHTML = `<span style="color: #9ca3af;">ไม่มีไฟล์สื่อ</span>`;
       }
