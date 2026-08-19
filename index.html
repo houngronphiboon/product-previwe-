@@ -95,24 +95,6 @@
       position: relative;
     }
     .media-preview-box img, .media-preview-box video { max-width: 100%; max-height: 100%; object-fit: contain; }
-    
-    .file-tag {
-      position: absolute;
-      bottom: 8px;
-      left: 8px;
-      right: 8px;
-      background: rgba(16, 185, 129, 0.9);
-      color: white;
-      font-size: 11px;
-      font-weight: 600;
-      padding: 4px 8px;
-      border-radius: 6px;
-      text-align: center;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      z-index: 10;
-    }
 
     .media-buttons { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 16px; }
     .btn { border: none; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: all 0.2s; }
@@ -716,7 +698,7 @@
         video.src = URL.createObjectURL(file);
 
         video.onloadeddata = () => {
-          video.currentTime = 0.1; // เลื่อนไปเฟรมถัดไปเล็กน้อยเพื่อหลบเฟรมดำ
+          video.currentTime = 0.1;
         };
 
         video.onseeked = () => {
@@ -826,7 +808,7 @@
     }
 
     // ==========================================
-    // อัปเดต Preview พร้อมสร้าง Thumbnail เฟรมแรก
+    // อัปเดต Preview (เอาแถบสีเขียวออก)
     // ==========================================
     window.handleFileSelect = async function(event) {
       const file = event.target.files[0];
@@ -838,29 +820,17 @@
       if (file.type.startsWith('image/')) {
         const compressed = await compressImage(file);
         processedMedia = { type: 'image', data: compressed.dataUrl, file: compressed.blob };
-        previewBox.innerHTML = `
-          <img src="${compressed.dataUrl}">
-          <div class="file-tag">📷 แนบรูปภาพแล้ว (${file.name || 'รูปถ่าย'})</div>
-        `;
+        previewBox.innerHTML = `<img src="${compressed.dataUrl}">`;
       } else if (file.type.startsWith('video/')) {
         const videoUrl = URL.createObjectURL(file);
         processedMedia = { type: 'video', data: videoUrl, file: file };
 
-        previewBox.innerHTML = `
-          <div style="color:#9ca3af; font-size:14px;">⏳ กำลังโหลดภาพตัวอย่างวิดีโอ...</div>
-          <div class="file-tag">🎥 แนบวิดีโอแล้ว: ${file.name || 'วิดีโอใหม่'}</div>
-        `;
+        previewBox.innerHTML = `<div style="color:#9ca3af; font-size:14px;">⏳ กำลังโหลดภาพตัวอย่าง...</div>`;
 
         generateVideoThumbnail(file).then(posterDataUrl => {
-          previewBox.innerHTML = `
-            <video src="${videoUrl}" poster="${posterDataUrl}" controls playsinline preload="metadata"></video>
-            <div class="file-tag">🎥 แนบวิดีโอแล้ว: ${file.name || 'วิดีโอใหม่'}</div>
-          `;
+          previewBox.innerHTML = `<video src="${videoUrl}" poster="${posterDataUrl}" controls playsinline preload="metadata"></video>`;
         }).catch(err => {
-          previewBox.innerHTML = `
-            <video id="preview-video-element" src="${videoUrl}#t=0.001" controls playsinline preload="metadata"></video>
-            <div class="file-tag">🎥 แนบวิดีโอแล้ว: ${file.name || 'วิดีโอใหม่'}</div>
-          `;
+          previewBox.innerHTML = `<video id="preview-video-element" src="${videoUrl}#t=0.001" controls playsinline preload="metadata"></video>`;
           setTimeout(() => {
             const v = document.getElementById('preview-video-element');
             if (v) v.load();
@@ -880,29 +850,17 @@
       if (file.type.startsWith('image/')) {
         const compressed = await compressImage(file);
         editProcessedMedia = { type: 'image', data: compressed.dataUrl, file: compressed.blob };
-        mediaContainer.innerHTML = `
-          <img src="${compressed.dataUrl}">
-          <div class="file-tag">📷 เปลี่ยนรูปแล้ว</div>
-        `;
+        mediaContainer.innerHTML = `<img src="${compressed.dataUrl}">`;
       } else if (file.type.startsWith('video/')) {
         const videoUrl = URL.createObjectURL(file);
         editProcessedMedia = { type: 'video', data: videoUrl, file: file };
 
-        mediaContainer.innerHTML = `
-          <div style="color:#9ca3af; font-size:14px;">⏳ กำลังโหลดภาพตัวอย่าง...</div>
-          <div class="file-tag">🎥 เปลี่ยนวิดีโอแล้ว</div>
-        `;
+        mediaContainer.innerHTML = `<div style="color:#9ca3af; font-size:14px;">⏳ กำลังโหลดภาพตัวอย่าง...</div>`;
 
         generateVideoThumbnail(file).then(posterDataUrl => {
-          mediaContainer.innerHTML = `
-            <video src="${videoUrl}" poster="${posterDataUrl}" controls playsinline preload="metadata"></video>
-            <div class="file-tag">🎥 เปลี่ยนวิดีโอแล้ว</div>
-          `;
+          mediaContainer.innerHTML = `<video src="${videoUrl}" poster="${posterDataUrl}" controls playsinline preload="metadata"></video>`;
         }).catch(err => {
-          mediaContainer.innerHTML = `
-            <video id="edit-video-element" src="${videoUrl}#t=0.001" controls playsinline preload="metadata"></video>
-            <div class="file-tag">🎥 เปลี่ยนวิดีโอแล้ว</div>
-          `;
+          mediaContainer.innerHTML = `<video id="edit-video-element" src="${videoUrl}#t=0.001" controls playsinline preload="metadata"></video>`;
           setTimeout(() => {
             const v = document.getElementById('edit-video-element');
             if (v) v.load();
