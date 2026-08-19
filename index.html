@@ -8,7 +8,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   <style>
     * { box-sizing: border-box; font-family: 'Sarabun', sans-serif; }
@@ -102,20 +101,6 @@
     }
     .media-preview-box img, .media-preview-box video { max-width: 100%; max-height: 100%; object-fit: contain; }
 
-    /* Overlay แสดง Progress ตอนอัปโหลด */
-    .upload-overlay {
-      position: absolute;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.75);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      color: #ffffff;
-      z-index: 10;
-    }
-    .upload-overlay.hidden { display: none; }
-
     .media-buttons { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 16px; }
     .btn { border: none; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: all 0.2s; }
     .btn:disabled { opacity: 0.6; cursor: not-allowed; }
@@ -201,10 +186,6 @@
       <!-- กรอบแสดงรูปภาพ / วิดีโอ -->
       <div class="media-preview-box" id="preview-box">
         <span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>
-        <div id="uploadProgressOverlay" class="upload-overlay hidden">
-          <i class="fa-solid fa-spinner fa-spin text-3xl mb-2" style="font-size: 28px; color: #34d399; margin-bottom: 8px;"></i>
-          <p id="uploadProgressText" style="margin: 0; font-size: 14px; font-weight: 500;">กำลังอัปโหลดวิดีโอ... (0%)</p>
-        </div>
       </div>
 
       <div class="media-buttons">
@@ -754,7 +735,6 @@
       if (!file) return;
 
       const previewBox = document.getElementById('preview-box');
-      const progressOverlay = document.getElementById('uploadProgressOverlay');
       revokePreviousMediaUrl(processedMedia);
 
       if (file.type.startsWith('image/')) {
@@ -769,10 +749,8 @@
 
         generateVideoThumbnail(file).then(posterDataUrl => {
           previewBox.innerHTML = `<video src="${videoUrl}" poster="${posterDataUrl}" controls playsinline preload="metadata"></video>`;
-          previewBox.appendChild(progressOverlay);
         }).catch(err => {
           previewBox.innerHTML = `<video id="preview-video-element" src="${videoUrl}#t=0.001" controls playsinline preload="metadata"></video>`;
-          previewBox.appendChild(progressOverlay);
           setTimeout(() => {
             const v = document.getElementById('preview-video-element');
             if (v) v.load();
@@ -813,105 +791,28 @@
     }
 
     // ==========================================
-    // อัปโหลดเข้า Cloudinary (รองรับ Chunked Upload + Auto Compress)
+    // อัปโหลดเข้า Cloudinary โดยตรง (แก้ไขจุดระบุชนิดสื่อ)
     // ==========================================
     async function uploadToCloudinary(file, mediaType) {
       if (!file) throw new Error("ไม่พบไฟล์สื่อสำหรับอัปโหลด");
 
       const isVideo = mediaType === 'video' || (file.type && file.type.startsWith('video/'));
+      const resourceType = isVideo ? 'video' : 'image';
+      const endpoint = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`;
 
-      // 1. ถ้าเป็นรูปภาพ ให้อัปโหลดตรงแบบปรกติ
-      if (!isVideo) {
-        const endpoint = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
-        const fileToUpload = new File([file], `image_${Date.now()}.jpg`, { type: file.type || 'image/jpeg' });
-        
-        const formData = new FormData();
-        formData.append('file', fileToUpload);
-        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
 
-        const res = await fetch(endpoint, { method: 'POST', body: formData });
-        if (!res.ok) {
-          const errJson = await res.json().catch(() => ({}));
-          throw new Error(`อัปโหลดรูปภาพไม่สำเร็จ: ${errJson.error?.message || res.status}`);
-        }
-        const data = await res.json();
-        return data.secure_url;
+      const res = await fetch(endpoint, { method: 'POST', body: formData });
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        const errorDetails = errJson.error?.message || `HTTP ${res.status}`;
+        console.error("Cloudinary Error Details:", errJson);
+        throw new Error(`อัปโหลดสื่อไม่สำเร็จ: ${errorDetails}`);
       }
-
-      // 2. ถ้าเป็นวิดีโอ ใช้ระบบ Chunked Upload (หั่นไฟล์ส่งทีละ 5MB)
-      return new Promise((resolve, reject) => {
-        const CHUNK_SIZE = 5 * 1024 * 1024; // 5 MB
-        const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
-        const uniqueUploadId = `upload_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-        let currentChunk = 0;
-
-        let ext = 'mp4';
-        if (file.type && file.type.includes('quicktime')) ext = 'mov';
-        else if (file.type && file.type.includes('webm')) ext = 'webm';
-
-        const fileName = `video_${Date.now()}.${ext}`;
-        const preparedFile = new File([file], fileName, { type: file.type || 'video/mp4' });
-
-        const progressOverlay = document.getElementById('uploadProgressOverlay');
-        const progressText = document.getElementById('uploadProgressText');
-        if (progressOverlay) progressOverlay.classList.remove('hidden');
-
-        function sendNextChunk() {
-          const start = currentChunk * CHUNK_SIZE;
-          const end = Math.min(start + CHUNK_SIZE, preparedFile.size);
-          const chunk = preparedFile.slice(start, end);
-
-          const percent = Math.round(((currentChunk + 1) / totalChunks) * 100);
-          if (progressText) progressText.innerText = `กำลังอัปโหลดวิดีโอ... (${percent}%)`;
-
-          const formData = new FormData();
-          formData.append('file', chunk);
-          formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-          formData.append('eager', 'q_auto:eco,w_1280,c_limit');
-          formData.append('eager_async', 'true');
-
-          const xhr = new XMLHttpRequest();
-          xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/video/upload`, true);
-
-          const contentRange = `bytes ${start}-${end - 1}/${preparedFile.size}`;
-          xhr.setRequestHeader('X-Unique-Upload-Id', uniqueUploadId);
-          xhr.setRequestHeader('Content-Range', contentRange);
-
-          xhr.onload = function () {
-            if (xhr.status >= 200 && xhr.status < 300) {
-              currentChunk++;
-              if (currentChunk < totalChunks) {
-                sendNextChunk();
-              } else {
-                if (progressOverlay) progressOverlay.classList.add('hidden');
-                try {
-                  const data = JSON.parse(xhr.responseText);
-                  resolve(data.secure_url);
-                } catch (e) {
-                  reject(new Error("รูปแบบการตอบกลับจากระบบคลาวด์ไม่ถูกต้อง"));
-                }
-              }
-            } else {
-              if (progressOverlay) progressOverlay.classList.add('hidden');
-              try {
-                const errJson = JSON.parse(xhr.responseText);
-                reject(new Error(errJson.error?.message || `Chunk Error (${xhr.status})`));
-              } catch (e) {
-                reject(new Error(`เกิดข้อผิดพลาดในการอัปโหลด (${xhr.status})`));
-              }
-            }
-          };
-
-          xhr.onerror = function () {
-            if (progressOverlay) progressOverlay.classList.add('hidden');
-            reject(new Error("การเชื่อมต่อสัญญาณอินเทอร์เน็ตขัดข้อง"));
-          };
-
-          xhr.send(formData);
-        }
-
-        sendNextChunk();
-      });
+      const data = await res.json();
+      return data.secure_url;
     }
 
     /* ===== PROMPT AI ===== */
@@ -1062,13 +963,7 @@
 
         nameInput.value = "";
         detailInput.value = "";
-        document.getElementById('preview-box').innerHTML = `
-          <span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>
-          <div id="uploadProgressOverlay" class="upload-overlay hidden">
-            <i class="fa-solid fa-spinner fa-spin text-3xl mb-2" style="font-size: 28px; color: #34d399; margin-bottom: 8px;"></i>
-            <p id="uploadProgressText" style="margin: 0; font-size: 14px; font-weight: 500;">กำลังอัปโหลดวิดีโอ... (0%)</p>
-          </div>
-        `;
+        document.getElementById('preview-box').innerHTML = "<span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>";
         revokePreviousMediaUrl(processedMedia);
         processedMedia = { type: null, data: null, file: null };
         clearValidationError();
@@ -1112,6 +1007,7 @@
           renderTable(productsList);
         }
 
+        // เมื่ออัปโหลดเสร็จสมบูรณ์ -> ไฟ DB เปลี่ยนเป็นสีเขียว
         updateStatusUI('db', 'green', 'DB: พร้อม');
         showToast("☁️ อัปโหลดไฟล์สื่อเรียบร้อยแล้ว", "success");
 
