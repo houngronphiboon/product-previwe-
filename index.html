@@ -81,19 +81,39 @@
     /* ===== กรอบแสดงรูปภาพ / วิดีโอ ===== */
     .media-preview-box { 
       width: 100%; 
-      height: 200px; 
+      height: 220px; 
       background-color: #1f2937; 
       border-radius: 12px; 
       margin-bottom: 16px; 
       display: flex; 
+      flex-direction: column;
       justify-content: center; 
       align-items: center; 
       color: #9ca3af; 
       border: 2px dashed #374151; 
       overflow: hidden; 
+      position: relative;
     }
     .media-preview-box img, .media-preview-box video { max-width: 100%; max-height: 100%; object-fit: contain; }
     
+    .file-tag {
+      position: absolute;
+      bottom: 8px;
+      left: 8px;
+      right: 8px;
+      background: rgba(16, 185, 129, 0.9);
+      color: white;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 8px;
+      border-radius: 6px;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      z-index: 10;
+    }
+
     .media-buttons { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 16px; }
     .btn { border: none; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: all 0.2s; }
     .btn:disabled { opacity: 0.6; cursor: not-allowed; }
@@ -138,7 +158,7 @@
     .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; padding: 16px; -webkit-overflow-scrolling: touch; }
     .modal-content { background-color: #fff; padding: 20px; border-radius: 16px; width: 100%; max-width: 480px; position: relative; max-height: 90vh; overflow-y: auto; -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }
     .close-btn { position: absolute; right: 15px; top: 10px; font-size: 24px; cursor: pointer; color: #9ca3af; z-index: 10; }
-    .modal-media-box { width: 100%; height: 230px; background: #111827; margin-bottom: 15px; border-radius: 10px; overflow: hidden; display: flex; justify-content: center; align-items: center; }
+    .modal-media-box { width: 100%; height: 230px; background: #111827; margin-bottom: 15px; border-radius: 10px; overflow: hidden; display: flex; justify-content: center; align-items: center; position: relative; }
     .modal-media-box img, .modal-media-box video { max-width: 100%; max-height: 100%; object-fit: contain; }
     .modal-actions { display: flex; gap: 10px; margin-top: 15px; }
     .btn-edit { background-color: #f59e0b; color: #ffffff; flex: 1; padding: 10px; }
@@ -687,35 +707,6 @@
     }
 
     // ==========================================
-    // ฟังก์ชันสร้าง รูปตัวอย่าง (Thumbnail) จากวิดีโอสดๆ บนมือถือ
-    // ==========================================
-    function generateVideoThumbnail(videoSrc) {
-      return new Promise((resolve) => {
-        const video = document.createElement('video');
-        video.src = videoSrc;
-        video.crossOrigin = 'anonymous';
-        video.muted = true;
-        video.playsInline = true;
-        video.currentTime = 0.5; // ดึงเฟรมช่วงวินาทีที่ 0.5
-
-        video.onseeked = () => {
-          try {
-            const canvas = document.createElement('canvas');
-            canvas.width = video.videoWidth || 640;
-            canvas.height = video.videoHeight || 360;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            resolve(canvas.toDataURL('image/jpeg'));
-          } catch (e) {
-            resolve(null);
-          }
-        };
-
-        video.onerror = () => resolve(null);
-      });
-    }
-
-    // ==========================================
     // บีบอัดวิดีโอบนเครื่อง โดยคงระบบสัญญาณเสียงไว้ (Audio Stream preserved)
     // ==========================================
     async function compressVideo(file, maxWidth = 1280, maxHeight = 720) {
@@ -798,6 +789,9 @@
       });
     }
 
+    // ==========================================
+    // ฟังก์ชันอัปเดต Preview พร้อมแท็กแจ้งชื่อไฟล์ชัดเจน
+    // ==========================================
     window.handleFileSelect = async function(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -808,16 +802,24 @@
       if (file.type.startsWith('image/')) {
         const compressed = await compressImage(file);
         processedMedia = { type: 'image', data: compressed.dataUrl, file: compressed.blob };
-        previewBox.innerHTML = `<img src="${compressed.dataUrl}">`;
+        previewBox.innerHTML = `
+          <img src="${compressed.dataUrl}">
+          <div class="file-tag">📷 แนบรูปภาพแล้ว (${file.name || 'รูปถ่าย'})</div>
+        `;
       } else if (file.type.startsWith('video/')) {
         const videoUrl = URL.createObjectURL(file);
         processedMedia = { type: 'video', data: videoUrl, file: file };
-        
-        // สร้างรูปตัวอย่าง (Poster) จากวิดีโอ
-        const posterUrl = await generateVideoThumbnail(videoUrl);
-        const posterAttr = posterUrl ? `poster="${posterUrl}"` : '';
 
-        previewBox.innerHTML = `<video src="${videoUrl}" ${posterAttr} controls playsinline preload="metadata"></video>`;
+        previewBox.innerHTML = `
+          <video id="preview-video-element" src="${videoUrl}#t=0.001" controls playsinline preload="metadata"></video>
+          <div class="file-tag">🎥 แนบวิดีโอแล้ว: ${file.name || 'วิดีโอใหม่'}</div>
+        `;
+        
+        // ช่วย Safari ให้ดึงเฟรมแรกออกมาทันที
+        setTimeout(() => {
+          const v = document.getElementById('preview-video-element');
+          if (v) v.load();
+        }, 100);
       }
       event.target.value = '';
     }
@@ -832,15 +834,23 @@
       if (file.type.startsWith('image/')) {
         const compressed = await compressImage(file);
         editProcessedMedia = { type: 'image', data: compressed.dataUrl, file: compressed.blob };
-        mediaContainer.innerHTML = `<img src="${compressed.dataUrl}">`;
+        mediaContainer.innerHTML = `
+          <img src="${compressed.dataUrl}">
+          <div class="file-tag">📷 เปลี่ยนรูปแล้ว</div>
+        `;
       } else if (file.type.startsWith('video/')) {
         const videoUrl = URL.createObjectURL(file);
         editProcessedMedia = { type: 'video', data: videoUrl, file: file };
-        
-        const posterUrl = await generateVideoThumbnail(videoUrl);
-        const posterAttr = posterUrl ? `poster="${posterUrl}"` : '';
 
-        mediaContainer.innerHTML = `<video src="${videoUrl}" ${posterAttr} controls playsinline preload="metadata"></video>`;
+        mediaContainer.innerHTML = `
+          <video id="edit-video-element" src="${videoUrl}#t=0.001" controls playsinline preload="metadata"></video>
+          <div class="file-tag">🎥 เปลี่ยนวิดีโอแล้ว</div>
+        `;
+
+        setTimeout(() => {
+          const v = document.getElementById('edit-video-element');
+          if (v) v.load();
+        }, 100);
       }
       event.target.value = '';
     }
@@ -1065,7 +1075,6 @@
       if (item.mediaType === 'image' && item.mediaUrl) {
         mediaContainer.innerHTML = `<img src="${item.mediaUrl}">`;
       } else if (item.mediaType === 'video' && item.mediaUrl) {
-        // สำหรับวิดีโอจากคลาวด์ ดึงรูป Thumbnail จาก Cloudinary โดยเปลี่ยนดวงนามสกุลไฟล์เป็น .jpg
         let posterUrl = item.mediaUrl.replace(/\.[^/.]+$/, ".jpg");
         mediaContainer.innerHTML = `<video src="${item.mediaUrl}" poster="${posterUrl}" controls playsinline preload="metadata"></video>`;
       } else {
