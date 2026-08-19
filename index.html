@@ -75,13 +75,8 @@
 
     .status-dot { width: 8px; height: 8px; border-radius: 50%; transition: all 0.3s ease; display: inline-block; }
     .status-dot.green { background-color: #10b981; box-shadow: 0 0 6px #10b981; }
-    .status-dot.orange { background-color: #f59e0b; box-shadow: 0 0 6px #f59e0b; animation: statusBlink 1s infinite alternate; }
+    .status-dot.orange { background-color: #f59e0b; box-shadow: 0 0 6px #f59e0b; }
     .status-dot.red { background-color: #ef4444; box-shadow: 0 0 6px #ef4444; }
-
-    @keyframes statusBlink {
-      0% { opacity: 1; transform: scale(1); }
-      100% { opacity: 0.3; transform: scale(0.8); }
-    }
 
     /* ===== กรอบแสดงรูปภาพ / วิดีโอ ===== */
     .media-preview-box { 
@@ -172,7 +167,7 @@
         <h1 class="header-title">หนึ่ง ร่อนพิบูลย์ อิเล็กทรอนิกส์</h1>
         
         <div class="status-container">
-          <div class="status-badge" id="dbStatusBadge">
+          <div class="status-badge">
             <span class="status-dot green" id="db-status-dot"></span>
             <span id="db-status-text">DB: พร้อม</span>
           </div>
@@ -238,8 +233,8 @@
       <table>
         <thead>
           <tr>
-            <th style="width: 28%;">ชนิดสื่อ</th>
-            <th style="width: 32%;">ชื่อ/รุ่น</th>
+            <th style="width: 25%;">ชนิดสื่อ</th>
+            <th style="width: 35%;">ชื่อ/รุ่น</th>
             <th style="width: 40%;">รายละเอียด</th>
           </tr>
         </thead>
@@ -728,6 +723,91 @@
       });
     }
 
+    // ==========================================
+    // บีบอัดวิดีโอบนเครื่อง (ปิดเสียงระหว่างเรนเดอร์เพื่อไม่ให้เสียงดัง)
+    // ==========================================
+    async function compressVideo(file, maxWidth = 1280, maxHeight = 720) {
+      return new Promise((resolve, reject) => {
+        showToast("⏳ กำลังเตรียมไฟล์วิดีโอพร้อมสัญญาณเสียง...", "info");
+        
+        const video = document.createElement('video');
+        video.src = URL.createObjectURL(file);
+        video.playsInline = true;
+        video.muted = true; // ปิดเสียงไม่ให้ดังออกลำโพงขณะบีบอัด
+        video.volume = 0;
+
+        video.onloadeddata = () => video.play();
+        video.onerror = (err) => {
+          URL.revokeObjectURL(video.src);
+          reject(err);
+        };
+
+        video.onplaying = () => {
+          let width = video.videoWidth;
+          let height = video.videoHeight;
+
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+
+          const canvasStream = canvas.captureStream(25);
+          const videoAudioStream = video.captureStream ? video.captureStream() : (video.mozCaptureStream ? video.mozCaptureStream() : null);
+
+          let combinedStream = canvasStream;
+          if (videoAudioStream && videoAudioStream.getAudioTracks().length > 0) {
+            const audioTrack = videoAudioStream.getAudioTracks()[0];
+            combinedStream.addTrack(audioTrack);
+          }
+
+          const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus') 
+            ? 'video/webm;codecs=vp8,opus' 
+            : 'video/webm';
+
+          const mediaRecorder = new MediaRecorder(combinedStream, {
+            mimeType: mimeType,
+            videoBitsPerSecond: 1200000 
+          });
+
+          const chunks = [];
+          mediaRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) chunks.push(e.data);
+          };
+
+          mediaRecorder.onstop = () => {
+            video.pause();
+            URL.revokeObjectURL(video.src);
+            const compressedBlob = new Blob(chunks, { type: 'video/webm' });
+            const compressedFile = new File([compressedBlob], `compressed_${Date.now()}.webm`, {
+              type: 'video/webm'
+            });
+            resolve(compressedFile);
+          };
+
+          mediaRecorder.start(100);
+
+          function drawFrame() {
+            if (!video.paused && !video.ended) {
+              ctx.drawImage(video, 0, 0, width, height);
+              requestAnimationFrame(drawFrame);
+            } else {
+              mediaRecorder.stop();
+            }
+          }
+          drawFrame();
+        };
+      });
+    }
+
     window.handleFileSelect = async function(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -788,19 +868,30 @@
       event.target.value = '';
     }
 
-    // ==========================================
-    // อัปโหลดเข้า Cloudinary โดยตรง (แก้ปัญหาเรื่องเสียงตัด)
-    // ==========================================
     async function uploadToCloudinary(file, resourceType = 'auto') {
+      let fileToUpload = file;
       const isVideo = file.type.startsWith('video/');
 
+      if (isVideo) {
+        try {
+          fileToUpload = await compressVideo(file);
+        } catch (err) {
+          console.warn("การบีบอัดวิดีโอล้มเหลว ใช้ไฟล์ต้นฉบับแทน:", err);
+          fileToUpload = file;
+        }
+      }
+
       const endpoint = isVideo 
-        ? `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/video/upload`
+        ? `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/video/upload_chunked`
         : `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
 
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', fileToUpload);
       formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+      if (isVideo) {
+        formData.append('quality', 'auto:eco');
+      }
 
       const res = await fetch(endpoint, { method: 'POST', body: formData });
       if (!res.ok) {
@@ -922,35 +1013,18 @@
       const tempMedia = { ...processedMedia };
 
       try {
-        const hasMedia = !!tempMedia.file;
-        const initialStatus = hasMedia ? "processing" : "completed";
-
-        // 1. บันทึกลง Firestore
         const docRef = await addDoc(collection(db, "products"), {
           name: name,
           detail: detail,
           mediaUrl: "",
           mediaType: tempMedia.file ? tempMedia.type : "none",
-          uploadStatus: initialStatus,
+          uploadStatus: tempMedia.file ? "processing" : "completed",
           createdAt: serverTimestamp()
         });
 
         const newDocId = docRef.id;
 
-        // 2. แทรกเข้ารายการในหน้าเว็บ และ Render ตารางทันที
-        const newProductObj = {
-          id: newDocId,
-          name: name,
-          detail: detail,
-          mediaUrl: "",
-          mediaType: tempMedia.file ? tempMedia.type : "none",
-          uploadStatus: initialStatus
-        };
-
-        productsList.unshift(newProductObj);
-        renderTable(productsList);
-
-        // 3. รีเซ็ต ฟอร์มรับข้อมูล
+        // สั่งหยุดการเล่นวิดีโอบนกรอบ พรีวิว ก่อนล้างข้อมูล
         const previewVid = document.querySelector('#preview-box video');
         if (previewVid) {
           previewVid.pause();
@@ -964,15 +1038,16 @@
         processedMedia = { type: null, data: null, file: null };
         clearValidationError();
 
-        // 4. ถ้ามีไฟล์สื่อ ให้เริ่มกระบวนการอัปโหลดเบื้องหลังและตั้งไฟ DB เป็น สีส้ม
-        if (hasMedia) {
+        if (tempMedia.file) {
+          // สลับสถานะไฟ DB เป็นสีส้มทันทีที่กดบันทึก
           updateStatusUI('db', 'orange', 'DB: กำลังอัปโหลดสื่อ...');
-          showToast("⚡ บันทึกสำเร็จ! (กำลังอัปโหลดสื่อหลังบ้าน)", "info");
+          showToast("⚡ บันทึกสำเร็จ! (กำลังอัปโหลดสื่อหลังบ้าน)", "success");
           processMediaInBackground(newDocId, tempMedia);
         } else {
-          updateStatusUI('db', 'green', 'DB: พร้อม');
           showToast("⚡ บันทึกสำเร็จ!", "success");
         }
+
+        fetchInitialProducts();
 
       } catch (error) {
         console.error("Add Product Error:", error);
@@ -987,7 +1062,6 @@
       try {
         const uploadedUrl = await uploadToCloudinary(mediaObj.file, mediaObj.type);
 
-        // อัปเดตข้อมูลบน Firestore เมื่ออัปโหลดเสร็จสมบูรณ์
         const productRef = doc(db, "products", docId);
         await updateDoc(productRef, {
           mediaUrl: uploadedUrl,
@@ -995,17 +1069,9 @@
           updatedAt: serverTimestamp()
         });
 
-        // อัปเดตสถานะในตัวแปร Local Array และสั่ง Render ตารางใหม่
-        const pIndex = productsList.findIndex(p => p.id === docId);
-        if (pIndex !== -1) {
-          productsList[pIndex].mediaUrl = uploadedUrl;
-          productsList[pIndex].uploadStatus = "completed";
-          renderTable(productsList);
-        }
-
-        // เมื่ออัปโหลดเสร็จสมบูรณ์ -> ไฟ DB เปลี่ยนเป็นสีเขียว
         updateStatusUI('db', 'green', 'DB: พร้อม');
-        showToast("☁️ อัปโหลดไฟล์สื่อเรียบร้อยแล้ว", "success");
+        showToast("☁️ อัปโหลดวิดีโอ/รูปภาพเรียบร้อยแล้ว", "info");
+        fetchInitialProducts();
 
       } catch (err) {
         console.error("Background Upload Failed:", err);
@@ -1013,12 +1079,6 @@
         
         const productRef = doc(db, "products", docId);
         await updateDoc(productRef, { uploadStatus: "failed" });
-
-        const pIndex = productsList.findIndex(p => p.id === docId);
-        if (pIndex !== -1) {
-          productsList[pIndex].uploadStatus = "failed";
-          renderTable(productsList);
-        }
       }
     }
 
@@ -1037,24 +1097,8 @@
       if (item.mediaType === 'image' && item.mediaUrl) {
         mediaContainer.innerHTML = `<img src="${item.mediaUrl}">`;
       } else if (item.mediaType === 'video' && item.mediaUrl) {
-        // ใช้การปรับจูนความละเอียดอัตโนมัติจาก Cloudinary โดยไม่ตัดเสียง
-        let optimizedVideoUrl = item.mediaUrl;
-        if (item.mediaUrl.includes('cloudinary.com')) {
-          optimizedVideoUrl = item.mediaUrl.replace('/upload/', '/upload/q_auto,f_auto/');
-        }
-
         let posterUrl = item.mediaUrl.replace(/\.[^/.]+$/, ".jpg");
-        mediaContainer.innerHTML = `<video id="modalVideoPlayer" src="${optimizedVideoUrl}" poster="${posterUrl}" controls playsinline preload="metadata"></video>`;
-        
-        setTimeout(() => {
-          const player = document.getElementById('modalVideoPlayer');
-          if (player) {
-            player.muted = false;
-            player.volume = 1.0;
-          }
-        }, 100);
-      } else if (item.uploadStatus === 'processing') {
-        mediaContainer.innerHTML = `<span style="color: #f59e0b;">⏳ กำลังประมวลผลการอัปโหลดวิดีโอ/รูปภาพ...</span>`;
+        mediaContainer.innerHTML = `<video src="${item.mediaUrl}" poster="${posterUrl}" controls playsinline preload="metadata"></video>`;
       } else {
         mediaContainer.innerHTML = `<span style="color: #9ca3af;">ไม่มีไฟล์สื่อ</span>`;
       }
