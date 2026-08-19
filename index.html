@@ -140,7 +140,6 @@
     .badge-image { background-color: #f0fdf4; color: #16a34a; }
     .badge-none { background-color: #f3f4f6; color: #6b7280; }
     .badge-loading { background-color: #fef3c7; color: #d97706; }
-    .badge-failed { background-color: #fef2f2; color: #dc2626; }
     .text-truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; color: #6b7280; }
     
     .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; padding: 16px; -webkit-overflow-scrolling: touch; }
@@ -155,7 +154,7 @@
     .btn-cancel { background-color: #6b7280; color: #ffffff; width: 100%; margin-top: 6px; padding: 10px; }
     .btn-quota { background-color: #8b5cf6; color: white; width: 100%; padding: 12px; margin-top: 10px; }
     .toast { visibility: hidden; min-width: 250px; background-color: #1f2937; color: #fff; text-align: center; border-radius: 10px; padding: 12px 20px; position: fixed; z-index: 2000; bottom: 30px; font-size: 14px; }
-    .toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 3.5s; }
+    .toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
     .toast.toast-error { background-color: #dc2626; }
     .toast.toast-success { background-color: #16a34a; }
     .toast.toast-info { background-color: #0284c7; }
@@ -481,7 +480,7 @@
         if (item.uploadStatus === 'processing') {
           mediaBadge = `<span class="badge badge-loading">⏳ กำลังอัปโหลด...</span>`;
         } else if (item.uploadStatus === 'failed') {
-          mediaBadge = `<span class="badge badge-failed">⚠️ สื่อล้มเหลว</span>`;
+          mediaBadge = `<span class="badge badge-loading" style="background-color:#fef2f2; color:#dc2626;">⚠️ สื่อล้มเหลว</span>`;
         } else if (item.mediaType === 'image') {
           mediaBadge = `<span class="badge badge-image">🖼️ รูปภาพ</span>`;
         } else if (item.mediaType === 'video') {
@@ -792,10 +791,14 @@
     }
 
     // ==========================================
-    // อัปโหลดเข้า Cloudinary โดยตรง (ใช้ auto/upload + แกะ Error สื่อ)
+    // อัปโหลดเข้า Cloudinary โดยตรง (แก้ไขจุดระบุชนิดสื่อ)
     // ==========================================
-    async function uploadToCloudinary(file) {
-      const endpoint = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`;
+    async function uploadToCloudinary(file, mediaType) {
+      if (!file) throw new Error("ไม่พบไฟล์สื่อสำหรับอัปโหลด");
+
+      const isVideo = mediaType === 'video' || (file.type && file.type.startsWith('video/'));
+      const resourceType = isVideo ? 'video' : 'image';
+      const endpoint = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`;
 
       const formData = new FormData();
       formData.append('file', file);
@@ -804,8 +807,8 @@
       const res = await fetch(endpoint, { method: 'POST', body: formData });
       if (!res.ok) {
         const errJson = await res.json().catch(() => ({}));
-        const errorDetails = errJson.error?.message || `HTTP Error ${res.status}`;
-        console.error("Cloudinary Upload Failed Details:", errJson);
+        const errorDetails = errJson.error?.message || `HTTP ${res.status}`;
+        console.error("Cloudinary Error Details:", errJson);
         throw new Error(`อัปโหลดสื่อไม่สำเร็จ: ${errorDetails}`);
       }
       const data = await res.json();
@@ -986,7 +989,7 @@
 
     async function processMediaInBackground(docId, mediaObj) {
       try {
-        const uploadedUrl = await uploadToCloudinary(mediaObj.file);
+        const uploadedUrl = await uploadToCloudinary(mediaObj.file, mediaObj.type);
 
         // อัปเดตข้อมูลบน Firestore เมื่ออัปโหลดเสร็จสมบูรณ์
         const productRef = doc(db, "products", docId);
@@ -1058,7 +1061,7 @@
       } else if (item.uploadStatus === 'processing') {
         mediaContainer.innerHTML = `<span style="color: #f59e0b;">⏳ กำลังประมวลผลการอัปโหลดวิดีโอ/รูปภาพ...</span>`;
       } else if (item.uploadStatus === 'failed') {
-        mediaContainer.innerHTML = `<span style="color: #ef4444;">⚠️ สื่ออัปโหลดล้มเหลว</span>`;
+        mediaContainer.innerHTML = `<span style="color: #ef4444;">⚠️ การอัปโหลดสื่อล้มเหลว</span>`;
       } else {
         mediaContainer.innerHTML = `<span style="color: #9ca3af;">ไม่มีไฟล์สื่อ</span>`;
       }
@@ -1124,7 +1127,7 @@
             await deleteCloudinaryMedia(item.mediaUrl, item.mediaType);
           }
 
-          mediaUrl = await uploadToCloudinary(editProcessedMedia.file);
+          mediaUrl = await uploadToCloudinary(editProcessedMedia.file, editProcessedMedia.type);
           mediaType = editProcessedMedia.type;
         }
 
@@ -1146,7 +1149,7 @@
       } catch (err) {
         console.error("Save Edit Error:", err);
         updateStatusUI('db', 'red', 'DB: ขัดข้อง');
-        showToast(err.message || "เกิดข้อผิดพลาดในการแก้ไขข้อมูล", "error");
+        showToast("เกิดข้อผิดพลาดในการแก้ไขข้อมูล", "error");
       } finally {
         updateBtn.disabled = false;
         updateBtn.innerText = "💾 บันทึกการแก้ไข";
