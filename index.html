@@ -706,8 +706,44 @@
       });
     }
 
+    // ฟังก์ชันสร้าง Thumbnail เฟรมแรกจากไฟล์วิดีโอ
+    function generateVideoThumbnail(file) {
+      return new Promise((resolve, reject) => {
+        const video = document.createElement('video');
+        video.autoplay = true;
+        video.muted = true;
+        video.playsInline = true;
+        video.src = URL.createObjectURL(file);
+
+        video.onloadeddata = () => {
+          video.currentTime = 0.1; // เลื่อนไปเฟรมถัดไปเล็กน้อยเพื่อหลบเฟรมดำ
+        };
+
+        video.onseeked = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 360;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+            URL.revokeObjectURL(video.src);
+            resolve(dataUrl);
+          } catch (e) {
+            URL.revokeObjectURL(video.src);
+            reject(e);
+          }
+        };
+
+        video.onerror = (err) => {
+          URL.revokeObjectURL(video.src);
+          reject(err);
+        };
+      });
+    }
+
     // ==========================================
-    // บีบอัดวิดีโอบนเครื่อง โดยคงระบบสัญญาณเสียงไว้ (Audio Stream preserved)
+    // บีบอัดวิดีโอบนเครื่อง โดยคงระบบสัญญาณเสียงไว้
     // ==========================================
     async function compressVideo(file, maxWidth = 1280, maxHeight = 720) {
       return new Promise((resolve, reject) => {
@@ -790,7 +826,7 @@
     }
 
     // ==========================================
-    // ฟังก์ชันอัปเดต Preview พร้อมแท็กแจ้งชื่อไฟล์ชัดเจน
+    // อัปเดต Preview พร้อมสร้าง Thumbnail เฟรมแรก
     // ==========================================
     window.handleFileSelect = async function(event) {
       const file = event.target.files[0];
@@ -811,15 +847,25 @@
         processedMedia = { type: 'video', data: videoUrl, file: file };
 
         previewBox.innerHTML = `
-          <video id="preview-video-element" src="${videoUrl}#t=0.001" controls playsinline preload="metadata"></video>
+          <div style="color:#9ca3af; font-size:14px;">⏳ กำลังโหลดภาพตัวอย่างวิดีโอ...</div>
           <div class="file-tag">🎥 แนบวิดีโอแล้ว: ${file.name || 'วิดีโอใหม่'}</div>
         `;
-        
-        // ช่วย Safari ให้ดึงเฟรมแรกออกมาทันที
-        setTimeout(() => {
-          const v = document.getElementById('preview-video-element');
-          if (v) v.load();
-        }, 100);
+
+        generateVideoThumbnail(file).then(posterDataUrl => {
+          previewBox.innerHTML = `
+            <video src="${videoUrl}" poster="${posterDataUrl}" controls playsinline preload="metadata"></video>
+            <div class="file-tag">🎥 แนบวิดีโอแล้ว: ${file.name || 'วิดีโอใหม่'}</div>
+          `;
+        }).catch(err => {
+          previewBox.innerHTML = `
+            <video id="preview-video-element" src="${videoUrl}#t=0.001" controls playsinline preload="metadata"></video>
+            <div class="file-tag">🎥 แนบวิดีโอแล้ว: ${file.name || 'วิดีโอใหม่'}</div>
+          `;
+          setTimeout(() => {
+            const v = document.getElementById('preview-video-element');
+            if (v) v.load();
+          }, 100);
+        });
       }
       event.target.value = '';
     }
@@ -843,14 +889,25 @@
         editProcessedMedia = { type: 'video', data: videoUrl, file: file };
 
         mediaContainer.innerHTML = `
-          <video id="edit-video-element" src="${videoUrl}#t=0.001" controls playsinline preload="metadata"></video>
+          <div style="color:#9ca3af; font-size:14px;">⏳ กำลังโหลดภาพตัวอย่าง...</div>
           <div class="file-tag">🎥 เปลี่ยนวิดีโอแล้ว</div>
         `;
 
-        setTimeout(() => {
-          const v = document.getElementById('edit-video-element');
-          if (v) v.load();
-        }, 100);
+        generateVideoThumbnail(file).then(posterDataUrl => {
+          mediaContainer.innerHTML = `
+            <video src="${videoUrl}" poster="${posterDataUrl}" controls playsinline preload="metadata"></video>
+            <div class="file-tag">🎥 เปลี่ยนวิดีโอแล้ว</div>
+          `;
+        }).catch(err => {
+          mediaContainer.innerHTML = `
+            <video id="edit-video-element" src="${videoUrl}#t=0.001" controls playsinline preload="metadata"></video>
+            <div class="file-tag">🎥 เปลี่ยนวิดีโอแล้ว</div>
+          `;
+          setTimeout(() => {
+            const v = document.getElementById('edit-video-element');
+            if (v) v.load();
+          }, 100);
+        });
       }
       event.target.value = '';
     }
