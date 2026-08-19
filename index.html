@@ -435,7 +435,6 @@
       document.getElementById('detail-modal').style.display = 'none';
       document.body.classList.remove('modal-open');
       
-      // สั่งหยุดเล่นวิดีโอใน Modal ทันทีเมื่อปิด
       const modalVideo = document.querySelector('#modal-media-container video');
       if (modalVideo) {
         modalVideo.pause();
@@ -688,6 +687,35 @@
     }
 
     // ==========================================
+    // ฟังก์ชันสร้าง รูปตัวอย่าง (Thumbnail) จากวิดีโอสดๆ บนมือถือ
+    // ==========================================
+    function generateVideoThumbnail(videoSrc) {
+      return new Promise((resolve) => {
+        const video = document.createElement('video');
+        video.src = videoSrc;
+        video.crossOrigin = 'anonymous';
+        video.muted = true;
+        video.playsInline = true;
+        video.currentTime = 0.5; // ดึงเฟรมช่วงวินาทีที่ 0.5
+
+        video.onseeked = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 360;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL('image/jpeg'));
+          } catch (e) {
+            resolve(null);
+          }
+        };
+
+        video.onerror = () => resolve(null);
+      });
+    }
+
+    // ==========================================
     // บีบอัดวิดีโอบนเครื่อง โดยคงระบบสัญญาณเสียงไว้ (Audio Stream preserved)
     // ==========================================
     async function compressVideo(file, maxWidth = 1280, maxHeight = 720) {
@@ -697,7 +725,7 @@
         const video = document.createElement('video');
         video.src = URL.createObjectURL(file);
         video.playsInline = true;
-        video.muted = false; // เปิดเสียงเพื่อให้จับสัญญาณ Audio Track ได้
+        video.muted = false;
 
         video.onloadeddata = () => video.play();
         video.onerror = (err) => {
@@ -723,14 +751,13 @@
           canvas.height = height;
           const ctx = canvas.getContext('2d');
 
-          // ดึงสัญญาณวิดีโอจาก Canvas + ดึงสัญญาณเสียงต้นฉบับจากตัววิดีโอ
           const canvasStream = canvas.captureStream(25);
           const videoAudioStream = video.captureStream ? video.captureStream() : (video.mozCaptureStream ? video.mozCaptureStream() : null);
 
           let combinedStream = canvasStream;
           if (videoAudioStream && videoAudioStream.getAudioTracks().length > 0) {
             const audioTrack = videoAudioStream.getAudioTracks()[0];
-            combinedStream.addTrack(audioTrack); // ผนวกสัญญาณเสียง
+            combinedStream.addTrack(audioTrack);
           }
 
           const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus') 
@@ -785,8 +812,12 @@
       } else if (file.type.startsWith('video/')) {
         const videoUrl = URL.createObjectURL(file);
         processedMedia = { type: 'video', data: videoUrl, file: file };
-        // แสดงรูปภาพตัวอย่าง (preload metadata) และไม่เล่นอัตโนมัติ มีเสียงสมบูรณ์
-        previewBox.innerHTML = `<video src="${videoUrl}#t=0.1" controls playsinline preload="metadata"></video>`;
+        
+        // สร้างรูปตัวอย่าง (Poster) จากวิดีโอ
+        const posterUrl = await generateVideoThumbnail(videoUrl);
+        const posterAttr = posterUrl ? `poster="${posterUrl}"` : '';
+
+        previewBox.innerHTML = `<video src="${videoUrl}" ${posterAttr} controls playsinline preload="metadata"></video>`;
       }
       event.target.value = '';
     }
@@ -805,7 +836,11 @@
       } else if (file.type.startsWith('video/')) {
         const videoUrl = URL.createObjectURL(file);
         editProcessedMedia = { type: 'video', data: videoUrl, file: file };
-        mediaContainer.innerHTML = `<video src="${videoUrl}#t=0.1" controls playsinline preload="metadata"></video>`;
+        
+        const posterUrl = await generateVideoThumbnail(videoUrl);
+        const posterAttr = posterUrl ? `poster="${posterUrl}"` : '';
+
+        mediaContainer.innerHTML = `<video src="${videoUrl}" ${posterAttr} controls playsinline preload="metadata"></video>`;
       }
       event.target.value = '';
     }
@@ -955,7 +990,6 @@
       const tempMedia = { ...processedMedia };
 
       try {
-        // 1. บันทึกเข้า DB ทันที
         const docRef = await addDoc(collection(db, "products"), {
           name: name,
           detail: detail,
@@ -967,7 +1001,6 @@
 
         const newDocId = docRef.id;
 
-        // 2. เคลียร์ฟอร์ม
         nameInput.value = "";
         detailInput.value = "";
         document.getElementById('preview-box').innerHTML = "<span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>";
@@ -978,7 +1011,6 @@
         showToast("⚡ บันทึกสำเร็จ! (กำลังอัปโหลดสื่อหลังบ้าน)", "success");
         fetchInitialProducts();
 
-        // 3. ทำงานส่งสื่อในฉากหลัง
         if (tempMedia.file) {
           processMediaInBackground(newDocId, tempMedia);
         }
@@ -994,7 +1026,6 @@
 
     async function processMediaInBackground(docId, mediaObj) {
       try {
-        // อัปเดตไฟสถานะ DB เป็นสีส้มเพื่อบอกว่ากำลังประมวลผลอัปโหลดสื่ออยู่
         updateStatusUI('db', 'orange', 'DB: กำลังอัปโหลดสื่อ...');
 
         const uploadedUrl = await uploadToCloudinary(mediaObj.file, mediaObj.type);
@@ -1006,7 +1037,6 @@
           updatedAt: serverTimestamp()
         });
 
-        // อัปโหลดสำเร็จ เปลี่ยนกลับเป็นไฟสีเขียว
         updateStatusUI('db', 'green', 'DB: พร้อม');
         showToast("☁️ อัปโหลดวิดีโอ/รูปภาพเรียบร้อยแล้ว", "info");
         fetchInitialProducts();
@@ -1023,7 +1053,7 @@
     // ==========================================
     // เปิด Modal ดูรายละเอียด
     // ==========================================
-    window.openDetailModal = function(id) {
+    window.openDetailModal = async function(id) {
       const item = productsList.find(p => p.id === id);
       if (!item) return;
 
@@ -1035,8 +1065,9 @@
       if (item.mediaType === 'image' && item.mediaUrl) {
         mediaContainer.innerHTML = `<img src="${item.mediaUrl}">`;
       } else if (item.mediaType === 'video' && item.mediaUrl) {
-        // ไม่เล่นอัตโนมัติ มีเสียงตามปกติ
-        mediaContainer.innerHTML = `<video src="${item.mediaUrl}#t=0.1" controls playsinline preload="metadata"></video>`;
+        // สำหรับวิดีโอจากคลาวด์ ดึงรูป Thumbnail จาก Cloudinary โดยเปลี่ยนดวงนามสกุลไฟล์เป็น .jpg
+        let posterUrl = item.mediaUrl.replace(/\.[^/.]+$/, ".jpg");
+        mediaContainer.innerHTML = `<video src="${item.mediaUrl}" poster="${posterUrl}" controls playsinline preload="metadata"></video>`;
       } else {
         mediaContainer.innerHTML = `<span style="color: #9ca3af;">ไม่มีไฟล์สื่อ</span>`;
       }
