@@ -791,7 +791,7 @@
     }
 
     // ==========================================
-    // อัปโหลดเข้า Cloudinary โดยตรง (แก้ไขจุดระบุชนิดสื่อ)
+    // อัปโหลดเข้า Cloudinary (แก้ไขพิเศษเพื่อรองรับ iOS/Safari Video Blob)
     // ==========================================
     async function uploadToCloudinary(file, mediaType) {
       if (!file) throw new Error("ไม่พบไฟล์สื่อสำหรับอัปโหลด");
@@ -800,8 +800,24 @@
       const resourceType = isVideo ? 'video' : 'image';
       const endpoint = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`;
 
+      // สร้าง File Object ใหม่เพื่อกำหนดชื่อไฟล์และประเภท MIME ให้ iOS Safari อ่านออกง่าย
+      let fileToUpload = file;
+      if (isVideo) {
+        let ext = 'mp4';
+        if (file.type && file.type.includes('quicktime')) ext = 'mov';
+        else if (file.type && file.type.includes('webm')) ext = 'webm';
+        
+        fileToUpload = new File([file], `video_${Date.now()}.${ext}`, { 
+          type: file.type || 'video/mp4' 
+        });
+      } else {
+        fileToUpload = new File([file], `image_${Date.now()}.jpg`, { 
+          type: file.type || 'image/jpeg' 
+        });
+      }
+
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', fileToUpload);
       formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
 
       const res = await fetch(endpoint, { method: 'POST', body: formData });
