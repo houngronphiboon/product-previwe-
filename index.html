@@ -434,6 +434,13 @@
     window.closeModal = function() {
       document.getElementById('detail-modal').style.display = 'none';
       document.body.classList.remove('modal-open');
+      
+      // สั่งหยุดเล่นวิดีโอใน Modal ทันทีเมื่อปิด
+      const modalVideo = document.querySelector('#modal-media-container video');
+      if (modalVideo) {
+        modalVideo.pause();
+      }
+
       revokePreviousMediaUrl(editProcessedMedia);
       activeProductId = null;
       editProcessedMedia = { type: null, data: null, file: null };
@@ -778,8 +785,8 @@
       } else if (file.type.startsWith('video/')) {
         const videoUrl = URL.createObjectURL(file);
         processedMedia = { type: 'video', data: videoUrl, file: file };
-        // ปลดคำสั่ง muted ออก เพื่อให้เล่นเสียงได้สมบูรณ์
-        previewBox.innerHTML = `<video src="${videoUrl}" controls playsinline></video>`;
+        // แสดงรูปภาพตัวอย่าง (preload metadata) และไม่เล่นอัตโนมัติ มีเสียงสมบูรณ์
+        previewBox.innerHTML = `<video src="${videoUrl}#t=0.1" controls playsinline preload="metadata"></video>`;
       }
       event.target.value = '';
     }
@@ -798,7 +805,7 @@
       } else if (file.type.startsWith('video/')) {
         const videoUrl = URL.createObjectURL(file);
         editProcessedMedia = { type: 'video', data: videoUrl, file: file };
-        mediaContainer.innerHTML = `<video src="${videoUrl}" controls playsinline></video>`;
+        mediaContainer.innerHTML = `<video src="${videoUrl}#t=0.1" controls playsinline preload="metadata"></video>`;
       }
       event.target.value = '';
     }
@@ -987,7 +994,8 @@
 
     async function processMediaInBackground(docId, mediaObj) {
       try {
-        updateStatusUI('db', 'orange', 'DB: อัปโหลดสื่อ');
+        // อัปเดตไฟสถานะ DB เป็นสีส้มเพื่อบอกว่ากำลังประมวลผลอัปโหลดสื่ออยู่
+        updateStatusUI('db', 'orange', 'DB: กำลังอัปโหลดสื่อ...');
 
         const uploadedUrl = await uploadToCloudinary(mediaObj.file, mediaObj.type);
 
@@ -998,6 +1006,7 @@
           updatedAt: serverTimestamp()
         });
 
+        // อัปโหลดสำเร็จ เปลี่ยนกลับเป็นไฟสีเขียว
         updateStatusUI('db', 'green', 'DB: พร้อม');
         showToast("☁️ อัปโหลดวิดีโอ/รูปภาพเรียบร้อยแล้ว", "info");
         fetchInitialProducts();
@@ -1026,8 +1035,8 @@
       if (item.mediaType === 'image' && item.mediaUrl) {
         mediaContainer.innerHTML = `<img src="${item.mediaUrl}">`;
       } else if (item.mediaType === 'video' && item.mediaUrl) {
-        // เอา muted ออก เพื่อให้ได้ยินเสียงเมื่อเปิดวิดีโอ
-        mediaContainer.innerHTML = `<video src="${item.mediaUrl}" controls playsinline></video>`;
+        // ไม่เล่นอัตโนมัติ มีเสียงตามปกติ
+        mediaContainer.innerHTML = `<video src="${item.mediaUrl}#t=0.1" controls playsinline preload="metadata"></video>`;
       } else {
         mediaContainer.innerHTML = `<span style="color: #9ca3af;">ไม่มีไฟล์สื่อ</span>`;
       }
@@ -1087,6 +1096,7 @@
 
         if (editProcessedMedia.file) {
           showToast("🚀 กำลังอัปโหลดสื่อใหม่...", "info");
+          updateStatusUI('db', 'orange', 'DB: กำลังอัปโหลดสื่อ...');
           
           if (item.mediaUrl) {
             await deleteCloudinaryMedia(item.mediaUrl, item.mediaType);
@@ -1106,12 +1116,14 @@
           updatedAt: serverTimestamp()
         });
 
+        updateStatusUI('db', 'green', 'DB: พร้อม');
         showToast("✅ แก้ไขข้อมูลสำเร็จ!", "success");
         closeModal();
         fetchInitialProducts();
 
       } catch (err) {
         console.error("Save Edit Error:", err);
+        updateStatusUI('db', 'red', 'DB: ขัดข้อง');
         showToast("เกิดข้อผิดพลาดในการแก้ไขข้อมูล", "error");
       } finally {
         updateBtn.disabled = false;
