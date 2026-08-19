@@ -742,6 +742,11 @@
         processedMedia = { type: 'image', data: compressed.dataUrl, file: compressed.blob };
         previewBox.innerHTML = `<img src="${compressed.dataUrl}">`;
       } else if (file.type.startsWith('video/')) {
+        // ตรวจสอบขนาดไฟล์เบื้องต้นเพื่อป้องกันเกินโควตา Free Plan (100MB)
+        if (file.size > 95 * 1024 * 1024) {
+          showToast("⚠️ ไฟล์วิดีโอมีขนาดใหญ่เกินไป (มากกว่า 95MB) แนะนำให้ตัดทอนความสั้นลงก่อนอัปโหลด", "error");
+        }
+
         const videoUrl = URL.createObjectURL(file);
         processedMedia = { type: 'video', data: videoUrl, file: file };
 
@@ -772,6 +777,10 @@
         editProcessedMedia = { type: 'image', data: compressed.dataUrl, file: compressed.blob };
         mediaContainer.innerHTML = `<img src="${compressed.dataUrl}">`;
       } else if (file.type.startsWith('video/')) {
+        if (file.size > 95 * 1024 * 1024) {
+          showToast("⚠️ ไฟล์วิดีโอมีขนาดใหญ่เกินไป (มากกว่า 95MB)", "error");
+        }
+
         const videoUrl = URL.createObjectURL(file);
         editProcessedMedia = { type: 'video', data: videoUrl, file: file };
 
@@ -791,7 +800,7 @@
     }
 
     // ==========================================
-    // อัปโหลดเข้า Cloudinary โดยตรง (แก้ไขจุดระบุชนิดสื่อ)
+    // อัปโหลดเข้า Cloudinary (พร้อมใส่ Transformation บีบอัดอัตโนมัติ)
     // ==========================================
     async function uploadToCloudinary(file, mediaType) {
       if (!file) throw new Error("ไม่พบไฟล์สื่อสำหรับอัปโหลด");
@@ -803,6 +812,13 @@
       const formData = new FormData();
       formData.append('file', file);
       formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+      // เพิ่มชุดคำสั่งจำกัดขนาดและบีบอัดไฟล์อัตโนมัติฝั่ง Cloudinary (รองรับวิดีโอยาว)
+      if (isVideo) {
+        formData.append('transformation', 'c_limit,w_1280,h_720,vc_auto,q_auto:eco,f_auto');
+      } else {
+        formData.append('transformation', 'q_auto:good,f_auto');
+      }
 
       const res = await fetch(endpoint, { method: 'POST', body: formData });
       if (!res.ok) {
@@ -968,7 +984,7 @@
         processedMedia = { type: null, data: null, file: null };
         clearValidationError();
 
-        // 4. ถ้ามีไฟล์สื่อ ให้เริ่มกระบวนการอัปโหลดเบื้องหลังและตั้งไฟ DB เป็น สีส้ม
+        // 4. ถ้ามีไฟล์สื่อ ให้เริ่มกระบวนการอัปโหลดเบื้องหลัง
         if (hasMedia) {
           updateStatusUI('db', 'orange', 'DB: กำลังอัปโหลดสื่อ...');
           showToast("⚡ บันทึกสำเร็จ! (กำลังอัปโหลดสื่อหลังบ้าน)", "info");
@@ -991,7 +1007,6 @@
       try {
         const uploadedUrl = await uploadToCloudinary(mediaObj.file, mediaObj.type);
 
-        // อัปเดตข้อมูลบน Firestore เมื่ออัปโหลดเสร็จสมบูรณ์
         const productRef = doc(db, "products", docId);
         await updateDoc(productRef, {
           mediaUrl: uploadedUrl,
@@ -999,7 +1014,6 @@
           updatedAt: serverTimestamp()
         });
 
-        // อัปเดตสถานะในตัวแปร Local Array และสั่ง Render ตารางใหม่
         const pIndex = productsList.findIndex(p => p.id === docId);
         if (pIndex !== -1) {
           productsList[pIndex].mediaUrl = uploadedUrl;
@@ -1007,7 +1021,6 @@
           renderTable(productsList);
         }
 
-        // เมื่ออัปโหลดเสร็จสมบูรณ์ -> ไฟ DB เปลี่ยนเป็นสีเขียว
         updateStatusUI('db', 'green', 'DB: พร้อม');
         showToast("☁️ อัปโหลดไฟล์สื่อเรียบร้อยแล้ว", "success");
 
