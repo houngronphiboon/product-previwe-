@@ -778,11 +778,10 @@
       } else if (file.type.startsWith('video/')) {
         const videoUrl = URL.createObjectURL(file);
         processedMedia = { type: 'video', data: videoUrl, file: file };
-        // ปลดคำสั่ง muted ออก เพื่อให้เล่นเสียงได้สมบูรณ์
         previewBox.innerHTML = `<video src="${videoUrl}" controls playsinline></video>`;
       }
       event.target.value = '';
-    }
+    };
 
     window.handleEditFileSelect = async function(event) {
       const file = event.target.files[0];
@@ -801,86 +800,47 @@
         mediaContainer.innerHTML = `<video src="${videoUrl}" controls playsinline></video>`;
       }
       event.target.value = '';
-    }
+    };
 
-    async function uploadToCloudinary(file, resourceType = 'auto') {
-      let fileToUpload = file;
-      const isVideo = file.type.startsWith('video/');
-
-      if (isVideo) {
-        try {
-          fileToUpload = await compressVideo(file);
-        } catch (err) {
-          console.warn("การบีบอัดวิดีโอล้มเหลว ใช้ไฟล์ต้นฉบับแทน:", err);
-          fileToUpload = file;
-        }
-      }
-
-      const endpoint = isVideo 
-        ? `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/video/upload_chunked`
-        : `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
-
+    async function uploadToCloudinary(file, type) {
+      const resourceType = type === 'video' ? 'video' : 'image';
       const formData = new FormData();
-      formData.append('file', fileToUpload);
+      formData.append('file', file);
       formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
 
-      if (isVideo) {
-        formData.append('quality', 'auto:eco');
-      }
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`, {
+        method: 'POST',
+        body: formData
+      });
 
-      const res = await fetch(endpoint, { method: 'POST', body: formData });
-      if (!res.ok) {
-        const errJson = await res.json();
-        throw new Error(errJson.error?.message || 'อัปโหลดไป Cloudinary ไม่สำเร็จ');
-      }
+      if (!res.ok) throw new Error("Upload Media Failed");
       const data = await res.json();
       return data.secure_url;
     }
 
-    /* ===== PROMPT AI ===== */
     window.generateAIDetails = async function() {
-      const nameInput = document.getElementById('product-name');
-      const detailInput = document.getElementById('product-detail');
-      const name = nameInput.value.trim();
+      const nameInput = document.getElementById('product-name').value.trim();
+      const detailTextarea = document.getElementById('product-detail');
 
-      const originalText = detailInput.value;
-      detailInput.value = "กำลังวิเคราะห์สเปกจริงจากเพลตสินค้าและฐานข้อมูล...";
+      if (!nameInput && !processedMedia.file) {
+        showToast("กรุณากรอกชื่อ/รุ่น หรือแนบรูปถ่ายก่อนให้ AI วิเคราะห์", "error");
+        return;
+      }
+
       setFormButtonsDisabled(true, true);
-      
-      updateStatusUI('ai', 'orange', 'AI: กำลังคิด');
+      updateStatusUI('ai', 'orange', 'AI: กำลังวิเคราะห์');
 
       try {
-        let payload = { contents: [] };
-
-        if (processedMedia.type === 'video') {
-          showToast("วิดีโอไม่รองรับการวิเคราะห์ด้วย AI Vision ระบบจะวิเคราะห์จากชื่อรุ่นแทน", "info");
-        }
+        let payload = { model: "google/gemini-2.5-flash", prompt: "", image: "" };
 
         if (processedMedia.type === 'image' && processedMedia.data) {
-          const base64Data = processedMedia.data.split(',')[1];
-          const mimeType = processedMedia.data.split(';')[0].split(':')[1];
-
-          payload.contents.push({
-            parts: [
-              { inline_data: { mime_type: mimeType, data: base64Data } },
-              { text: name || '' }
-            ]
-          });
+          payload.image = processedMedia.data;
+          payload.prompt = `วิเคราะห์ภาพถ่ายนี้ สรุปรายละเอียดสเปกและข้อมูลสินค้าให้ครบถ้วน ${nameInput ? 'รุ่น: ' + nameInput : ''}`;
         } else {
-          if (!name) {
-            triggerValidationError("กรุณากรอกชื่อ/รุ่น หรืออัปโหลดรูปถ่ายเพลตสินค้า");
-            detailInput.value = originalText;
-            setFormButtonsDisabled(false, false);
-            updateStatusUI('ai', 'green', 'AI: Vision');
-            return;
-          }
-
-          payload.contents.push({
-            parts: [{ text: name }]
-          });
+          payload.prompt = `ระบุสเปก ข้อมูลเทคนิค และรายละเอียดสำคัญของสินค้า/อะไหล่รุ่น ${nameInput} อย่างกระชับและครบถ้วน`;
         }
 
-        const response = await fetch(WORKER_URL, {
+        const response = await fetch(`${WORKER_URL}generate`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -888,148 +848,99 @@
 
         const data = await response.json();
 
-        if (response.status === 402 || response.status === 429) {
-          throw { isQuotaError: true, message: "สิทธิ์หรือโควต้าใช้งาน AI หมดแล้ว" };
-        }
-
-        if (!response.ok || data.error) {
-          const errMsg = data.error?.message || data.error || "";
-          if (errMsg.toLowerCase().includes("quota") || errMsg.toLowerCase().includes("rate limit")) {
-            throw { isQuotaError: true, message: "สิทธิ์การใช้งาน AI หมดแล้ว" };
-          }
-          throw new Error(errMsg || "ไม่สามารถวิเคราะห์ข้อมูลได้");
-        }
-
-        const resultText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-        if (resultText) {
-          detailInput.value = resultText.trim();
-          showToast("วิเคราะห์ข้อมูลสำเร็จ!", "success");
-          updateStatusUI('ai', 'green', 'AI: Vision');
-        } else {
-          throw new Error("ไม่พบคำตอบจากระบบ AI");
-        }
-
-      } catch (err) {
-        console.error("AI Error:", err);
-        updateStatusUI('ai', 'red', 'AI: ขัดข้อง');
-        
-        if (err.isQuotaError) {
-          detailInput.value = originalText;
-          document.getElementById('quota-modal-msg').innerText = err.message || "โควต้าหรือสิทธิ์ใช้ AI ของคุณหมดแล้ว ต้องการไปยังหน้าจัดการเพื่อเติมสิทธิ์หรือไม่?";
+        if (response.status === 429 || (data.error && data.error.includes("quota"))) {
           document.getElementById('quota-modal').style.display = 'flex';
           document.body.classList.add('modal-open');
-        } else {
-          detailInput.value = originalText;
-          showToast(err.message || "เกิดข้อผิดพลาดในการเชื่อมต่อ AI", "error");
+          updateStatusUI('ai', 'red', 'AI: โควต้าหมด');
+          return;
         }
+
+        if (!response.ok || data.error) throw new Error(data.error || "AI Response Error");
+
+        detailTextarea.value = data.text || data.result || "";
+        showToast("วิเคราะห์ข้อมูลสินค้าเรียบร้อยแล้ว", "success");
+        updateStatusUI('ai', 'green', 'AI: Vision');
+      } catch (err) {
+        console.error("AI Error:", err);
+        showToast("เกิดข้อผิดพลาดในการวิเคราะห์ด้วย AI", "error");
+        updateStatusUI('ai', 'red', 'AI: ขัดข้อง');
       } finally {
         setFormButtonsDisabled(false, false);
       }
     };
 
-    // ==========================================
-    // บันทึกสินค้าแบบ Instant + Background Media Process
-    // ==========================================
     window.addProduct = async function() {
-      const nameInput = document.getElementById('product-name');
-      const detailInput = document.getElementById('product-detail');
-      const saveBtn = document.getElementById('btn-save');
-
-      const name = nameInput.value.trim();
-      const detail = detailInput.value.trim();
+      const name = document.getElementById('product-name').value.trim();
+      const detail = document.getElementById('product-detail').value.trim();
 
       if (!name) {
         triggerValidationError("กรุณากรอกชื่อหรือรุ่นสินค้า");
         return;
       }
 
-      saveBtn.disabled = true;
-      const tempMedia = { ...processedMedia };
+      setFormButtonsDisabled(true);
+      showToast("กำลังบันทึกข้อมูลสินค้า...", "info");
 
       try {
-        // 1. บันทึกเข้า DB ทันที
-        const docRef = await addDoc(collection(db, "products"), {
-          name: name,
-          detail: detail,
-          mediaUrl: "",
-          mediaType: tempMedia.file ? tempMedia.type : "none",
-          uploadStatus: tempMedia.file ? "processing" : "completed",
-          createdAt: serverTimestamp()
-        });
+        let mediaUrl = "";
+        let mediaType = processedMedia.type || "none";
 
-        const newDocId = docRef.id;
-
-        // 2. เคลียร์ฟอร์ม
-        nameInput.value = "";
-        detailInput.value = "";
-        document.getElementById('preview-box').innerHTML = "<span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>";
-        revokePreviousMediaUrl(processedMedia);
-        processedMedia = { type: null, data: null, file: null };
-        clearValidationError();
-
-        showToast("⚡ บันทึกสำเร็จ! (กำลังอัปโหลดสื่อหลังบ้าน)", "success");
-        fetchInitialProducts();
-
-        // 3. ทำงานส่งสื่อในฉากหลัง
-        if (tempMedia.file) {
-          processMediaInBackground(newDocId, tempMedia);
+        if (processedMedia.file) {
+          let uploadFile = processedMedia.file;
+          if (processedMedia.type === 'video') {
+            uploadFile = await compressVideo(processedMedia.file);
+          }
+          mediaUrl = await uploadToCloudinary(uploadFile, mediaType);
         }
 
-      } catch (error) {
-        console.error("Add Product Error:", error);
-        showToast("เกิดข้อผิดพลาดในการบันทึกข้อมูล", "error");
-        updateStatusUI('db', 'red', 'DB: ขัดข้อง');
+        const newDocData = {
+          name,
+          detail,
+          mediaUrl,
+          mediaType,
+          uploadStatus: 'done',
+          createdAt: serverTimestamp()
+        };
+
+        const docRef = await addDoc(collection(db, "products"), newDocData);
+
+        productsList.unshift({ id: docRef.id, ...newDocData, createdAt: new Date() });
+        renderTable(productsList);
+
+        // รีเซ็ต ฟอร์ม
+        document.getElementById('product-name').value = '';
+        document.getElementById('product-detail').value = '';
+        document.getElementById('preview-box').innerHTML = '<span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>';
+        revokePreviousMediaUrl(processedMedia);
+        processedMedia = { type: null, data: null, file: null };
+
+        showToast("บันทึกข้อมูลสินค้าสำเร็จ!", "success");
+      } catch (err) {
+        console.error("Add Product Error:", err);
+        showToast("ไม่สามารถบันทึกข้อมูลได้", "error");
       } finally {
-        saveBtn.disabled = false;
+        setFormButtonsDisabled(false);
       }
     };
 
-    async function processMediaInBackground(docId, mediaObj) {
-      try {
-        updateStatusUI('db', 'orange', 'DB: อัปโหลดสื่อ');
-
-        const uploadedUrl = await uploadToCloudinary(mediaObj.file, mediaObj.type);
-
-        const productRef = doc(db, "products", docId);
-        await updateDoc(productRef, {
-          mediaUrl: uploadedUrl,
-          uploadStatus: "completed",
-          updatedAt: serverTimestamp()
-        });
-
-        updateStatusUI('db', 'green', 'DB: พร้อม');
-        showToast("☁️ อัปโหลดวิดีโอ/รูปภาพเรียบร้อยแล้ว", "info");
-        fetchInitialProducts();
-
-      } catch (err) {
-        console.error("Background Upload Failed:", err);
-        updateStatusUI('db', 'red', 'DB: สื่อล้มเหลว');
-        
-        const productRef = doc(db, "products", docId);
-        await updateDoc(productRef, { uploadStatus: "failed" });
-      }
-    }
-
-    // ==========================================
-    // เปิด Modal ดูรายละเอียด
-    // ==========================================
     window.openDetailModal = function(id) {
-      const item = productsList.find(p => p.id === id);
-      if (!item) return;
-
       activeProductId = id;
-      document.getElementById('modal-title').innerText = item.name || "ไม่มีชื่อรุ่น";
-      document.getElementById('modal-detail-text').innerText = item.detail || "ไม่มีรายละเอียด";
+      const product = productsList.find(p => p.id === id);
+      if (!product) return;
 
-      const mediaContainer = document.getElementById('modal-media-container');
-      if (item.mediaType === 'image' && item.mediaUrl) {
-        mediaContainer.innerHTML = `<img src="${item.mediaUrl}">`;
-      } else if (item.mediaType === 'video' && item.mediaUrl) {
-        // เอา muted ออก เพื่อให้ได้ยินเสียงเมื่อเปิดวิดีโอ
-        mediaContainer.innerHTML = `<video src="${item.mediaUrl}" controls playsinline></video>`;
+      const modalMediaBox = document.getElementById('modal-media-container');
+      const modalTitle = document.getElementById('modal-title');
+      const modalDetail = document.getElementById('modal-detail-text');
+
+      modalTitle.innerText = product.name || 'ไม่มีชื่อรุ่น';
+      modalDetail.innerText = product.detail || 'ไม่มีรายละเอียดข้อมูล';
+
+      if (product.mediaType === 'image' && product.mediaUrl) {
+        modalMediaBox.innerHTML = `<img src="${product.mediaUrl}">`;
+      } else if (product.mediaType === 'video' && product.mediaUrl) {
+        modalMediaBox.innerHTML = `<video src="${product.mediaUrl}" controls playsinline></video>`;
       } else {
-        mediaContainer.innerHTML = `<span style="color: #9ca3af;">ไม่มีไฟล์สื่อ</span>`;
+        modalMediaBox.innerHTML = `<span style="color: #9ca3af;">ไม่มีสื่อบันทึกไว้</span>`;
       }
 
       document.getElementById('view-mode').style.display = 'block';
@@ -1038,16 +949,12 @@
       document.body.classList.add('modal-open');
     };
 
-    // ==========================================
-    // เข้าสู่โหมดแก้ไข
-    // ==========================================
     window.enableEditMode = function() {
-      const item = productsList.find(p => p.id === activeProductId);
-      if (!item) return;
+      const product = productsList.find(p => p.id === activeProductId);
+      if (!product) return;
 
-      document.getElementById('edit-name').value = item.name || '';
-      document.getElementById('edit-detail').value = item.detail || '';
-      editProcessedMedia = { type: null, data: null, file: null };
+      document.getElementById('edit-name').value = product.name || '';
+      document.getElementById('edit-detail').value = product.detail || '';
 
       document.getElementById('view-mode').style.display = 'none';
       document.getElementById('edit-mode').style.display = 'block';
@@ -1060,56 +967,58 @@
       document.getElementById('edit-mode').style.display = 'none';
     };
 
-    // ==========================================
-    // บันทึกการแก้ไขข้อมูล
-    // ==========================================
     window.saveEditProduct = async function() {
       if (!activeProductId) return;
 
-      const item = productsList.find(p => p.id === activeProductId);
-      if (!item) return;
+      const newName = document.getElementById('edit-name').value.trim();
+      const newDetail = document.getElementById('edit-detail').value.trim();
 
-      const editName = document.getElementById('edit-name').value.trim();
-      const editDetail = document.getElementById('edit-detail').value.trim();
-      const updateBtn = document.getElementById('btn-update-submit');
-
-      if (!editName) {
-        showToast("กรุณากรอกชื่อหรือรุ่นสินค้า", "error");
+      if (!newName) {
+        showToast("กรุณาระบุชื่อหรือรุ่นสินค้า", "error");
         return;
       }
 
+      const updateBtn = document.getElementById('btn-update-submit');
       updateBtn.disabled = true;
       updateBtn.innerText = "⏳ กำลังบันทึกการแก้ไข...";
 
       try {
-        let mediaUrl = item.mediaUrl || "";
-        let mediaType = item.mediaType || "none";
+        const productIndex = productsList.findIndex(p => p.id === activeProductId);
+        const product = productsList[productIndex];
+
+        let updatedMediaUrl = product.mediaUrl || "";
+        let updatedMediaType = product.mediaType || "none";
 
         if (editProcessedMedia.file) {
-          showToast("🚀 กำลังอัปโหลดสื่อใหม่...", "info");
-          
-          if (item.mediaUrl) {
-            await deleteCloudinaryMedia(item.mediaUrl, item.mediaType);
+          if (product.mediaUrl) {
+            await deleteCloudinaryMedia(product.mediaUrl, product.mediaType);
           }
 
-          mediaUrl = await uploadToCloudinary(editProcessedMedia.file, editProcessedMedia.type);
-          mediaType = editProcessedMedia.type;
+          let uploadFile = editProcessedMedia.file;
+          if (editProcessedMedia.type === 'video') {
+            uploadFile = await compressVideo(editProcessedMedia.file);
+          }
+
+          updatedMediaType = editProcessedMedia.type;
+          updatedMediaUrl = await uploadToCloudinary(uploadFile, updatedMediaType);
         }
 
-        const docRef = doc(db, "products", activeProductId);
-        await updateDoc(docRef, {
-          name: editName,
-          detail: editDetail,
-          mediaUrl: mediaUrl,
-          mediaType: mediaType,
-          uploadStatus: "completed",
-          updatedAt: serverTimestamp()
-        });
+        const updatedData = {
+          name: newName,
+          detail: newDetail,
+          mediaUrl: updatedMediaUrl,
+          mediaType: updatedMediaType
+        };
 
-        showToast("✅ แก้ไขข้อมูลสำเร็จ!", "success");
+        await updateDoc(doc(db, "products", activeProductId), updatedData);
+
+        if (productIndex !== -1) {
+          productsList[productIndex] = { ...productsList[productIndex], ...updatedData };
+          renderTable(productsList);
+        }
+
+        showToast("แก้ไขข้อมูลเรียบร้อยแล้ว", "success");
         closeModal();
-        fetchInitialProducts();
-
       } catch (err) {
         console.error("Save Edit Error:", err);
         showToast("เกิดข้อผิดพลาดในการแก้ไขข้อมูล", "error");
@@ -1119,31 +1028,27 @@
       }
     };
 
-    // ==========================================
-    // ลบรายการสินค้า
-    // ==========================================
     window.deleteProduct = async function() {
       if (!activeProductId) return;
-
-      const item = productsList.find(p => p.id === activeProductId);
-      if (!item) return;
-
-      if (!confirm(`คุณต้องการลบรายการ "${item.name}" ใช่หรือไม่?`)) return;
+      if (!confirm("คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้นี้?")) return;
 
       try {
-        if (item.mediaUrl) {
-          await deleteCloudinaryMedia(item.mediaUrl, item.mediaType);
+        const product = productsList.find(p => p.id === activeProductId);
+
+        if (product && product.mediaUrl) {
+          await deleteCloudinaryMedia(product.mediaUrl, product.mediaType);
         }
 
         await deleteDoc(doc(db, "products", activeProductId));
 
-        showToast("🗑️ ลบรายการเรียบร้อยแล้ว", "success");
-        closeModal();
-        fetchInitialProducts();
+        productsList = productsList.filter(p => p.id !== activeProductId);
+        renderTable(productsList);
 
+        showToast("ลบรายการสินค้าเรียบร้อยแล้ว", "success");
+        closeModal();
       } catch (err) {
         console.error("Delete Error:", err);
-        showToast("เกิดข้อผิดพลาดในการลบรายการ", "error");
+        showToast("ไม่สามารถลบรายการได้", "error");
       }
     };
   </script>
