@@ -33,6 +33,7 @@
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); 
     }
 
+    /* ===== ส่วนหัว ชื่อร้าน + ปุ่มสถานะ ===== */
     .header-container {
       display: flex;
       justify-content: space-between;
@@ -74,37 +75,30 @@
 
     .status-dot { width: 8px; height: 8px; border-radius: 50%; transition: all 0.3s ease; display: inline-block; }
     .status-dot.green { background-color: #10b981; box-shadow: 0 0 6px #10b981; }
-    .status-dot.orange { background-color: #f59e0b; box-shadow: 0 0 6px #f59e0b; animation: statusBlink 1s infinite alternate; }
+    .status-dot.orange { background-color: #f59e0b; box-shadow: 0 0 6px #f59e0b; }
     .status-dot.red { background-color: #ef4444; box-shadow: 0 0 6px #ef4444; }
 
-    @keyframes statusBlink {
-      0% { opacity: 1; transform: scale(1); }
-      100% { opacity: 0.3; transform: scale(0.8); }
-    }
-
+    /* ===== กรอบแสดงรูปภาพ / วิดีโอ ===== */
     .media-preview-box { 
       width: 100%; 
-      height: 220px; 
+      height: 200px; 
       background-color: #1f2937; 
       border-radius: 12px; 
       margin-bottom: 16px; 
       display: flex; 
-      flex-direction: column;
       justify-content: center; 
       align-items: center; 
       color: #9ca3af; 
       border: 2px dashed #374151; 
       overflow: hidden; 
-      position: relative;
     }
     .media-preview-box img, .media-preview-box video { max-width: 100%; max-height: 100%; object-fit: contain; }
-
-    .media-buttons { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 16px; }
-    .btn { border: none; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: all 0.2s; }
+    
+    .media-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+    .btn { border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s; }
     .btn:disabled { opacity: 0.6; cursor: not-allowed; }
-    .btn-media { background-color: #e5e7eb; color: #374151; padding: 12px 6px; }
-    .btn-camera { background-color: #007bff; color: white; padding: 12px 6px; }
-    .btn-video-cam { background-color: #dc2626; color: white; padding: 12px 6px; }
+    .btn-media { background-color: #e5e7eb; color: #374151; padding: 12px 8px; }
+    .btn-camera { background-color: #007bff; color: white; padding: 12px 8px; }
     .form-group { margin-bottom: 16px; }
     .form-group label { display: block; font-size: 15px; font-weight: 700; margin-bottom: 6px; color: #374151; }
     .required { color: #dc2626; }
@@ -137,13 +131,12 @@
     .badge-video { background-color: #eff6ff; color: #2563eb; }
     .badge-image { background-color: #f0fdf4; color: #16a34a; }
     .badge-none { background-color: #f3f4f6; color: #6b7280; }
-    .badge-loading { background-color: #fef3c7; color: #d97706; }
     .text-truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; color: #6b7280; }
     
     .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; padding: 16px; -webkit-overflow-scrolling: touch; }
     .modal-content { background-color: #fff; padding: 20px; border-radius: 16px; width: 100%; max-width: 480px; position: relative; max-height: 90vh; overflow-y: auto; -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }
     .close-btn { position: absolute; right: 15px; top: 10px; font-size: 24px; cursor: pointer; color: #9ca3af; z-index: 10; }
-    .modal-media-box { width: 100%; height: 230px; background: #111827; margin-bottom: 15px; border-radius: 10px; overflow: hidden; display: flex; justify-content: center; align-items: center; position: relative; }
+    .modal-media-box { width: 100%; height: 230px; background: #111827; margin-bottom: 15px; border-radius: 10px; overflow: hidden; display: flex; justify-content: center; align-items: center; }
     .modal-media-box img, .modal-media-box video { max-width: 100%; max-height: 100%; object-fit: contain; }
     .modal-actions { display: flex; gap: 10px; margin-top: 15px; }
     .btn-edit { background-color: #f59e0b; color: #ffffff; flex: 1; padding: 10px; }
@@ -165,11 +158,12 @@
   <div class="container">
     <div class="card">
       
+      <!-- ส่วนหัว -->
       <div class="header-container">
         <h1 class="header-title">หนึ่ง ร่อนพิบูลย์ อิเล็กทรอนิกส์</h1>
         
         <div class="status-container">
-          <div class="status-badge" id="dbStatusBadge">
+          <div class="status-badge">
             <span class="status-dot green" id="db-status-dot"></span>
             <span id="db-status-text">DB: พร้อม</span>
           </div>
@@ -180,25 +174,22 @@
         </div>
       </div>
 
+      <!-- กรอบแสดงรูปภาพ / วิดีโอ -->
       <div class="media-preview-box" id="preview-box">
         <span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>
       </div>
 
       <div class="media-buttons">
         <button class="btn btn-media" id="btn-file-select" onclick="document.getElementById('media-input').click()">
-          📁 เลือกไฟล์
+          📁 เลือกรูป / วิดีโอ
         </button>
         <button class="btn btn-camera" id="btn-camera" onclick="document.getElementById('camera-input').click()">
           📷 ถ่ายรูป
-        </button>
-        <button class="btn btn-video-cam" id="btn-video-camera" onclick="document.getElementById('video-camera-input').click()">
-          🎥 อัดวิดีโอ
         </button>
       </div>
 
       <input type="file" id="media-input" accept="image/*,video/*" style="display: none;" onchange="handleFileSelect(event)">
       <input type="file" id="camera-input" accept="image/*" capture="environment" style="display: none;" onchange="handleFileSelect(event)">
-      <input type="file" id="video-camera-input" accept="video/*" capture="environment" style="display: none;" onchange="handleFileSelect(event)">
 
       <div class="form-group">
         <label for="product-name">ชื่อ/รุ่น <span class="required">*</span></label>
@@ -234,8 +225,8 @@
       <table>
         <thead>
           <tr>
-            <th style="width: 28%;">ชนิดสื่อ</th>
-            <th style="width: 32%;">ชื่อ/รุ่น</th>
+            <th style="width: 25%;">ชนิดสื่อ</th>
+            <th style="width: 35%;">ชื่อ/รุ่น</th>
             <th style="width: 40%;">รายละเอียด</th>
           </tr>
         </thead>
@@ -244,6 +235,7 @@
     </div>
   </div>
 
+  <!-- Modal ดูรายละเอียด -->
   <div class="modal" id="detail-modal">
     <div class="modal-content" id="modal-content-box">
       <span class="close-btn" onclick="closeModal()">&times;</span>
@@ -266,19 +258,15 @@
 
         <div class="media-buttons">
           <button class="btn btn-media" onclick="document.getElementById('edit-media-input').click()">
-            📁 เปลี่ยนไฟล์
+            📁 เปลี่ยนรูป / วิดีโอ
           </button>
           <button class="btn btn-camera" onclick="document.getElementById('edit-camera-input').click()">
             📷 ถ่ายรูปใหม่
-          </button>
-          <button class="btn btn-video-cam" onclick="document.getElementById('edit-video-camera-input').click()">
-            🎥 อัดวิดีโอใหม่
           </button>
         </div>
 
         <input type="file" id="edit-media-input" accept="image/*,video/*" style="display: none;" onchange="handleEditFileSelect(event)">
         <input type="file" id="edit-camera-input" accept="image/*" capture="environment" style="display: none;" onchange="handleEditFileSelect(event)">
-        <input type="file" id="edit-video-camera-input" accept="video/*" capture="environment" style="display: none;" onchange="handleEditFileSelect(event)">
 
         <div class="form-group">
           <label for="edit-name">ชื่อ/รุ่น</label>
@@ -294,6 +282,7 @@
     </div>
   </div>
 
+  <!-- Modal แจ้งเตือนโควต้า AI -->
   <div class="modal" id="quota-modal">
     <div class="modal-content" style="text-align: center;">
       <div style="font-size: 40px; margin-bottom: 10px;">⚠️</div>
@@ -387,9 +376,10 @@
       }
     }
 
-    async function deleteMediaFile(mediaUrl, mediaType, objectKey) {
-      if (!mediaUrl && !objectKey) return;
+    async function deleteCloudinaryMedia(mediaUrl, mediaType) {
+      if (!mediaUrl) return;
       const publicId = extractPublicIdFromUrl(mediaUrl);
+      if (!publicId) return;
 
       try {
         await fetch(`${WORKER_URL}delete-media`, {
@@ -397,12 +387,11 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             publicId: publicId,
-            objectKey: objectKey || "",
             resourceType: mediaType === "video" ? "video" : "image"
           })
         });
       } catch (err) {
-        console.error("Failed to delete media:", err);
+        console.error("Failed to delete media from Cloudinary:", err);
       }
     }
 
@@ -435,12 +424,6 @@
     window.closeModal = function() {
       document.getElementById('detail-modal').style.display = 'none';
       document.body.classList.remove('modal-open');
-      
-      const modalVideo = document.querySelector('#modal-media-container video');
-      if (modalVideo) {
-        modalVideo.pause();
-      }
-
       revokePreviousMediaUrl(editProcessedMedia);
       activeProductId = null;
       editProcessedMedia = { type: null, data: null, file: null };
@@ -471,15 +454,8 @@
         tr.onclick = () => openDetailModal(item.id);
 
         let mediaBadge = `<span class="badge badge-none">ไม่มี</span>`;
-        if (item.uploadStatus === 'processing') {
-          mediaBadge = `<span class="badge badge-loading">⏳ กำลังอัปโหลด...</span>`;
-        } else if (item.uploadStatus === 'failed') {
-          mediaBadge = `<span class="badge badge-loading" style="background-color:#fef2f2; color:#dc2626;">⚠️ สื่อล้มเหลว</span>`;
-        } else if (item.mediaType === 'image') {
-          mediaBadge = `<span class="badge badge-image">🖼️ รูปภาพ</span>`;
-        } else if (item.mediaType === 'video') {
-          mediaBadge = `<span class="badge badge-video">🎥 วิดีโอ</span>`;
-        }
+        if (item.mediaType === 'image') mediaBadge = `<span class="badge badge-image">🖼️ รูปภาพ</span>`;
+        else if (item.mediaType === 'video') mediaBadge = `<span class="badge badge-video">🎥 วิดีโอ</span>`;
 
         tr.innerHTML = `
           <td>${mediaBadge}</td>
@@ -660,7 +636,6 @@
       aiBtn.disabled = disabled;
       document.getElementById('btn-file-select').disabled = disabled;
       document.getElementById('btn-camera').disabled = disabled;
-      document.getElementById('btn-video-camera').disabled = disabled;
 
       if (isAnalyzing) {
         aiBtn.innerText = "⏳ กำลังวิเคราะห์สเปกข้อมูลด้วย AI...";
@@ -669,7 +644,7 @@
       }
     }
 
-    function compressImage(file, maxWidth = 1000, quality = 0.7) {
+    function compressImage(file, maxWidth = 800, quality = 0.6) {
       return new Promise((resolve) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
@@ -689,41 +664,6 @@
       });
     }
 
-    function generateVideoThumbnail(file) {
-      return new Promise((resolve, reject) => {
-        const video = document.createElement('video');
-        video.autoplay = true;
-        video.muted = true;
-        video.playsInline = true;
-        video.src = URL.createObjectURL(file);
-
-        video.onloadeddata = () => {
-          video.currentTime = 0.1;
-        };
-
-        video.onseeked = () => {
-          try {
-            const canvas = document.createElement('canvas');
-            canvas.width = video.videoWidth || 640;
-            canvas.height = video.videoHeight || 360;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-            URL.revokeObjectURL(video.src);
-            resolve(dataUrl);
-          } catch (e) {
-            URL.revokeObjectURL(video.src);
-            reject(e);
-          }
-        };
-
-        video.onerror = (err) => {
-          URL.revokeObjectURL(video.src);
-          reject(err);
-        };
-      });
-    }
-
     window.handleFileSelect = async function(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -738,18 +678,7 @@
       } else if (file.type.startsWith('video/')) {
         const videoUrl = URL.createObjectURL(file);
         processedMedia = { type: 'video', data: videoUrl, file: file };
-
-        previewBox.innerHTML = `<div style="color:#9ca3af; font-size:14px;">⏳ กำลังโหลดภาพตัวอย่าง...</div>`;
-
-        generateVideoThumbnail(file).then(posterDataUrl => {
-          previewBox.innerHTML = `<video src="${videoUrl}" poster="${posterDataUrl}" controls playsinline preload="metadata"></video>`;
-        }).catch(err => {
-          previewBox.innerHTML = `<video id="preview-video-element" src="${videoUrl}#t=0.001" controls playsinline preload="metadata"></video>`;
-          setTimeout(() => {
-            const v = document.getElementById('preview-video-element');
-            if (v) v.load();
-          }, 100);
-        });
+        previewBox.innerHTML = `<video src="${videoUrl}" controls autoplay muted></video>`;
       }
       event.target.value = '';
     }
@@ -768,77 +697,24 @@
       } else if (file.type.startsWith('video/')) {
         const videoUrl = URL.createObjectURL(file);
         editProcessedMedia = { type: 'video', data: videoUrl, file: file };
-
-        mediaContainer.innerHTML = `<div style="color:#9ca3af; font-size:14px;">⏳ กำลังโหลดภาพตัวอย่าง...</div>`;
-
-        generateVideoThumbnail(file).then(posterDataUrl => {
-          mediaContainer.innerHTML = `<video src="${videoUrl}" poster="${posterDataUrl}" controls playsinline preload="metadata"></video>`;
-        }).catch(err => {
-          mediaContainer.innerHTML = `<video id="edit-video-element" src="${videoUrl}#t=0.001" controls playsinline preload="metadata"></video>`;
-          setTimeout(() => {
-            const v = document.getElementById('edit-video-element');
-            if (v) v.load();
-          }, 100);
-        });
+        mediaContainer.innerHTML = `<video src="${videoUrl}" controls autoplay muted></video>`;
       }
       event.target.value = '';
     }
 
-    // ==========================================
-    // ฟังก์ชันอัปโหลดสื่อ (R2 Direct Presigned & Cloudinary)
-    // ==========================================
-    async function uploadToR2Direct(file) {
-      if (!file) throw new Error("ไม่พบไฟล์สื่อสำหรับอัปโหลด");
-
-      // 1. ขอ Presigned URL จาก Worker
-      const res = await fetch(`${WORKER_URL}get-r2-upload-url`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fileName: file.name || `media_${Date.now()}.mp4`,
-          contentType: file.type || 'video/mp4'
-        })
-      });
-
-      if (!res.ok) throw new Error("ไม่สามารถขอ URL อัปโหลด R2 ได้");
-
-      const { uploadUrl, publicUrl, objectKey } = await res.json();
-
-      // 2. ส่งไฟล์ตรงเข้า R2 ผ่าน Presigned URL
-      const uploadRes = await fetch(uploadUrl, {
-        method: 'PUT',
-        headers: { 
-          'Content-Type': file.type || 'video/mp4',
-          'x-amz-content-sha256': 'UNSIGNED-PAYLOAD'
-        },
-        body: file
-      });
-
-      if (!uploadRes.ok) throw new Error(`อัปโหลดไฟล์เข้า R2 ไม่สำเร็จ Status: ${uploadRes.status}`);
-
-      return { publicUrl, objectKey };
-    }
-
-    async function uploadToCloudinary(file, mediaType) {
-      if (!file) throw new Error("ไม่พบไฟล์สื่อสำหรับอัปโหลด");
-
-      const isVideo = mediaType === 'video' || (file.type && file.type.startsWith('video/'));
-      const resourceType = isVideo ? 'video' : 'image';
-      const endpoint = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`;
-
+    async function uploadToCloudinary(file, resourceType = 'auto') {
+      const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`;
       const formData = new FormData();
       formData.append('file', file);
       formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
 
-      const res = await fetch(endpoint, { method: 'POST', body: formData });
-      if (!res.ok) {
-        const errJson = await res.json().catch(() => ({}));
-        throw new Error(`อัปโหลดสื่อไม่สำเร็จ: ${errJson.error?.message || res.status}`);
-      }
+      const res = await fetch(url, { method: 'POST', body: formData });
+      if (!res.ok) throw new Error('อัปโหลดไป Cloudinary ไม่สำเร็จ');
       const data = await res.json();
       return data.secure_url;
     }
 
+    /* ===== PROMPT AI: วิเคราะห์ชื่อรุ่น + ภาพ ส่งไปยัง Worker Backend ===== */
     window.generateAIDetails = async function() {
       const nameInput = document.getElementById('product-name');
       const detailInput = document.getElementById('product-detail');
@@ -852,10 +728,6 @@
 
       try {
         let payload = { contents: [] };
-
-        if (processedMedia.type === 'video') {
-          showToast("วิดีโอไม่รองรับการวิเคราะห์ด้วย AI Vision ระบบจะวิเคราะห์จากชื่อรุ่นแทน", "info");
-        }
 
         if (processedMedia.type === 'image' && processedMedia.data) {
           const base64Data = processedMedia.data.split(',')[1];
@@ -908,27 +780,27 @@
           showToast("วิเคราะห์ข้อมูลสำเร็จ!", "success");
           updateStatusUI('ai', 'green', 'AI: Vision');
         } else {
-          throw new Error("ไม่พบคำตอบจากระบบ AI");
+          throw new Error("ไม่สามารถประมวลผลคำตอบจาก AI ได้");
         }
 
       } catch (err) {
         console.error("AI Error:", err);
         updateStatusUI('ai', 'red', 'AI: ขัดข้อง');
-        
+
         if (err.isQuotaError) {
-          detailInput.value = originalText;
           document.getElementById('quota-modal-msg').innerText = err.message || "โควต้าหรือสิทธิ์ใช้ AI ของคุณหมดแล้ว ต้องการไปยังหน้าจัดการเพื่อเติมสิทธิ์หรือไม่?";
           document.getElementById('quota-modal').style.display = 'flex';
           document.body.classList.add('modal-open');
         } else {
-          detailInput.value = originalText;
-          showToast(err.message || "เกิดข้อผิดพลาดในการเชื่อมต่อ AI", "error");
+          showToast(err.message || "เกิดข้อผิดพลาดในการวิเคราะห์ AI", "error");
         }
+        detailInput.value = originalText;
       } finally {
         setFormButtonsDisabled(false, false);
       }
     };
 
+    /* ===== ฟังก์ชันเพิ่มสินค้าบันทึกคลาวด์ ===== */
     window.addProduct = async function() {
       const nameInput = document.getElementById('product-name');
       const detailInput = document.getElementById('product-detail');
@@ -938,166 +810,89 @@
       const detail = detailInput.value.trim();
 
       if (!name) {
-        triggerValidationError("กรุณากรอกชื่อหรือรุ่นสินค้า");
+        triggerValidationError("กรุณากรอกชื่อหรือรุ่นสินค้าก่อนบันทึก");
         return;
       }
 
       saveBtn.disabled = true;
-      const tempMedia = { ...processedMedia };
+      saveBtn.innerText = "⏳ กำลังบันทึกลง Cloud...";
+      updateStatusUI('db', 'orange', 'DB: กำลังบันทึก');
 
       try {
-        const hasMedia = !!tempMedia.file;
-        const initialStatus = hasMedia ? "processing" : "completed";
+        let mediaUrl = null;
+        let mediaType = processedMedia.type;
 
-        const docRef = await addDoc(collection(db, "products"), {
+        if (processedMedia.file) {
+          showToast("กำลังอัปโหลดไฟล์สื่อ...", "info");
+          mediaUrl = await uploadToCloudinary(processedMedia.file, mediaType === 'video' ? 'video' : 'image');
+        }
+
+        await addDoc(collection(db, "products"), {
           name: name,
           detail: detail,
-          mediaUrl: "",
-          objectKey: "",
-          mediaType: tempMedia.file ? tempMedia.type : "none",
-          uploadStatus: initialStatus,
+          mediaUrl: mediaUrl,
+          mediaType: mediaType,
           createdAt: serverTimestamp()
         });
 
-        const newDocId = docRef.id;
+        showToast("บันทึกข้อมูลเรียบร้อยแล้ว!", "success");
 
-        const newProductObj = {
-          id: newDocId,
-          name: name,
-          detail: detail,
-          mediaUrl: "",
-          objectKey: "",
-          mediaType: tempMedia.file ? tempMedia.type : "none",
-          uploadStatus: initialStatus
-        };
-
-        productsList.unshift(newProductObj);
-        renderTable(productsList);
-
-        const previewVid = document.querySelector('#preview-box video');
-        if (previewVid) {
-          previewVid.pause();
-          previewVid.src = "";
-        }
-
-        nameInput.value = "";
-        detailInput.value = "";
-        document.getElementById('preview-box').innerHTML = "<span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>";
+        // รีเซ็ตฟอร์ม
+        nameInput.value = '';
+        detailInput.value = '';
+        document.getElementById('preview-box').innerHTML = '<span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>';
         revokePreviousMediaUrl(processedMedia);
         processedMedia = { type: null, data: null, file: null };
         clearValidationError();
 
-        if (hasMedia) {
-          updateStatusUI('db', 'orange', 'DB: กำลังอัปโหลดสื่อ...');
-          showToast("⚡ บันทึกสำเร็จ! (กำลังอัปโหลดสื่อหลังบ้าน)", "info");
-          processMediaInBackground(newDocId, tempMedia);
-        } else {
-          updateStatusUI('db', 'green', 'DB: พร้อม');
-          showToast("⚡ บันทึกสำเร็จ!", "success");
-        }
+        await fetchInitialProducts();
 
-      } catch (error) {
-        console.error("Add Product Error:", error);
+      } catch (err) {
+        console.error("Add Product Error:", err);
         showToast("เกิดข้อผิดพลาดในการบันทึกข้อมูล", "error");
         updateStatusUI('db', 'red', 'DB: ขัดข้อง');
       } finally {
         saveBtn.disabled = false;
+        saveBtn.innerText = "บันทึกสินค้าลงคลาวด์";
       }
     };
 
-    async function processMediaInBackground(docId, mediaObj) {
-      try {
-        let uploadedUrl = "";
-        let objectKey = "";
-
-        if (mediaObj.type === 'video' || (mediaObj.file && mediaObj.file.size > 20 * 1024 * 1024)) {
-          const r2Result = await uploadToR2Direct(mediaObj.file);
-          uploadedUrl = r2Result.publicUrl;
-          objectKey = r2Result.objectKey;
-        } else {
-          uploadedUrl = await uploadToCloudinary(mediaObj.file, mediaObj.type);
-        }
-
-        const productRef = doc(db, "products", docId);
-        await updateDoc(productRef, {
-          mediaUrl: uploadedUrl,
-          objectKey: objectKey || "",
-          uploadStatus: "completed",
-          updatedAt: serverTimestamp()
-        });
-
-        const pIndex = productsList.findIndex(p => p.id === docId);
-        if (pIndex !== -1) {
-          productsList[pIndex].mediaUrl = uploadedUrl;
-          productsList[pIndex].objectKey = objectKey || "";
-          productsList[pIndex].uploadStatus = "completed";
-          renderTable(productsList);
-        }
-
-        updateStatusUI('db', 'green', 'DB: พร้อม');
-        showToast("☁️ อัปโหลดไฟล์สื่อเรียบร้อยแล้ว", "success");
-
-      } catch (err) {
-        console.error("Background Upload Failed:", err);
-        updateStatusUI('db', 'red', 'DB: สื่อล้มเหลว');
-        
-        showToast(err.message || "เกิดข้อผิดพลาดในการอัปโหลดสื่อ", "error");
-
-        const productRef = doc(db, "products", docId);
-        await updateDoc(productRef, { uploadStatus: "failed" }).catch(() => {});
-
-        const pIndex = productsList.findIndex(p => p.id === docId);
-        if (pIndex !== -1) {
-          productsList[pIndex].uploadStatus = "failed";
-          renderTable(productsList);
-        }
-      }
-    }
-
-    window.openDetailModal = async function(id) {
-      const item = productsList.find(p => p.id === id);
-      if (!item) return;
+    /* ===== ฟังก์ชันเปิด Modal สื่อสารข้อมูล และ แก้ไข/ลบ ===== */
+    function openDetailModal(id) {
+      const product = productsList.find(p => p.id === id);
+      if (!product) return;
 
       activeProductId = id;
-      document.getElementById('modal-title').innerText = item.name || "ไม่มีชื่อรุ่น";
-      document.getElementById('modal-detail-text').innerText = item.detail || "ไม่มีรายละเอียด";
+      document.getElementById('modal-title').innerText = product.name || 'ไม่ระบุชื่อ/รุ่น';
+      document.getElementById('modal-detail-text').innerText = product.detail || 'ไม่มีรายละเอียด';
 
-      const mediaContainer = document.getElementById('modal-media-container');
-      if (item.mediaType === 'image' && item.mediaUrl) {
-        mediaContainer.innerHTML = `<img src="${item.mediaUrl}">`;
-      } else if (item.mediaType === 'video' && item.mediaUrl) {
-        let optimizedVideoUrl = item.mediaUrl;
-        let posterUrl = item.mediaUrl.replace(/\.[^/.]+$/, ".jpg");
-        mediaContainer.innerHTML = `<video id="modalVideoPlayer" src="${optimizedVideoUrl}" poster="${posterUrl}" controls playsinline preload="metadata"></video>`;
-        
-        setTimeout(() => {
-          const player = document.getElementById('modalVideoPlayer');
-          if (player) {
-            player.muted = false;
-            player.volume = 1.0;
-          }
-        }, 100);
-      } else if (item.uploadStatus === 'processing') {
-        mediaContainer.innerHTML = `<span style="color: #f59e0b;">⏳ กำลังประมวลผลการอัปโหลดวิดีโอ/รูปภาพ...</span>`;
-      } else if (item.uploadStatus === 'failed') {
-        mediaContainer.innerHTML = `<span style="color: #ef4444;">⚠️ การอัปโหลดสื่อล้มเหลว</span>`;
+      const mediaBox = document.getElementById('modal-media-container');
+      mediaBox.innerHTML = '';
+
+      if (product.mediaUrl) {
+        if (product.mediaType === 'image') {
+          mediaBox.innerHTML = `<img src="${product.mediaUrl}" alt="Product Image">`;
+        } else if (product.mediaType === 'video') {
+          mediaBox.innerHTML = `<video src="${product.mediaUrl}" controls></video>`;
+        }
       } else {
-        mediaContainer.innerHTML = `<span style="color: #9ca3af;">ไม่มีไฟล์สื่อ</span>`;
+        mediaBox.innerHTML = `<span style="color: #6b7280;">ไม่มีรูปภาพ/วิดีโอประกอบ</span>`;
       }
 
       document.getElementById('view-mode').style.display = 'block';
       document.getElementById('edit-mode').style.display = 'none';
+
       document.getElementById('detail-modal').style.display = 'flex';
       document.body.classList.add('modal-open');
-    };
+    }
 
     window.enableEditMode = function() {
-      const item = productsList.find(p => p.id === activeProductId);
-      if (!item) return;
+      const product = productsList.find(p => p.id === activeProductId);
+      if (!product) return;
 
-      document.getElementById('edit-name').value = item.name || '';
-      document.getElementById('edit-detail').value = item.detail || '';
-      editProcessedMedia = { type: null, data: null, file: null };
+      document.getElementById('edit-name').value = product.name || '';
+      document.getElementById('edit-detail').value = product.detail || '';
+      editProcessedMedia = { type: product.mediaType, data: product.mediaUrl, file: null };
 
       document.getElementById('view-mode').style.display = 'none';
       document.getElementById('edit-mode').style.display = 'block';
@@ -1113,65 +908,53 @@
     window.saveEditProduct = async function() {
       if (!activeProductId) return;
 
-      const item = productsList.find(p => p.id === activeProductId);
-      if (!item) return;
-
       const editName = document.getElementById('edit-name').value.trim();
       const editDetail = document.getElementById('edit-detail').value.trim();
       const updateBtn = document.getElementById('btn-update-submit');
 
       if (!editName) {
-        showToast("กรุณากรอกชื่อหรือรุ่นสินค้า", "error");
+        showToast("กรุณากรอกชื่อ/รุ่นสินค้า", "error");
         return;
       }
 
+      const product = productsList.find(p => p.id === activeProductId);
+
       updateBtn.disabled = true;
       updateBtn.innerText = "⏳ กำลังบันทึกการแก้ไข...";
+      updateStatusUI('db', 'orange', 'DB: กำลังอัปเดต');
 
       try {
-        let mediaUrl = item.mediaUrl || "";
-        let objectKey = item.objectKey || "";
-        let mediaType = item.mediaType || "none";
+        let finalMediaUrl = product.mediaUrl;
+        let finalMediaType = product.mediaType;
 
         if (editProcessedMedia.file) {
-          showToast("🚀 กำลังอัปโหลดสื่อใหม่...", "info");
-          updateStatusUI('db', 'orange', 'DB: กำลังอัปโหลดสื่อ...');
+          showToast("กำลังอัปโหลดสื่อใหม่...", "info");
           
-          if (item.mediaUrl || item.objectKey) {
-            await deleteMediaFile(item.mediaUrl, item.mediaType, item.objectKey);
+          if (product.mediaUrl) {
+            await deleteCloudinaryMedia(product.mediaUrl, product.mediaType);
           }
 
-          if (editProcessedMedia.type === 'video' || (editProcessedMedia.file && editProcessedMedia.file.size > 20 * 1024 * 1024)) {
-            const r2Result = await uploadToR2Direct(editProcessedMedia.file);
-            mediaUrl = r2Result.publicUrl;
-            objectKey = r2Result.objectKey;
-          } else {
-            mediaUrl = await uploadToCloudinary(editProcessedMedia.file, editProcessedMedia.type);
-            objectKey = "";
-          }
-          mediaType = editProcessedMedia.type;
+          finalMediaUrl = await uploadToCloudinary(editProcessedMedia.file, editProcessedMedia.type === 'video' ? 'video' : 'image');
+          finalMediaType = editProcessedMedia.type;
         }
 
         const docRef = doc(db, "products", activeProductId);
         await updateDoc(docRef, {
           name: editName,
           detail: editDetail,
-          mediaUrl: mediaUrl,
-          objectKey: objectKey,
-          mediaType: mediaType,
-          uploadStatus: "completed",
+          mediaUrl: finalMediaUrl,
+          mediaType: finalMediaType,
           updatedAt: serverTimestamp()
         });
 
-        updateStatusUI('db', 'green', 'DB: พร้อม');
-        showToast("✅ แก้ไขข้อมูลสำเร็จ!", "success");
+        showToast("แก้ไขข้อมูลสำเร็จ!", "success");
         closeModal();
-        fetchInitialProducts();
+        await fetchInitialProducts();
 
       } catch (err) {
         console.error("Save Edit Error:", err);
-        updateStatusUI('db', 'red', 'DB: ขัดข้อง');
         showToast("เกิดข้อผิดพลาดในการแก้ไขข้อมูล", "error");
+        updateStatusUI('db', 'red', 'DB: ขัดข้อง');
       } finally {
         updateBtn.disabled = false;
         updateBtn.innerText = "💾 บันทึกการแก้ไข";
@@ -1181,25 +964,27 @@
     window.deleteProduct = async function() {
       if (!activeProductId) return;
 
-      const item = productsList.find(p => p.id === activeProductId);
-      if (!item) return;
+      if (!confirm("คุณต้องการลบรายการนี้ใช่หรือไม่? ข้อมูลและสื่อบน Cloud จะถูกลบอย่างถาวร")) {
+        return;
+      }
 
-      if (!confirm(`คุณต้องการลบรายการ "${item.name}" ใช่หรือไม่?`)) return;
+      const product = productsList.find(p => p.id === activeProductId);
+      updateStatusUI('db', 'orange', 'DB: กำลังลบ');
 
       try {
-        if (item.mediaUrl || item.objectKey) {
-          await deleteMediaFile(item.mediaUrl, item.mediaType, item.objectKey);
+        if (product && product.mediaUrl) {
+          await deleteCloudinaryMedia(product.mediaUrl, product.mediaType);
         }
 
         await deleteDoc(doc(db, "products", activeProductId));
-
-        showToast("🗑️ ลบรายการเรียบร้อยแล้ว", "success");
+        showToast("ลบรายการสำเร็จแล้ว", "success");
         closeModal();
-        fetchInitialProducts();
+        await fetchInitialProducts();
 
       } catch (err) {
         console.error("Delete Error:", err);
         showToast("เกิดข้อผิดพลาดในการลบรายการ", "error");
+        updateStatusUI('db', 'red', 'DB: ขัดข้อง');
       }
     };
   </script>
