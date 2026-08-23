@@ -727,7 +727,6 @@
       return data.secure_url;
     }
 
-    // ฟังก์ชันสำหรับส่งไฟล์อัปโหลดเข้า Cloudflare R2 ผ่าน Presigned URL
     async function uploadFileToR2(file) {
       const res = await fetch(`${WORKER_URL}get-presigned-url`, {
         method: 'POST',
@@ -755,11 +754,17 @@
       return { publicUrl, objectKey };
     }
 
-    /* ===== PROMPT AI: วิเคราะห์ชื่อรุ่น + ภาพ ส่งไปยัง Worker Backend ===== */
+    /* ===== PROMPT AI: ปรับปรุงโครงสร้างให้รองรับวิดีโอโดยข้ามการส่งไฟล์สื่อไปวิเคราะห์ ===== */
     window.generateAIDetails = async function() {
       const nameInput = document.getElementById('product-name');
       const detailInput = document.getElementById('product-detail');
       const name = nameInput.value.trim();
+
+      // ตรวจสอบกรณีไม่มีรูปภาพ และไม่ได้กรอกชื่อ/รุ่น
+      if (processedMedia.type !== 'image' && !name) {
+        triggerValidationError("กรุณากรอกชื่อ/รุ่น หรืออัปโหลดรูปภาพเพื่อวิเคราะห์");
+        return;
+      }
 
       const originalText = detailInput.value;
       detailInput.value = "กำลังวิเคราะห์สเปกจริงจากเพลตสินค้าและฐานข้อมูล...";
@@ -768,33 +773,25 @@
       updateStatusUI('ai', 'orange', 'AI: กำลังคิด');
 
       try {
-        let payload = { contents: [] };
+        let parts = [];
 
-        // **จุดสำคัญที่แก้ไข:** ตรวจสอบเฉพาะประเภทที่เป็น 'image' เท่านั้น ข้าม 'video' โดยสิ้นเชิง
+        // ส่งเฉพาะรูปภาพ (ข้ามวิดีโอทันที)
         if (processedMedia.type === 'image' && processedMedia.data) {
           const base64Data = processedMedia.data.split(',')[1];
           const mimeType = processedMedia.data.split(';')[0].split(':')[1];
-
-          payload.contents.push({
-            parts: [
-              { inline_data: { mime_type: mimeType, data: base64Data } },
-              { text: name || '' }
-            ]
-          });
-        } else {
-          // หากไม่มีภาพ หรือไฟล์ที่แนบเป็นวิดีโอ จะส่งเฉพาะข้อความชื่อ/รุ่น ไปยัง AI
-          if (!name) {
-            triggerValidationError("กรุณากรอกชื่อ/รุ่น หรืออัปโหลดรูปถ่ายเพลตสินค้า");
-            detailInput.value = originalText;
-            setFormButtonsDisabled(false, false);
-            updateStatusUI('ai', 'green', 'AI: Vision');
-            return;
-          }
-
-          payload.contents.push({
-            parts: [{ text: name }]
-          });
+          parts.push({ inline_data: { mime_type: mimeType, data: base64Data } });
         }
+
+        // เพิ่มชื่อ/รุ่นถ้ามี
+        if (name) {
+          parts.push({ text: `วิเคราะห์สเปกของรุ่น: ${name}` });
+        } else {
+          parts.push({ text: "วิเคราะห์สเปกสินค้าจากรูปถ่ายเพลตนี้" });
+        }
+
+        const payload = {
+          contents: [{ parts: parts }]
+        };
 
         const response = await fetch(WORKER_URL, {
           method: 'POST',
