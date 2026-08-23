@@ -785,38 +785,31 @@
     }
 
     // ==========================================
-    // ฟังก์ชันอัปโหลดสื่อ (R2 & Cloudinary - ปรับปรุงแก้ไขแล้ว)
-    // ==========================================
-    async function uploadToR2Direct(file) {
-      if (!file) throw new Error("ไม่พบไฟล์สื่อสำหรับอัปโหลด");
+    // ใน index.html แทนที่ฟังก์ชัน uploadToR2Direct เดิมด้วยอันนี้
+async function uploadToR2Direct(file) {
+  if (!file) throw new Error("ไม่พบไฟล์สื่อสำหรับอัปโหลด");
 
-      const res = await fetch(`${WORKER_URL}get-presigned-url`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fileName: file.name || `media_${Date.now()}.mp4`,
-          contentType: file.type || 'video/mp4'
-        })
-      });
+  const fileName = encodeURIComponent(file.name || `media_${Date.now()}.mp4`);
+  const contentType = file.type || 'video/mp4';
 
-      if (!res.ok) throw new Error("ไม่สามารถขอ URL อัปโหลด R2 ได้");
+  const res = await fetch(`${WORKER_URL}upload-r2-direct`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': contentType,
+      'x-filename': fileName,
+      'x-content-type': contentType
+    },
+    body: file
+  });
 
-      const { uploadUrl, publicUrl, objectKey } = await res.json();
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`อัปโหลดเข้า R2 ไม่สำเร็จ (${res.status}): ${errText}`);
+  }
 
-      // แนบเฉพาะ Content-Type Header ตาม Signature ที่สร้างโดย Worker
-      const uploadRes = await fetch(uploadUrl, {
-        method: 'PUT',
-        headers: { 
-          'Content-Type': file.type || 'video/mp4'
-        },
-        body: file
-      });
-
-      if (!uploadRes.ok) throw new Error("อัปโหลดไฟล์เข้า R2 ไม่สำเร็จ");
-
-      return { publicUrl, objectKey };
-    }
-
+  const data = await res.json();
+  return { publicUrl: data.publicUrl, objectKey: data.objectKey };
+}
     async function uploadToCloudinary(file, mediaType) {
       if (!file) throw new Error("ไม่พบไฟล์สื่อสำหรับอัปโหลด");
 
