@@ -770,6 +770,7 @@
       try {
         let payload = { contents: [] };
 
+        // **จุดสำคัญที่แก้ไข:** ตรวจสอบเฉพาะประเภทที่เป็น 'image' เท่านั้น ข้าม 'video' โดยสิ้นเชิง
         if (processedMedia.type === 'image' && processedMedia.data) {
           const base64Data = processedMedia.data.split(',')[1];
           const mimeType = processedMedia.data.split(';')[0].split(':')[1];
@@ -781,6 +782,7 @@
             ]
           });
         } else {
+          // หากไม่มีภาพ หรือไฟล์ที่แนบเป็นวิดีโอ จะส่งเฉพาะข้อความชื่อ/รุ่น ไปยัง AI
           if (!name) {
             triggerValidationError("กรุณากรอกชื่อ/รุ่น หรืออัปโหลดรูปถ่ายเพลตสินค้า");
             detailInput.value = originalText;
