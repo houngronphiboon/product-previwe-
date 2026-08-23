@@ -794,8 +794,8 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          fileName: file.name || `media_${Date.now()}`,
-          contentType: file.type || 'application/octet-stream'
+          fileName: file.name || `media_${Date.now()}.mp4`,
+          contentType: file.type || 'video/mp4'
         })
       });
 
@@ -805,7 +805,10 @@
 
       const uploadRes = await fetch(uploadUrl, {
         method: 'PUT',
-        headers: { 'Content-Type': file.type || 'application/octet-stream' },
+        headers: { 
+          'Content-Type': file.type || 'video/mp4',
+          'x-amz-content-sha256': 'UNSIGNED-PAYLOAD'
+        },
         body: file
       });
 
