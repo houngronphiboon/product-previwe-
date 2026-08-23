@@ -785,7 +785,7 @@
     }
 
     // ==========================================
-    // ฟังก์ชันอัปโหลดสื่อ (R2 & Cloudinary)
+    // ฟังก์ชันอัปโหลดสื่อ (R2 & Cloudinary - ปรับปรุงแก้ไขแล้ว)
     // ==========================================
     async function uploadToR2Direct(file) {
       if (!file) throw new Error("ไม่พบไฟล์สื่อสำหรับอัปโหลด");
@@ -803,11 +803,11 @@
 
       const { uploadUrl, publicUrl, objectKey } = await res.json();
 
+      // แนบเฉพาะ Content-Type Header ตาม Signature ที่สร้างโดย Worker
       const uploadRes = await fetch(uploadUrl, {
         method: 'PUT',
         headers: { 
-          'Content-Type': file.type || 'video/mp4',
-          'x-amz-content-sha256': 'UNSIGNED-PAYLOAD'
+          'Content-Type': file.type || 'video/mp4'
         },
         body: file
       });
