@@ -376,22 +376,29 @@
       }
     }
 
-    async function deleteCloudinaryMedia(mediaUrl, mediaType) {
+    // ฟังก์ชันสั่งลบสื่อ (รองรับทั้ง R2 สำหรับวิดีโอ และ Cloudinary สำหรับรูปภาพ)
+    async function deleteCloudMedia(mediaUrl, mediaType, objectKey = null) {
       if (!mediaUrl) return;
-      const publicId = extractPublicIdFromUrl(mediaUrl);
-      if (!publicId) return;
+
+      let payload = { resourceType: mediaType };
+
+      if (mediaType === 'video') {
+        const key = objectKey || mediaUrl.split('/').pop();
+        payload.objectKey = key;
+      } else {
+        const publicId = extractPublicIdFromUrl(mediaUrl);
+        if (!publicId) return;
+        payload.publicId = publicId;
+      }
 
       try {
         await fetch(`${WORKER_URL}delete-media`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            publicId: publicId,
-            resourceType: mediaType === "video" ? "video" : "image"
-          })
+          body: JSON.stringify(payload)
         });
       } catch (err) {
-        console.error("Failed to delete media from Cloudinary:", err);
+        console.error("Failed to delete media from Cloud:", err);
       }
     }
 
@@ -702,21 +709,39 @@
       event.target.value = '';
     }
 
-    // ฟังก์ชันจัดการการอัปโหลดไฟล์สื่อ (รูป -> Cloudinary / วิดีโอ -> Cloudflare R2)
+    /* ===== ฟังก์ชันจัดการการอัปโหลดไฟล์สื่อ (รูป -> Cloudinary / วิดีโอ -> Cloudflare R2 ผ่าน Presigned URL) ===== */
     async function uploadMediaFile(file, resourceType) {
       if (resourceType === 'video') {
-        const formData = new FormData();
-        formData.append('file', file);
-        
-        const res = await fetch(`${WORKER_URL}upload-r2`, {
+        const ext = file.name ? file.name.split('.').pop() : 'mp4';
+        const filename = `video_${Date.now()}.${ext}`;
+
+        // 1. ขอ Presigned Upload URL จาก Worker
+        const res = await fetch(`${WORKER_URL}get-presigned-url`, {
           method: 'POST',
-          body: formData
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            filename: filename,
+            contentType: file.type || 'video/mp4'
+          })
         });
-        
-        if (!res.ok) throw new Error('อัปโหลดวิดีโอไป Cloudflare R2 ไม่สำเร็จ');
-        const data = await res.json();
-        return data.url;
+
+        if (!res.ok) throw new Error('ไม่สามารถขอ Presigned URL จาก Worker ได้');
+        const { uploadUrl, publicUrl, objectKey } = await res.json();
+
+        // 2. อัปโหลด Stream Binary ของวิดีโอไปยัง Presigned URL (R2 Bucket)
+        const uploadRes = await fetch(uploadUrl, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': file.type || 'video/mp4'
+          },
+          body: file
+        });
+
+        if (!uploadRes.ok) throw new Error('อัปโหลดวิดีโอเข้า Cloudflare R2 ไม่สำเร็จ');
+
+        return { mediaUrl: publicUrl, objectKey: objectKey || filename };
       } else {
+        // อัปโหลดรูปภาพขึ้น Cloudinary
         const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
         const formData = new FormData();
         formData.append('file', file);
@@ -725,11 +750,11 @@
         const res = await fetch(url, { method: 'POST', body: formData });
         if (!res.ok) throw new Error('อัปโหลดรูปภาพไป Cloudinary ไม่สำเร็จ');
         const data = await res.json();
-        return data.secure_url;
+        return { mediaUrl: data.secure_url, objectKey: null };
       }
     }
 
-    /* ===== PROMPT AI: วิเคราะห์ชื่อรุ่น + ภาพ (ข้ามวิดีโออัตโนมัติ) ===== */
+    /* ===== PROMPT AI: วิเคราะห์ชื่อรุ่น + ภาพ ===== */
     window.generateAIDetails = async function() {
       const nameInput = document.getElementById('product-name');
       const detailInput = document.getElementById('product-detail');
@@ -839,17 +864,21 @@
 
       try {
         let mediaUrl = null;
+        let objectKey = null;
         let mediaType = processedMedia.type;
 
         if (processedMedia.file) {
           showToast("กำลังอัปโหลดไฟล์สื่อ...", "info");
-          mediaUrl = await uploadMediaFile(processedMedia.file, mediaType);
+          const uploadRes = await uploadMediaFile(processedMedia.file, mediaType);
+          mediaUrl = uploadRes.mediaUrl;
+          objectKey = uploadRes.objectKey;
         }
 
         await addDoc(collection(db, "products"), {
           name: name,
           detail: detail,
           mediaUrl: mediaUrl,
+          objectKey: objectKey,
           mediaType: mediaType,
           createdAt: serverTimestamp()
         });
@@ -876,7 +905,7 @@
       }
     };
 
-    /* ===== ฟังก์ชันเปิด Modal สื่อสารข้อมูล และ แก้ไข/ลบ ===== */
+    /* ===== ฟังก์ชันเปิด Modal ดูรายละเอียด/แก้ไข/ลบ ===== */
     function openDetailModal(id) {
       const product = productsList.find(p => p.id === id);
       if (!product) return;
@@ -944,16 +973,19 @@
 
       try {
         let finalMediaUrl = product.mediaUrl;
+        let finalObjectKey = product.objectKey || null;
         let finalMediaType = product.mediaType;
 
         if (editProcessedMedia.file) {
           showToast("กำลังอัปโหลดสื่อใหม่...", "info");
           
-          if (product.mediaUrl && product.mediaType === 'image') {
-            await deleteCloudinaryMedia(product.mediaUrl, product.mediaType);
+          if (product.mediaUrl) {
+            await deleteCloudMedia(product.mediaUrl, product.mediaType, product.objectKey);
           }
 
-          finalMediaUrl = await uploadMediaFile(editProcessedMedia.file, editProcessedMedia.type);
+          const uploadRes = await uploadMediaFile(editProcessedMedia.file, editProcessedMedia.type);
+          finalMediaUrl = uploadRes.mediaUrl;
+          finalObjectKey = uploadRes.objectKey;
           finalMediaType = editProcessedMedia.type;
         }
 
@@ -962,6 +994,7 @@
           name: editName,
           detail: editDetail,
           mediaUrl: finalMediaUrl,
+          objectKey: finalObjectKey,
           mediaType: finalMediaType,
           updatedAt: serverTimestamp()
         });
@@ -991,8 +1024,8 @@
       updateStatusUI('db', 'orange', 'DB: กำลังลบ');
 
       try {
-        if (product && product.mediaUrl && product.mediaType === 'image') {
-          await deleteCloudinaryMedia(product.mediaUrl, product.mediaType);
+        if (product && product.mediaUrl) {
+          await deleteCloudMedia(product.mediaUrl, product.mediaType, product.objectKey);
         }
 
         await deleteDoc(doc(db, "products", activeProductId));
