@@ -395,6 +395,19 @@
       }
     }
 
+    async function deleteR2Media(objectKey) {
+      if (!objectKey) return;
+      try {
+        await fetch(`${WORKER_URL}delete-media`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ objectKey: objectKey })
+        });
+      } catch (err) {
+        console.error("Failed to delete media from R2:", err);
+      }
+    }
+
     function showToast(message, type = 'info') {
       const toast = document.getElementById('toast');
       toast.innerText = message;
@@ -714,6 +727,34 @@
       return data.secure_url;
     }
 
+    // ฟังก์ชันสำหรับส่งไฟล์อัปโหลดเข้า Cloudflare R2 ผ่าน Presigned URL
+    async function uploadFileToR2(file) {
+      const res = await fetch(`${WORKER_URL}get-presigned-url`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileName: file.name || `video_${Date.now()}.mp4`,
+          contentType: file.type || 'video/mp4'
+        })
+      });
+
+      if (!res.ok) throw new Error('ไม่สามารถขอ Presigned URL จาก R2 ได้');
+      const { uploadUrl, publicUrl, objectKey } = await res.json();
+
+      const uploadRes = await fetch(uploadUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': file.type || 'video/mp4',
+          'x-amz-content-sha256': 'UNSIGNED-PAYLOAD'
+        },
+        body: file
+      });
+
+      if (!uploadRes.ok) throw new Error('เกิดข้อผิดพลาดขณะอัปโหลดวิดีโอเข้า R2');
+
+      return { publicUrl, objectKey };
+    }
+
     /* ===== PROMPT AI: วิเคราะห์ชื่อรุ่น + ภาพ ส่งไปยัง Worker Backend ===== */
     window.generateAIDetails = async function() {
       const nameInput = document.getElementById('product-name');
@@ -729,6 +770,7 @@
       try {
         let payload = { contents: [] };
 
+        // **จุดสำคัญที่แก้ไข:** ตรวจสอบเฉพาะประเภทที่เป็น 'image' เท่านั้น ข้าม 'video' โดยสิ้นเชิง
         if (processedMedia.type === 'image' && processedMedia.data) {
           const base64Data = processedMedia.data.split(',')[1];
           const mimeType = processedMedia.data.split(';')[0].split(':')[1];
@@ -740,6 +782,7 @@
             ]
           });
         } else {
+          // หากไม่มีภาพ หรือไฟล์ที่แนบเป็นวิดีโอ จะส่งเฉพาะข้อความชื่อ/รุ่น ไปยัง AI
           if (!name) {
             triggerValidationError("กรุณากรอกชื่อ/รุ่น หรืออัปโหลดรูปถ่ายเพลตสินค้า");
             detailInput.value = originalText;
@@ -820,24 +863,32 @@
 
       try {
         let mediaUrl = null;
+        let objectKey = null;
         let mediaType = processedMedia.type;
 
         if (processedMedia.file) {
-          showToast("กำลังอัปโหลดไฟล์สื่อ...", "info");
-          mediaUrl = await uploadToCloudinary(processedMedia.file, mediaType === 'video' ? 'video' : 'image');
+          if (mediaType === 'video') {
+            showToast("กำลังอัปโหลดวิดีโอลง R2 Storage...", "info");
+            const r2Result = await uploadFileToR2(processedMedia.file);
+            mediaUrl = r2Result.publicUrl;
+            objectKey = r2Result.objectKey;
+          } else {
+            showToast("กำลังอัปโหลดรูปภาพ...", "info");
+            mediaUrl = await uploadToCloudinary(processedMedia.file, 'image');
+          }
         }
 
         await addDoc(collection(db, "products"), {
           name: name,
           detail: detail,
           mediaUrl: mediaUrl,
+          objectKey: objectKey || null,
           mediaType: mediaType,
           createdAt: serverTimestamp()
         });
 
         showToast("บันทึกข้อมูลเรียบร้อยแล้ว!", "success");
 
-        // รีเซ็ตฟอร์ม
         nameInput.value = '';
         detailInput.value = '';
         document.getElementById('preview-box').innerHTML = '<span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>';
@@ -926,15 +977,25 @@
       try {
         let finalMediaUrl = product.mediaUrl;
         let finalMediaType = product.mediaType;
+        let finalObjectKey = product.objectKey || null;
 
         if (editProcessedMedia.file) {
           showToast("กำลังอัปโหลดสื่อใหม่...", "info");
           
-          if (product.mediaUrl) {
+          if (product.mediaType === 'video' && product.objectKey) {
+            await deleteR2Media(product.objectKey);
+          } else if (product.mediaUrl) {
             await deleteCloudinaryMedia(product.mediaUrl, product.mediaType);
           }
 
-          finalMediaUrl = await uploadToCloudinary(editProcessedMedia.file, editProcessedMedia.type === 'video' ? 'video' : 'image');
+          if (editProcessedMedia.type === 'video') {
+            const r2Result = await uploadFileToR2(editProcessedMedia.file);
+            finalMediaUrl = r2Result.publicUrl;
+            finalObjectKey = r2Result.objectKey;
+          } else {
+            finalMediaUrl = await uploadToCloudinary(editProcessedMedia.file, 'image');
+            finalObjectKey = null;
+          }
           finalMediaType = editProcessedMedia.type;
         }
 
@@ -943,6 +1004,7 @@
           name: editName,
           detail: editDetail,
           mediaUrl: finalMediaUrl,
+          objectKey: finalObjectKey,
           mediaType: finalMediaType,
           updatedAt: serverTimestamp()
         });
@@ -972,8 +1034,12 @@
       updateStatusUI('db', 'orange', 'DB: กำลังลบ');
 
       try {
-        if (product && product.mediaUrl) {
-          await deleteCloudinaryMedia(product.mediaUrl, product.mediaType);
+        if (product) {
+          if (product.mediaType === 'video' && product.objectKey) {
+            await deleteR2Media(product.objectKey);
+          } else if (product.mediaUrl) {
+            await deleteCloudinaryMedia(product.mediaUrl, product.mediaType);
+          }
         }
 
         await deleteDoc(doc(db, "products", activeProductId));
