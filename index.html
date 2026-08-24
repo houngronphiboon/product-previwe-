@@ -338,6 +338,7 @@
 
   <div id="toast" class="toast"></div>
 
+  <!-- ================= JavaScript หลักแบบ Module ================= -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { 
@@ -374,6 +375,18 @@
     let isSearchMode = false;
     let searchDebounceTimer = null;
 
+    /* ===== UI Management Helpers ===== */
+    function showToast(message, type = 'info') {
+      const toast = document.getElementById('toast');
+      if (!toast) return;
+      toast.innerText = message;
+      toast.className = `toast show toast-${type}`;
+      setTimeout(() => {
+        toast.className = toast.className.replace('show', '');
+      }, 4000);
+    }
+    window.showToast = showToast;
+
     function updateStatusUI(target, state, text) {
       const dot = document.getElementById(`${target}-status-dot`);
       const txt = document.getElementById(`${target}-status-text`);
@@ -403,7 +416,6 @@
       });
     }
 
-    /* ฟังก์ชันสร้างแทร็กพรีวิววิดีโอแบบไม่เล่นเองอัตโนมัติ (On-Demand Player) */
     function renderVideoPreviewHTML(videoSrc, containerId) {
       const uniqueId = 'vid_' + Math.random().toString(36).substr(2, 9);
       return `
@@ -425,7 +437,6 @@
       }
     };
 
-    // ดึง Thumbnail เฟรมแรกจากวิดีโอไฟล์ท้องถิ่น
     function generateVideoThumbnail(file) {
       return new Promise((resolve) => {
         const video = document.createElement('video');
@@ -434,10 +445,7 @@
         video.muted = true;
         video.playsInline = true;
 
-        video.onloadeddata = () => {
-          video.currentTime = 0.1;
-        };
-
+        video.onloadeddata = () => { video.currentTime = 0.1; };
         video.onseeked = () => {
           const canvas = document.createElement('canvas');
           canvas.width = video.videoWidth || 320;
@@ -448,10 +456,7 @@
           URL.revokeObjectURL(video.src);
           resolve(dataUrl);
         };
-
-        video.onerror = () => {
-          resolve(null);
-        };
+        video.onerror = () => resolve(null);
       });
     }
 
@@ -485,7 +490,6 @@
 
     async function deleteCloudMedia(mediaUrl, mediaType, objectKey = null) {
       if (!mediaUrl) return;
-
       let payload = { resourceType: mediaType };
 
       if (mediaType === 'video') {
@@ -508,19 +512,10 @@
       }
     }
 
-    function showToast(message, type = 'info') {
-      const toast = document.getElementById('toast');
-      toast.innerText = message;
-      toast.className = `toast show toast-${type}`;
-      setTimeout(() => {
-        toast.className = toast.className.replace('show', '');
-      }, 4000);
-    }
-
     function triggerValidationError(msg) {
       const nameInput = document.getElementById('product-name');
       const errorMsg = document.getElementById('name-error-msg');
-      nameInput.classList.add('input-error');
+      if (nameInput) nameInput.classList.add('input-error');
       if (errorMsg) {
         errorMsg.innerText = msg || "กรุณากรอกข้อมูล";
         errorMsg.style.display = 'block';
@@ -530,9 +525,9 @@
     window.clearValidationError = function() {
       const nameInput = document.getElementById('product-name');
       const errorMsg = document.getElementById('name-error-msg');
-      nameInput.classList.remove('input-error');
+      if (nameInput) nameInput.classList.remove('input-error');
       if (errorMsg) errorMsg.style.display = 'none';
-    }
+    };
 
     window.closeModal = function() {
       const mediaContainer = document.getElementById('modal-media-container');
@@ -544,18 +539,19 @@
       revokePreviousMediaUrl(editProcessedMedia);
       activeProductId = null;
       editProcessedMedia = { type: null, data: null, file: null };
-    }
+    };
 
     window.closeQuotaModal = function() {
       document.getElementById('quota-modal').style.display = 'none';
       document.body.classList.remove('modal-open');
-    }
+    };
 
     window.goToRecharge = function() {
       window.open('https://openrouter.ai/settings/keys', '_blank');
       closeQuotaModal();
-    }
+    };
 
+    /* ===== Data Rendering & Firestore Query ===== */
     function renderTable(dataList) {
       const tbody = document.getElementById('product-list');
       tbody.innerHTML = '';
@@ -667,7 +663,6 @@
 
     function setupScrollListener() {
       const tableContainer = document.getElementById('table-container');
-
       if (tableContainer) {
         tableContainer.addEventListener('scroll', () => {
           if (tableContainer.scrollTop + tableContainer.clientHeight >= tableContainer.scrollHeight - 50) {
@@ -716,7 +711,7 @@
           matchedResults = combined;
           updateStatusUI('db', 'green', 'DB: พร้อม');
         } catch (err) {
-          console.error("Firestore Prefix Search Error:", err);
+          console.error("Firestore Search Error:", err);
           updateStatusUI('db', 'green', 'DB: พร้อม');
         }
       }
@@ -744,9 +739,7 @@
       }
     }
 
-    fetchInitialProducts();
-    setupScrollListener();
-
+    /* ===== Media Processing ===== */
     function setFormButtonsDisabled(disabled, isAnalyzing = false) {
       const aiBtn = document.getElementById('btn-ai-search');
       document.getElementById('btn-save').disabled = disabled;
@@ -797,7 +790,6 @@
         const videoUrl = URL.createObjectURL(file);
         processedMedia = { type: 'video', data: videoUrl, file: file };
         
-        // ดึง Thumbnail เฟรมแรกขึ้นมาโชว์
         const thumbUrl = await generateVideoThumbnail(file);
         const uniqueId = 'preview_main';
 
@@ -814,7 +806,7 @@
         }
       }
       event.target.value = '';
-    }
+    };
 
     window.handleEditFileSelect = async function(event) {
       const file = event.target.files[0];
@@ -848,7 +840,7 @@
         }
       }
       event.target.value = '';
-    }
+    };
 
     async function uploadMediaFile(file, resourceType) {
       if (resourceType === 'video') {
@@ -869,9 +861,7 @@
 
         const uploadRes = await fetch(uploadUrl, {
           method: 'PUT',
-          headers: {
-            'Content-Type': file.type || 'video/mp4'
-          },
+          headers: { 'Content-Type': file.type || 'video/mp4' },
           body: file
         });
 
@@ -891,6 +881,7 @@
       }
     }
 
+    /* ===== AI Analysis ===== */
     window.generateAIDetails = async function() {
       const nameInput = document.getElementById('product-name');
       const detailInput = document.getElementById('product-detail');
@@ -980,6 +971,7 @@
       }
     };
 
+    /* ===== CRUD Operations (Add, Edit, Delete) ===== */
     window.addProduct = async function() {
       const nameInput = document.getElementById('product-name');
       const detailInput = document.getElementById('product-detail');
@@ -1057,7 +1049,6 @@
         if (product.mediaType === 'image') {
           mediaBox.innerHTML = `<img src="${product.mediaUrl}" alt="Product Image">`;
         } else if (product.mediaType === 'video') {
-          // โหลดเพลเยอร์แบบปุ่ม Play Overlay ไม่เล่นอัตโนมัติ
           mediaBox.innerHTML = renderVideoPreviewHTML(product.mediaUrl, 'modal-media-container');
         }
       } else {
@@ -1181,6 +1172,10 @@
         updateStatusUI('db', 'red', 'DB: ขัดข้อง');
       }
     };
+
+    // เริ่มต้นดึงข้อมูลรายการและตั้งค่า Event Listener
+    fetchInitialProducts();
+    setupScrollListener();
   </script>
 </body>
 </html>
