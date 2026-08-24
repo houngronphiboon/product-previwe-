@@ -995,7 +995,7 @@
         let mediaType = processedMedia.type;
 
         if (processedMedia.file) {
-          showToast("กำลังอัปโหลดไฟล์สื่อ...", "info");
+          // อัปโหลดไฟล์สื่อ (ตัดการแจ้งเตือนระหว่างทำออก)
           const uploadRes = await uploadMediaFile(processedMedia.file, mediaType);
           mediaUrl = uploadRes.mediaUrl;
           objectKey = uploadRes.objectKey;
@@ -1010,6 +1010,7 @@
           createdAt: serverTimestamp()
         });
 
+        // แจ้งเตือนเพียงครั้งเดียวเมื่อขั้นตอนสำเร็จสมบูรณ์
         showToast("บันทึกข้อมูลเรียบร้อยแล้ว!", "success");
 
         nameInput.value = '';
@@ -1107,8 +1108,6 @@
         let finalMediaType = product.mediaType;
 
         if (editProcessedMedia.file) {
-          showToast("กำลังอัปโหลดสื่อใหม่...", "info");
-          
           if (product.mediaUrl) {
             await deleteCloudMedia(product.mediaUrl, product.mediaType, product.objectKey);
           }
@@ -1129,6 +1128,7 @@
           updatedAt: serverTimestamp()
         });
 
+        // แจ้งเตือนเพียงครั้งเดียวเมื่อขั้นตอนแก้ไขสำเร็จสมบูรณ์
         showToast("แก้ไขข้อมูลสำเร็จ!", "success");
         closeModal();
         await fetchInitialProducts();
