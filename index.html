@@ -376,14 +376,18 @@
     let searchDebounceTimer = null;
 
     /* ===== UI Management Helpers ===== */
+    let toastTimeout = null;
     function showToast(message, type = 'info') {
       const toast = document.getElementById('toast');
       if (!toast) return;
+      
+      clearTimeout(toastTimeout); // ล้างเวลาซ่อนเดิม เพื่อป้องกันการเด้งซ้อน
       toast.innerText = message;
       toast.className = `toast show toast-${type}`;
-      setTimeout(() => {
+      
+      toastTimeout = setTimeout(() => {
         toast.className = toast.className.replace('show', '');
-      }, 4000);
+      }, 3000);
     }
     window.showToast = showToast;
 
@@ -985,6 +989,7 @@
         return;
       }
 
+      // 1. ปิดปุ่มและแสดงสถานะกำลังอัปโหลด/บันทึก บน UI
       saveBtn.disabled = true;
       saveBtn.innerText = "⏳ กำลังบันทึกลง Cloud...";
       updateStatusUI('db', 'orange', 'DB: กำลังบันทึก');
@@ -994,13 +999,14 @@
         let objectKey = null;
         let mediaType = processedMedia.type;
 
+        // อัปโหลดสื่อเข้าเซิร์ฟเวอร์ (ไม่มี Toast สีฟ้าเด้งค้าง)
         if (processedMedia.file) {
-          // อัปโหลดไฟล์สื่อ (ตัดการแจ้งเตือนระหว่างทำออก)
           const uploadRes = await uploadMediaFile(processedMedia.file, mediaType);
           mediaUrl = uploadRes.mediaUrl;
           objectKey = uploadRes.objectKey;
         }
 
+        // บันทึกลง Firestore
         await addDoc(collection(db, "products"), {
           name: name,
           detail: detail,
@@ -1010,100 +1016,29 @@
           createdAt: serverTimestamp()
         });
 
-        // ==========================================
-// 1. ฟังก์ชันสำหรับแสดง Toast Notification (แสดงผลครั้งเดียว)
-// ==========================================
-function showSingleToast(message, type = 'info') {
-    // ลบ Toast เก่าที่กำลังแสดงอยู่ทั้งหมดเพื่อป้องกันการซ้อนทับ
-    const existingToasts = document.querySelectorAll('.custom-toast');
-    existingToasts.forEach(toast => toast.remove());
+        // 2. แสดงแจ้งเตือนสำเร็จเพียงครั้งเดียวในขั้นตอนสุดท้าย
+        showToast("บันทึกข้อมูลเรียบร้อยแล้ว!", "success");
 
-    // กำหนดสีตามประเภท
-    let bgColor = '#3b82f6'; // สีฟ้า (กำลังอัปโหลด/ประมวลผล)
-    if (type === 'success') bgColor = '#22c55e'; // สีเขียว (สำเร็จ)
-    if (type === 'error') bgColor = '#ef4444'; // สีแดง (ผิดพลาด)
+        nameInput.value = '';
+        detailInput.value = '';
+        const previewBox = document.getElementById('preview-box');
+        stopAllVideoPlayback(previewBox);
+        previewBox.innerHTML = '<span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>';
+        revokePreviousMediaUrl(processedMedia);
+        processedMedia = { type: null, data: null, file: null };
+        clearValidationError();
 
-    // สร้าง Element แจ้งเตือน
-    const toast = document.createElement('div');
-    toast.className = 'custom-toast';
-    toast.innerText = message;
-    
-    // จัด Style แสดงผลบริเวณด้านล่างหน้าจอ
-    Object.assign(toast.style, {
-        position: 'fixed',
-        bottom: '20px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        backgroundColor: bgColor,
-        color: '#ffffff',
-        padding: '12px 24px',
-        borderRadius: '8px',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-        zIndex: '9999',
-        fontSize: '14px',
-        fontWeight: '500',
-        transition: 'opacity 0.3s ease-in-out',
-        opacity: '1'
-    });
+        await fetchInitialProducts();
 
-    document.body.appendChild(toast);
-
-    // ซ่อนและลบ Toast ออกเมื่อผ่านไป 3 วินาที (เฉพาะกรณี success หรือ error)
-    if (type !== 'info') {
-        setTimeout(() => {
-            toast.style.opacity = '0';
-            setTimeout(() => toast.remove(), 300);
-        }, 3000);
-    }
-}
-
-// ==========================================
-// 2. ฟังก์ชันจำลอง/ดำเนินการ อัปโหลดและบันทึกข้อมูล
-// ==========================================
-async function processUploadAndSave() {
-    const submitBtn = document.querySelector('#btn-submit') || document.querySelector('button[type="submit"]');
-    
-    // ป้องกันการกดซ้ำระหว่างประมวลผล
-    if (submitBtn) submitBtn.disabled = true;
-
-    try {
-        // [ขั้นตอนที่ 1] แสดงแจ้งเตือนตัวสีฟ้า 1 ครั้ง
-        showSingleToast('กำลังอัปโหลดสื่อและบันทึกข้อมูล...', 'info');
-
-        // --- ใส่ Logic การ Upload ไฟล์ / API Call ของท่านที่นี่ ---
-        // ตัวอย่าง: await uploadMediaFiles();
-        await new Promise(resolve => setTimeout(resolve, 2000)); // จำลองระยะเวลาทำงาน 2 วินาที
-        // ----------------------------------------------------
-
-        // [ขั้นตอนที่ 2] แสดงแจ้งเตือนตัวสีเขียว 1 ครั้งเมื่อเสร็จสิ้น
-        showSingleToast('บันทึกข้อมูลเรียบร้อยแล้ว', 'success');
-
-    } catch (error) {
-        showSingleToast('เกิดข้อผิดพลาดในการบันทึกข้อมูล', 'error');
-        console.error(error);
-    } finally {
-        // เปิดให้กดปุ่มได้อีกครั้งหลังทำงานเสร็จ
-        if (submitBtn) submitBtn.disabled = false;
-    }
-}
-
-// ==========================================
-// 3. ผูก Event Listener เพียงครั้งเดียว (Prevent Duplicate Events)
-// ==========================================
-document.addEventListener('DOMContentLoaded', () => {
-    const submitBtn = document.querySelector('#btn-submit') || document.querySelector('button[type="submit"]');
-    
-    if (submitBtn) {
-        // ล้าง listener เก่าออกก่อนผูกใหม่
-        submitBtn.replaceWith(submitBtn.cloneNode(true));
-        const newSubmitBtn = document.querySelector('#btn-submit') || document.querySelector('button[type="submit"]');
-        
-        newSubmitBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            processUploadAndSave();
-        });
-    }
-});
+      } catch (err) {
+        console.error("Add Product Error:", err);
+        showToast("เกิดข้อผิดพลาดในการบันทึกข้อมูล", "error");
+        updateStatusUI('db', 'red', 'DB: ขัดข้อง');
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.innerText = "บันทึกสินค้าลงคลาวด์";
+      }
+    };
 
     function openDetailModal(id) {
       const product = productsList.find(p => p.id === id);
@@ -1199,7 +1134,7 @@ document.addEventListener('DOMContentLoaded', () => {
           updatedAt: serverTimestamp()
         });
 
-        // แจ้งเตือนเพียงครั้งเดียวเมื่อขั้นตอนแก้ไขสำเร็จสมบูรณ์
+        // แสดงแจ้งเตือนสำเร็จเพียงครั้งเดียวในขั้นตอนสุดท้าย
         showToast("แก้ไขข้อมูลสำเร็จ!", "success");
         closeModal();
         await fetchInitialProducts();
