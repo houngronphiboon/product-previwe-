@@ -351,7 +351,6 @@
       }
     }
 
-    // ฟังก์ชันหยุดเล่นวิดีโอเด็ดขาดเพื่อป้องกันเสียงค้าง
     function stopAllVideoPlayback(containerElement) {
       if (!containerElement) return;
       const videos = containerElement.querySelectorAll('video');
@@ -394,7 +393,6 @@
       }
     }
 
-    // ฟังก์ชันสั่งลบสื่อ (รองรับทั้ง R2 สำหรับวิดีโอ และ Cloudinary สำหรับรูปภาพ)
     async function deleteCloudMedia(mediaUrl, mediaType, objectKey = null) {
       if (!mediaUrl) return;
 
@@ -708,7 +706,8 @@
       } else if (file.type.startsWith('video/')) {
         const videoUrl = URL.createObjectURL(file);
         processedMedia = { type: 'video', data: videoUrl, file: file };
-        previewBox.innerHTML = `<video src="${videoUrl}" controls autoplay muted></video>`;
+        // ปรับไม่ให้เล่นอัตโนมัติ และแสดงพรีวิวภาพวิดีโอ
+        previewBox.innerHTML = `<video src="${videoUrl}" controls preload="metadata"></video>`;
       }
       event.target.value = '';
     }
@@ -728,18 +727,17 @@
       } else if (file.type.startsWith('video/')) {
         const videoUrl = URL.createObjectURL(file);
         editProcessedMedia = { type: 'video', data: videoUrl, file: file };
-        mediaContainer.innerHTML = `<video src="${videoUrl}" controls autoplay muted></video>`;
+        // ปรับไม่ให้เล่นอัตโนมัติ และแสดงพรีวิวภาพวิดีโอ
+        mediaContainer.innerHTML = `<video src="${videoUrl}" controls preload="metadata"></video>`;
       }
       event.target.value = '';
     }
 
-    /* ===== ฟังก์ชันจัดการการอัปโหลดไฟล์สื่อ (รูป -> Cloudinary / วิดีโอ -> Cloudflare R2 ผ่าน Presigned URL) ===== */
     async function uploadMediaFile(file, resourceType) {
       if (resourceType === 'video') {
         const ext = file.name ? file.name.split('.').pop() : 'mp4';
         const filename = `video_${Date.now()}.${ext}`;
 
-        // 1. ขอ Presigned Upload URL จาก Worker
         const res = await fetch(`${WORKER_URL}get-presigned-url`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -752,7 +750,6 @@
         if (!res.ok) throw new Error('ไม่สามารถขอ Presigned URL จาก Worker ได้');
         const { uploadUrl, publicUrl, objectKey } = await res.json();
 
-        // 2. อัปโหลด Stream Binary ของวิดีโอไปยัง Presigned URL (R2 Bucket)
         const uploadRes = await fetch(uploadUrl, {
           method: 'PUT',
           headers: {
@@ -765,7 +762,6 @@
 
         return { mediaUrl: publicUrl, objectKey: objectKey || filename };
       } else {
-        // อัปโหลดรูปภาพขึ้น Cloudinary
         const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
         const formData = new FormData();
         formData.append('file', file);
@@ -778,7 +774,6 @@
       }
     }
 
-    /* ===== PROMPT AI: วิเคราะห์ชื่อรุ่น + ภาพ ===== */
     window.generateAIDetails = async function() {
       const nameInput = document.getElementById('product-name');
       const detailInput = document.getElementById('product-detail');
@@ -868,7 +863,6 @@
       }
     };
 
-    /* ===== ฟังก์ชันเพิ่มสินค้าบันทึกคลาวด์ ===== */
     window.addProduct = async function() {
       const nameInput = document.getElementById('product-name');
       const detailInput = document.getElementById('product-detail');
@@ -909,7 +903,6 @@
 
         showToast("บันทึกข้อมูลเรียบร้อยแล้ว!", "success");
 
-        // รีเซ็ตฟอร์ม
         nameInput.value = '';
         detailInput.value = '';
         const previewBox = document.getElementById('preview-box');
@@ -931,7 +924,6 @@
       }
     };
 
-    /* ===== ฟังก์ชันเปิด Modal ดูรายละเอียด/แก้ไข/ลบ ===== */
     function openDetailModal(id) {
       const product = productsList.find(p => p.id === id);
       if (!product) return;
@@ -948,7 +940,8 @@
         if (product.mediaType === 'image') {
           mediaBox.innerHTML = `<img src="${product.mediaUrl}" alt="Product Image">`;
         } else if (product.mediaType === 'video') {
-          mediaBox.innerHTML = `<video src="${product.mediaUrl}" controls></video>`;
+          // ปรับไม่ให้เล่นอัตโนมัติ และแสดงภาพตัวอย่างเฟรมแรก
+          mediaBox.innerHTML = `<video src="${product.mediaUrl}" controls preload="metadata"></video>`;
         }
       } else {
         mediaBox.innerHTML = `<span style="color: #6b7280;">ไม่มีรูปภาพ/วิดีโอประกอบ</span>`;
@@ -1049,7 +1042,6 @@
         return;
       }
 
-      // หยุดวิดีโอทันทีก่อนทำรายการลบ
       const mediaBox = document.getElementById('modal-media-container');
       stopAllVideoPlayback(mediaBox);
 
