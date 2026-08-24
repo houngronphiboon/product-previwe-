@@ -94,9 +94,47 @@
       color: #9ca3af; 
       border: 2px dashed #374151; 
       overflow: hidden; 
+      position: relative;
     }
     .media-preview-box img, .media-preview-box video { max-width: 100%; max-height: 100%; object-fit: contain; }
     
+    /* สไตล์สำหรับกล่องเล่นวิดีโอคลิกเพื่อเล่น */
+    .video-thumb-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      background: #000;
+    }
+    .video-thumb-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      opacity: 0.85;
+    }
+    .play-btn-overlay {
+      position: absolute;
+      width: 54px;
+      height: 54px;
+      background: rgba(0, 0, 0, 0.65);
+      border: 2px solid #ffffff;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #ffffff;
+      font-size: 22px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      transition: transform 0.2s, background 0.2s;
+    }
+    .video-thumb-container:hover .play-btn-overlay {
+      transform: scale(1.1);
+      background: rgba(37, 99, 235, 0.85);
+    }
+
     .media-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
     .btn { border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s; }
     .btn:disabled { opacity: 0.6; cursor: not-allowed; }
@@ -139,7 +177,7 @@
     .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; padding: 16px; -webkit-overflow-scrolling: touch; }
     .modal-content { background-color: #fff; padding: 20px; border-radius: 16px; width: 100%; max-width: 480px; position: relative; max-height: 90vh; overflow-y: auto; -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }
     .close-btn { position: absolute; right: 15px; top: 10px; font-size: 24px; cursor: pointer; color: #9ca3af; z-index: 10; }
-    .modal-media-box { width: 100%; height: 230px; background: #111827; margin-bottom: 15px; border-radius: 10px; overflow: hidden; display: flex; justify-content: center; align-items: center; }
+    .modal-media-box { width: 100%; height: 230px; background: #111827; margin-bottom: 15px; border-radius: 10px; overflow: hidden; display: flex; justify-content: center; align-items: center; position: relative; }
     .modal-media-box img, .modal-media-box video { max-width: 100%; max-height: 100%; object-fit: contain; }
     .modal-actions { display: flex; gap: 10px; margin-top: 15px; }
     .btn-edit { background-color: #f59e0b; color: #ffffff; flex: 1; padding: 10px; }
@@ -362,6 +400,58 @@
         } catch (e) {
           console.warn("Error stopping video:", e);
         }
+      });
+    }
+
+    /* ฟังก์ชันสร้างแทร็กพรีวิววิดีโอแบบไม่เล่นเองอัตโนมัติ (On-Demand Player) */
+    function renderVideoPreviewHTML(videoSrc, containerId) {
+      const uniqueId = 'vid_' + Math.random().toString(36).substr(2, 9);
+      return `
+        <div class="video-thumb-container" id="thumb_${uniqueId}" onclick="playVideoInline('${uniqueId}', '${videoSrc}')">
+          <div style="font-size: 40px; color: #9ca3af;">🎥</div>
+          <div class="play-btn-overlay">▶</div>
+        </div>
+        <div id="holder_${uniqueId}" style="display:none; width:100%; height:100%;"></div>
+      `;
+    }
+
+    window.playVideoInline = function(uniqueId, videoSrc) {
+      const thumb = document.getElementById(`thumb_${uniqueId}`);
+      const holder = document.getElementById(`holder_${uniqueId}`);
+      if (thumb && holder) {
+        thumb.style.display = 'none';
+        holder.style.display = 'block';
+        holder.innerHTML = `<video src="${videoSrc}" controls autoplay style="width:100%; height:100%; object-fit:contain;"></video>`;
+      }
+    };
+
+    // ดึง Thumbnail เฟรมแรกจากวิดีโอไฟล์ท้องถิ่น
+    function generateVideoThumbnail(file) {
+      return new Promise((resolve) => {
+        const video = document.createElement('video');
+        video.preload = 'metadata';
+        video.src = URL.createObjectURL(file);
+        video.muted = true;
+        video.playsInline = true;
+
+        video.onloadeddata = () => {
+          video.currentTime = 0.1;
+        };
+
+        video.onseeked = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = video.videoWidth || 320;
+          canvas.height = video.videoHeight || 240;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+          URL.revokeObjectURL(video.src);
+          resolve(dataUrl);
+        };
+
+        video.onerror = () => {
+          resolve(null);
+        };
       });
     }
 
@@ -706,8 +796,22 @@
       } else if (file.type.startsWith('video/')) {
         const videoUrl = URL.createObjectURL(file);
         processedMedia = { type: 'video', data: videoUrl, file: file };
-        // ปรับไม่ให้เล่นอัตโนมัติ และแสดงพรีวิวภาพวิดีโอ
-        previewBox.innerHTML = `<video src="${videoUrl}" controls preload="metadata"></video>`;
+        
+        // ดึง Thumbnail เฟรมแรกขึ้นมาโชว์
+        const thumbUrl = await generateVideoThumbnail(file);
+        const uniqueId = 'preview_main';
+
+        if (thumbUrl) {
+          previewBox.innerHTML = `
+            <div class="video-thumb-container" id="thumb_${uniqueId}" onclick="playVideoInline('${uniqueId}', '${videoUrl}')">
+              <img src="${thumbUrl}">
+              <div class="play-btn-overlay">▶</div>
+            </div>
+            <div id="holder_${uniqueId}" style="display:none; width:100%; height:100%;"></div>
+          `;
+        } else {
+          previewBox.innerHTML = renderVideoPreviewHTML(videoUrl, 'preview-box');
+        }
       }
       event.target.value = '';
     }
@@ -727,8 +831,21 @@
       } else if (file.type.startsWith('video/')) {
         const videoUrl = URL.createObjectURL(file);
         editProcessedMedia = { type: 'video', data: videoUrl, file: file };
-        // ปรับไม่ให้เล่นอัตโนมัติ และแสดงพรีวิวภาพวิดีโอ
-        mediaContainer.innerHTML = `<video src="${videoUrl}" controls preload="metadata"></video>`;
+        
+        const thumbUrl = await generateVideoThumbnail(file);
+        const uniqueId = 'preview_edit';
+
+        if (thumbUrl) {
+          mediaContainer.innerHTML = `
+            <div class="video-thumb-container" id="thumb_${uniqueId}" onclick="playVideoInline('${uniqueId}', '${videoUrl}')">
+              <img src="${thumbUrl}">
+              <div class="play-btn-overlay">▶</div>
+            </div>
+            <div id="holder_${uniqueId}" style="display:none; width:100%; height:100%;"></div>
+          `;
+        } else {
+          mediaContainer.innerHTML = renderVideoPreviewHTML(videoUrl, 'modal-media-container');
+        }
       }
       event.target.value = '';
     }
@@ -940,8 +1057,8 @@
         if (product.mediaType === 'image') {
           mediaBox.innerHTML = `<img src="${product.mediaUrl}" alt="Product Image">`;
         } else if (product.mediaType === 'video') {
-          // ปรับไม่ให้เล่นอัตโนมัติ และแสดงภาพตัวอย่างเฟรมแรก
-          mediaBox.innerHTML = `<video src="${product.mediaUrl}" controls preload="metadata"></video>`;
+          // โหลดเพลเยอร์แบบปุ่ม Play Overlay ไม่เล่นอัตโนมัติ
+          mediaBox.innerHTML = renderVideoPreviewHTML(product.mediaUrl, 'modal-media-container');
         }
       } else {
         mediaBox.innerHTML = `<span style="color: #6b7280;">ไม่มีรูปภาพ/วิดีโอประกอบ</span>`;
