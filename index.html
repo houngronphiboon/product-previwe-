@@ -702,23 +702,50 @@
       event.target.value = '';
     }
 
-    async function uploadToCloudinary(file, resourceType = 'auto') {
-      const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`;
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+    // ฟังก์ชันจัดการการอัปโหลดไฟล์สื่อ (รูป -> Cloudinary / วิดีโอ -> Cloudflare R2)
+    async function uploadMediaFile(file, resourceType) {
+      if (resourceType === 'video') {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const res = await fetch(`${WORKER_URL}upload-r2`, {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (!res.ok) throw new Error('อัปโหลดวิดีโอไป Cloudflare R2 ไม่สำเร็จ');
+        const data = await res.json();
+        return data.url;
+      } else {
+        const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
 
-      const res = await fetch(url, { method: 'POST', body: formData });
-      if (!res.ok) throw new Error('อัปโหลดไป Cloudinary ไม่สำเร็จ');
-      const data = await res.json();
-      return data.secure_url;
+        const res = await fetch(url, { method: 'POST', body: formData });
+        if (!res.ok) throw new Error('อัปโหลดรูปภาพไป Cloudinary ไม่สำเร็จ');
+        const data = await res.json();
+        return data.secure_url;
+      }
     }
 
-    /* ===== PROMPT AI: วิเคราะห์ชื่อรุ่น + ภาพ ส่งไปยัง Worker Backend ===== */
+    /* ===== PROMPT AI: วิเคราะห์ชื่อรุ่น + ภาพ (ข้ามวิดีโออัตโนมัติ) ===== */
     window.generateAIDetails = async function() {
       const nameInput = document.getElementById('product-name');
       const detailInput = document.getElementById('product-detail');
       const name = nameInput.value.trim();
+
+      const hasImage = processedMedia.type === 'image' && processedMedia.data;
+      const isVideo = processedMedia.type === 'video';
+
+      if (!hasImage && !name) {
+        triggerValidationError("กรุณากรอกชื่อ/รุ่น หรืออัปโหลดรูปถ่ายเพลตสินค้า");
+        return;
+      }
+
+      if (isVideo) {
+        showToast("ข้ามการวิเคราะห์ไฟล์วิดีโอ (ระบบรองรับเฉพาะรูปภาพและข้อความ)", "info");
+      }
 
       const originalText = detailInput.value;
       detailInput.value = "กำลังวิเคราะห์สเปกจริงจากเพลตสินค้าและฐานข้อมูล...";
@@ -729,7 +756,7 @@
       try {
         let payload = { contents: [] };
 
-        if (processedMedia.type === 'image' && processedMedia.data) {
+        if (hasImage) {
           const base64Data = processedMedia.data.split(',')[1];
           const mimeType = processedMedia.data.split(';')[0].split(':')[1];
 
@@ -739,15 +766,7 @@
               { text: name || '' }
             ]
           });
-        } else {
-          if (!name) {
-            triggerValidationError("กรุณากรอกชื่อ/รุ่น หรืออัปโหลดรูปถ่ายเพลตสินค้า");
-            detailInput.value = originalText;
-            setFormButtonsDisabled(false, false);
-            updateStatusUI('ai', 'green', 'AI: Vision');
-            return;
-          }
-
+        } else if (name) {
           payload.contents.push({
             parts: [{ text: name }]
           });
@@ -824,7 +843,7 @@
 
         if (processedMedia.file) {
           showToast("กำลังอัปโหลดไฟล์สื่อ...", "info");
-          mediaUrl = await uploadToCloudinary(processedMedia.file, mediaType === 'video' ? 'video' : 'image');
+          mediaUrl = await uploadMediaFile(processedMedia.file, mediaType);
         }
 
         await addDoc(collection(db, "products"), {
@@ -930,11 +949,11 @@
         if (editProcessedMedia.file) {
           showToast("กำลังอัปโหลดสื่อใหม่...", "info");
           
-          if (product.mediaUrl) {
+          if (product.mediaUrl && product.mediaType === 'image') {
             await deleteCloudinaryMedia(product.mediaUrl, product.mediaType);
           }
 
-          finalMediaUrl = await uploadToCloudinary(editProcessedMedia.file, editProcessedMedia.type === 'video' ? 'video' : 'image');
+          finalMediaUrl = await uploadMediaFile(editProcessedMedia.file, editProcessedMedia.type);
           finalMediaType = editProcessedMedia.type;
         }
 
@@ -972,7 +991,7 @@
       updateStatusUI('db', 'orange', 'DB: กำลังลบ');
 
       try {
-        if (product && product.mediaUrl) {
+        if (product && product.mediaUrl && product.mediaType === 'image') {
           await deleteCloudinaryMedia(product.mediaUrl, product.mediaType);
         }
 
