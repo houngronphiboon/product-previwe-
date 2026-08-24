@@ -138,6 +138,31 @@
     .btn-camera { background-color: #007bff; color: white; padding: 12px 8px; }
     .form-group { margin-bottom: 16px; }
     .form-group label { display: block; font-size: 15px; font-weight: 700; margin-bottom: 6px; color: #374151; }
+    
+    .label-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .label-header label { margin-bottom: 0; }
+    
+    .btn-clear {
+      background-color: #fee2e2;
+      color: #dc2626;
+      border: 1px solid #fca5a5;
+      padding: 4px 10px;
+      font-size: 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+    .btn-clear:hover {
+      background-color: #fecaca;
+      color: #b91c1c;
+    }
+
     .required { color: #dc2626; }
     .form-control { width: 100%; padding: 12px; font-size: 15px; border: 1px solid #d1d5db; border-radius: 10px; outline: none; background-color: #ffffff; }
     .form-control:focus { border-color: #2563eb; }
@@ -231,7 +256,10 @@
       </div>
 
       <div class="form-group">
-        <label for="product-detail">รายละเอียดสินค้า</label>
+        <div class="label-header">
+          <label for="product-detail">รายละเอียดสินค้า</label>
+          <button type="button" class="btn-clear" onclick="clearFormInput()">🧹 ล้างข้อมูล</button>
+        </div>
         <textarea id="product-detail" class="form-control" placeholder="ระบุรายละเอียดสินค้า หรือแนบรูปเพลต/สินค้าแล้วกดให้ AI วิเคราะห์สเปก"></textarea>
       </div>
 
@@ -407,6 +435,25 @@
         }
       });
     }
+
+    window.clearFormInput = function() {
+      const nameInput = document.getElementById('product-name');
+      const detailInput = document.getElementById('product-detail');
+      const previewBox = document.getElementById('preview-box');
+      
+      if (nameInput) nameInput.value = '';
+      if (detailInput) detailInput.value = '';
+      
+      if (previewBox) {
+        stopAllVideoPlayback(previewBox);
+        previewBox.innerHTML = '<span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>';
+      }
+      
+      revokePreviousMediaUrl(processedMedia);
+      processedMedia = { type: null, data: null, file: null };
+      clearValidationError();
+      showToast("ล้างข้อมูลเรียบร้อยแล้ว", "info");
+    };
 
     function renderVideoPreviewHTML(videoSrc, containerId) {
       const uniqueId = 'vid_' + Math.random().toString(36).substr(2, 9);
@@ -1009,7 +1056,6 @@
         stopAllVideoPlayback(previewBox);
         previewBox.innerHTML = '<span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>';
         
-        // คืนค่า Memory ของ Blob
         revokePreviousMediaUrl(processedMedia);
         processedMedia = { type: null, data: null, file: null };
         clearValidationError();
