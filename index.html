@@ -1010,29 +1010,100 @@
           createdAt: serverTimestamp()
         });
 
-        // แจ้งเตือนเพียงครั้งเดียวเมื่อขั้นตอนสำเร็จสมบูรณ์
-        showToast("บันทึกข้อมูลเรียบร้อยแล้ว!", "success");
+        // ==========================================
+// 1. ฟังก์ชันสำหรับแสดง Toast Notification (แสดงผลครั้งเดียว)
+// ==========================================
+function showSingleToast(message, type = 'info') {
+    // ลบ Toast เก่าที่กำลังแสดงอยู่ทั้งหมดเพื่อป้องกันการซ้อนทับ
+    const existingToasts = document.querySelectorAll('.custom-toast');
+    existingToasts.forEach(toast => toast.remove());
 
-        nameInput.value = '';
-        detailInput.value = '';
-        const previewBox = document.getElementById('preview-box');
-        stopAllVideoPlayback(previewBox);
-        previewBox.innerHTML = '<span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>';
-        revokePreviousMediaUrl(processedMedia);
-        processedMedia = { type: null, data: null, file: null };
-        clearValidationError();
+    // กำหนดสีตามประเภท
+    let bgColor = '#3b82f6'; // สีฟ้า (กำลังอัปโหลด/ประมวลผล)
+    if (type === 'success') bgColor = '#22c55e'; // สีเขียว (สำเร็จ)
+    if (type === 'error') bgColor = '#ef4444'; // สีแดง (ผิดพลาด)
 
-        await fetchInitialProducts();
+    // สร้าง Element แจ้งเตือน
+    const toast = document.createElement('div');
+    toast.className = 'custom-toast';
+    toast.innerText = message;
+    
+    // จัด Style แสดงผลบริเวณด้านล่างหน้าจอ
+    Object.assign(toast.style, {
+        position: 'fixed',
+        bottom: '20px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        backgroundColor: bgColor,
+        color: '#ffffff',
+        padding: '12px 24px',
+        borderRadius: '8px',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+        zIndex: '9999',
+        fontSize: '14px',
+        fontWeight: '500',
+        transition: 'opacity 0.3s ease-in-out',
+        opacity: '1'
+    });
 
-      } catch (err) {
-        console.error("Add Product Error:", err);
-        showToast("เกิดข้อผิดพลาดในการบันทึกข้อมูล", "error");
-        updateStatusUI('db', 'red', 'DB: ขัดข้อง');
-      } finally {
-        saveBtn.disabled = false;
-        saveBtn.innerText = "บันทึกสินค้าลงคลาวด์";
-      }
-    };
+    document.body.appendChild(toast);
+
+    // ซ่อนและลบ Toast ออกเมื่อผ่านไป 3 วินาที (เฉพาะกรณี success หรือ error)
+    if (type !== 'info') {
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+}
+
+// ==========================================
+// 2. ฟังก์ชันจำลอง/ดำเนินการ อัปโหลดและบันทึกข้อมูล
+// ==========================================
+async function processUploadAndSave() {
+    const submitBtn = document.querySelector('#btn-submit') || document.querySelector('button[type="submit"]');
+    
+    // ป้องกันการกดซ้ำระหว่างประมวลผล
+    if (submitBtn) submitBtn.disabled = true;
+
+    try {
+        // [ขั้นตอนที่ 1] แสดงแจ้งเตือนตัวสีฟ้า 1 ครั้ง
+        showSingleToast('กำลังอัปโหลดสื่อและบันทึกข้อมูล...', 'info');
+
+        // --- ใส่ Logic การ Upload ไฟล์ / API Call ของท่านที่นี่ ---
+        // ตัวอย่าง: await uploadMediaFiles();
+        await new Promise(resolve => setTimeout(resolve, 2000)); // จำลองระยะเวลาทำงาน 2 วินาที
+        // ----------------------------------------------------
+
+        // [ขั้นตอนที่ 2] แสดงแจ้งเตือนตัวสีเขียว 1 ครั้งเมื่อเสร็จสิ้น
+        showSingleToast('บันทึกข้อมูลเรียบร้อยแล้ว', 'success');
+
+    } catch (error) {
+        showSingleToast('เกิดข้อผิดพลาดในการบันทึกข้อมูล', 'error');
+        console.error(error);
+    } finally {
+        // เปิดให้กดปุ่มได้อีกครั้งหลังทำงานเสร็จ
+        if (submitBtn) submitBtn.disabled = false;
+    }
+}
+
+// ==========================================
+// 3. ผูก Event Listener เพียงครั้งเดียว (Prevent Duplicate Events)
+// ==========================================
+document.addEventListener('DOMContentLoaded', () => {
+    const submitBtn = document.querySelector('#btn-submit') || document.querySelector('button[type="submit"]');
+    
+    if (submitBtn) {
+        // ล้าง listener เก่าออกก่อนผูกใหม่
+        submitBtn.replaceWith(submitBtn.cloneNode(true));
+        const newSubmitBtn = document.querySelector('#btn-submit') || document.querySelector('button[type="submit"]');
+        
+        newSubmitBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            processUploadAndSave();
+        });
+    }
+});
 
     function openDetailModal(id) {
       const product = productsList.find(p => p.id === id);
