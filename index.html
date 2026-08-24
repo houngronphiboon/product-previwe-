@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>ระบบบันทึกข้อมูลสินค้า - หนึ่ง ร่อนพิบูลย์ อิเล็กทรอนิกส์</title>
   
+  <!-- Favicon กันข้อผิดพลาด 404 บน Console -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛠️</text></svg>">
+  
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -348,6 +351,21 @@
       }
     }
 
+    // ฟังก์ชันหยุดเล่นวิดีโอเด็ดขาดเพื่อป้องกันเสียงค้าง
+    function stopAllVideoPlayback(containerElement) {
+      if (!containerElement) return;
+      const videos = containerElement.querySelectorAll('video');
+      videos.forEach(video => {
+        try {
+          video.pause();
+          video.src = '';
+          video.load();
+        } catch (e) {
+          console.warn("Error stopping video:", e);
+        }
+      });
+    }
+
     window.autoScrollFocus = function(element) {
       setTimeout(() => {
         element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -429,6 +447,10 @@
     }
 
     window.closeModal = function() {
+      const mediaContainer = document.getElementById('modal-media-container');
+      stopAllVideoPlayback(mediaContainer);
+      if (mediaContainer) mediaContainer.innerHTML = '';
+
       document.getElementById('detail-modal').style.display = 'none';
       document.body.classList.remove('modal-open');
       revokePreviousMediaUrl(editProcessedMedia);
@@ -676,6 +698,7 @@
       if (!file) return;
 
       const previewBox = document.getElementById('preview-box');
+      stopAllVideoPlayback(previewBox);
       revokePreviousMediaUrl(processedMedia);
 
       if (file.type.startsWith('image/')) {
@@ -695,6 +718,7 @@
       if (!file) return;
 
       const mediaContainer = document.getElementById('modal-media-container');
+      stopAllVideoPlayback(mediaContainer);
       revokePreviousMediaUrl(editProcessedMedia);
 
       if (file.type.startsWith('image/')) {
@@ -888,7 +912,9 @@
         // รีเซ็ตฟอร์ม
         nameInput.value = '';
         detailInput.value = '';
-        document.getElementById('preview-box').innerHTML = '<span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>';
+        const previewBox = document.getElementById('preview-box');
+        stopAllVideoPlayback(previewBox);
+        previewBox.innerHTML = '<span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>';
         revokePreviousMediaUrl(processedMedia);
         processedMedia = { type: null, data: null, file: null };
         clearValidationError();
@@ -915,6 +941,7 @@
       document.getElementById('modal-detail-text').innerText = product.detail || 'ไม่มีรายละเอียด';
 
       const mediaBox = document.getElementById('modal-media-container');
+      stopAllVideoPlayback(mediaBox);
       mediaBox.innerHTML = '';
 
       if (product.mediaUrl) {
@@ -947,6 +974,8 @@
     };
 
     window.cancelEditMode = function() {
+      const mediaBox = document.getElementById('modal-media-container');
+      stopAllVideoPlayback(mediaBox);
       revokePreviousMediaUrl(editProcessedMedia);
       editProcessedMedia = { type: null, data: null, file: null };
       document.getElementById('view-mode').style.display = 'block';
@@ -1019,6 +1048,10 @@
       if (!confirm("คุณต้องการลบรายการนี้ใช่หรือไม่? ข้อมูลและสื่อบน Cloud จะถูกลบอย่างถาวร")) {
         return;
       }
+
+      // หยุดวิดีโอทันทีก่อนทำรายการลบ
+      const mediaBox = document.getElementById('modal-media-container');
+      stopAllVideoPlayback(mediaBox);
 
       const product = productsList.find(p => p.id === activeProductId);
       updateStatusUI('db', 'orange', 'DB: กำลังลบ');
