@@ -35,7 +35,7 @@
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); 
     }
 
-    /* --- ส่วนปรับปรุง Header ใหม่ --- */
+    /* --- ส่วน Header --- */
     .app-header {
       background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
       padding: 14px 18px;
@@ -103,7 +103,6 @@
     .status-dot.green { background-color: #10b981; box-shadow: 0 0 6px #10b981; }
     .status-dot.orange { background-color: #f59e0b; box-shadow: 0 0 6px #f59e0b; }
     .status-dot.red { background-color: #ef4444; box-shadow: 0 0 6px #ef4444; }
-    /* --- สิ้นสุดส่วน Header --- */
 
     .media-preview-box { 
       width: 100%; 
@@ -246,7 +245,7 @@
   <div class="container">
     <div class="card">
       
-      <!-- Header 라이่ระดับสีพร้อมโลโก้และสถานะระบบ -->
+      <!-- Header -->
       <div class="app-header">
         <div class="header-brand">
           <img src="logo.png" alt="Nueng Electronics Logo" class="header-logo" onerror="this.style.display='none'">
@@ -953,7 +952,7 @@
       }
     }
 
-    /* ฟังก์ชันวิเคราะห์ข้อมูลสินค้าด้วย AI (คง Prompt เดิมไว้ + เพิ่มคำสั่งค้นหารุ่นที่ใช้แทนกันได้ต่อท้าย) */
+    /* --- คงส่วนเดิมไว้ + ต่อท้ายด้วยคำสั่งหา "รุ่นที่ใช้แทนกันได้" และกฎเหล็กห้ามเดา --- */
     window.generateAIDetails = async function() {
       const nameInput = document.getElementById('product-name');
       const detailInput = document.getElementById('product-detail');
@@ -980,7 +979,7 @@
       try {
         let payload = { contents: [] };
 
-        // Prompt เดิม + คำสั่งเพิ่มเติมต่อท้าย
+        // ข้อความคำสั่งเดิม + คำสั่งเพิ่มเติมต่อท้ายในส่วนล่างสุด
         const promptInstruction = `วิเคราะห์ภาพเพลต/อะไหล่ หรือชื่อรุ่นต่อไปนี้ (${name || 'ตามภาพ'}) และสรุปสเปกรายละเอียดสินค้าทางเทคนิคอย่างกระชับและชัดเจน
 
 เพิ่มเติมคำสั่งพิเศษ (ต่อท้าย):
