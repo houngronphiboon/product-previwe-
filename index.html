@@ -35,7 +35,7 @@
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); 
     }
 
-    /* --- ส่วนปรับปรุง Header ใหม่ --- */
+    /* --- ส่วน Header --- */
     .app-header {
       background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
       padding: 14px 18px;
@@ -103,7 +103,6 @@
     .status-dot.green { background-color: #10b981; box-shadow: 0 0 6px #10b981; }
     .status-dot.orange { background-color: #f59e0b; box-shadow: 0 0 6px #f59e0b; }
     .status-dot.red { background-color: #ef4444; box-shadow: 0 0 6px #ef4444; }
-    /* --- สิ้นสุดส่วน Header --- */
 
     .media-preview-box { 
       width: 100%; 
@@ -120,42 +119,6 @@
       position: relative;
     }
     .media-preview-box img, .media-preview-box video { max-width: 100%; max-height: 100%; object-fit: contain; }
-    
-    .video-thumb-container {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      cursor: pointer;
-      background: #000;
-    }
-    .video-thumb-container img {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      opacity: 0.85;
-    }
-    .play-btn-overlay {
-      position: absolute;
-      width: 54px;
-      height: 54px;
-      background: rgba(0, 0, 0, 0.65);
-      border: 2px solid #ffffff;
-      border-radius: 50%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      color: #ffffff;
-      font-size: 22px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-      transition: transform 0.2s, background 0.2s;
-    }
-    .video-thumb-container:hover .play-btn-overlay {
-      transform: scale(1.1);
-      background: rgba(37, 99, 235, 0.85);
-    }
 
     .media-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
     .btn { border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s; }
@@ -486,54 +449,6 @@
       showToast("ล้างข้อมูลเรียบร้อยแล้ว", "info");
     };
 
-    function renderVideoPreviewHTML(videoSrc, containerId) {
-      const uniqueId = 'vid_' + Math.random().toString(36).substr(2, 9);
-      return `
-        <div class="video-thumb-container" id="thumb_${uniqueId}" onclick="playVideoInline('${uniqueId}', '${videoSrc}')">
-          <div style="font-size: 40px; color: #9ca3af;">🎥</div>
-          <div class="play-btn-overlay">▶</div>
-        </div>
-        <div id="holder_${uniqueId}" style="display:none; width:100%; height:100%;"></div>
-      `;
-    }
-
-    window.playVideoInline = function(uniqueId, videoSrc) {
-      const thumb = document.getElementById(`thumb_${uniqueId}`);
-      const holder = document.getElementById(`holder_${uniqueId}`);
-      if (thumb && holder) {
-        thumb.style.display = 'none';
-        holder.style.display = 'block';
-        holder.innerHTML = `<video src="${videoSrc}" controls autoplay style="width:100%; height:100%; object-fit:contain;"></video>`;
-      }
-    };
-
-    function generateVideoThumbnail(file) {
-      return new Promise((resolve) => {
-        const video = document.createElement('video');
-        video.preload = 'metadata';
-        const blobUrl = URL.createObjectURL(file);
-        video.src = blobUrl;
-        video.muted = true;
-        video.playsInline = true;
-
-        video.onloadeddata = () => { video.currentTime = 0.1; };
-        video.onseeked = () => {
-          const canvas = document.createElement('canvas');
-          canvas.width = video.videoWidth || 320;
-          canvas.height = video.videoHeight || 240;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-          URL.revokeObjectURL(blobUrl);
-          resolve(dataUrl);
-        };
-        video.onerror = () => {
-          URL.revokeObjectURL(blobUrl);
-          resolve(null);
-        };
-      });
-    }
-
     window.autoScrollFocus = function(element) {
       setTimeout(() => {
         element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -846,6 +761,7 @@
       });
     }
 
+    /* --- ปรับปรุงจุดเลือกวิดีโอหน้าแรก --- */
     window.handleFileSelect = async function(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -862,24 +778,13 @@
         const videoUrl = URL.createObjectURL(file);
         processedMedia = { type: 'video', data: videoUrl, file: file };
         
-        const thumbUrl = await generateVideoThumbnail(file);
-        const uniqueId = 'preview_main';
-
-        if (thumbUrl) {
-          previewBox.innerHTML = `
-            <div class="video-thumb-container" id="thumb_${uniqueId}" onclick="playVideoInline('${uniqueId}', '${videoUrl}')">
-              <img src="${thumbUrl}">
-              <div class="play-btn-overlay">▶</div>
-            </div>
-            <div id="holder_${uniqueId}" style="display:none; width:100%; height:100%;"></div>
-          `;
-        } else {
-          previewBox.innerHTML = renderVideoPreviewHTML(videoUrl, 'preview-box');
-        }
+        // เรนเดอร์ HTML5 Video สำหรับพรีวิวทันที
+        previewBox.innerHTML = `<video src="${videoUrl}" controls playsinline preload="metadata" style="width:100%; height:100%; object-fit:contain;"></video>`;
       }
       event.target.value = '';
     };
 
+    /* --- ปรับปรุงจุดเลือกวิดีโอหน้าแก้ไข (Modal Edit) --- */
     window.handleEditFileSelect = async function(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -896,20 +801,8 @@
         const videoUrl = URL.createObjectURL(file);
         editProcessedMedia = { type: 'video', data: videoUrl, file: file };
         
-        const thumbUrl = await generateVideoThumbnail(file);
-        const uniqueId = 'preview_edit';
-
-        if (thumbUrl) {
-          mediaContainer.innerHTML = `
-            <div class="video-thumb-container" id="thumb_${uniqueId}" onclick="playVideoInline('${uniqueId}', '${videoUrl}')">
-              <img src="${thumbUrl}">
-              <div class="play-btn-overlay">▶</div>
-            </div>
-            <div id="holder_${uniqueId}" style="display:none; width:100%; height:100%;"></div>
-          `;
-        } else {
-          mediaContainer.innerHTML = renderVideoPreviewHTML(videoUrl, 'modal-media-container');
-        }
+        // เรนเดอร์ HTML5 Video สำหรับพรีวิวทันที
+        mediaContainer.innerHTML = `<video src="${videoUrl}" controls playsinline preload="metadata" style="width:100%; height:100%; object-fit:contain;"></video>`;
       }
       event.target.value = '';
     };
@@ -1103,6 +996,7 @@
       }
     };
 
+    /* --- ปรับปรุงจุดเปิดดูรายละเอียดวิดีโอใน Modal --- */
     function openDetailModal(id) {
       const product = productsList.find(p => p.id === id);
       if (!product) return;
@@ -1119,7 +1013,7 @@
         if (product.mediaType === 'image') {
           mediaBox.innerHTML = `<img src="${product.mediaUrl}" alt="Product Image">`;
         } else if (product.mediaType === 'video') {
-          mediaBox.innerHTML = renderVideoPreviewHTML(product.mediaUrl, 'modal-media-container');
+          mediaBox.innerHTML = `<video src="${product.mediaUrl}" controls playsinline preload="metadata" style="width:100%; height:100%; object-fit:contain;"></video>`;
         }
       } else {
         mediaBox.innerHTML = `<span style="color: #6b7280;">ไม่มีรูปภาพ/วิดีโอประกอบ</span>`;
