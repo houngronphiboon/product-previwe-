@@ -246,7 +246,7 @@
   <div class="container">
     <div class="card">
       
-      <!-- Header ไล่ระดับสีพร้อมโลโก้และสถานะระบบ -->
+      <!-- Header 라이่ระดับสีพร้อมโลโก้และสถานะระบบ -->
       <div class="app-header">
         <div class="header-brand">
           <img src="logo.png" alt="Nueng Electronics Logo" class="header-logo" onerror="this.style.display='none'">
@@ -953,6 +953,7 @@
       }
     }
 
+    /* ฟังก์ชันวิเคราะห์ข้อมูลสินค้าด้วย AI (คง Prompt เดิมไว้ + เพิ่มคำสั่งค้นหารุ่นที่ใช้แทนกันได้ต่อท้าย) */
     window.generateAIDetails = async function() {
       const nameInput = document.getElementById('product-name');
       const detailInput = document.getElementById('product-detail');
@@ -971,13 +972,21 @@
       }
 
       const originalText = detailInput.value;
-      detailInput.value = "กำลังวิเคราะห์สเปกจริงจากเพลตสินค้าและฐานข้อมูล...";
+      detailInput.value = "กำลังวิเคราะห์สเปกข้อมูลด้วย AI...";
       setFormButtonsDisabled(true, true);
       
       updateStatusUI('ai', 'orange', 'AI: กำลังคิด');
 
       try {
         let payload = { contents: [] };
+
+        // Prompt เดิม + คำสั่งเพิ่มเติมต่อท้าย
+        const promptInstruction = `วิเคราะห์ภาพเพลต/อะไหล่ หรือชื่อรุ่นต่อไปนี้ (${name || 'ตามภาพ'}) และสรุปสเปกรายละเอียดสินค้าทางเทคนิคอย่างกระชับและชัดเจน
+
+เพิ่มเติมคำสั่งพิเศษ (ต่อท้าย):
+- ในบรรทัดสุดท้าย หากตรวจสอบข้อมูลทางเทคนิคได้อย่างแน่ชัดว่าอะไหล่หรืออุปกรณ์ชิ้นนี้ สามารถใช้ร่วมหรือทดแทนรุ่นอื่นๆ ได้ ให้ระบุข้อหัวข้อดังนี้:
+  • รุ่นที่ใช้แทนกันได้ / รองรับเพิ่มเติม: [ระบุชื่อรุ่น]
+- **กฎเหล็กเรื่อง Cross-compatibility:** หากตรวจสอบแล้วหาข้อมูลอ้างอิงตรงกันไม่ได้ หรือไม่แน่ชัดว่าใช้ร่วมกับรุ่นอื่นได้หรือไม่ ให้ข้ามหัวข้อนี้ไปทันที ห้ามสุ่มหรือคาดเดารุ่นขึ้นมาเองเด็ดขาด`;
 
         if (hasImage) {
           const base64Data = processedMedia.data.split(',')[1];
@@ -986,12 +995,12 @@
           payload.contents.push({
             parts: [
               { inline_data: { mime_type: mimeType, data: base64Data } },
-              { text: name || '' }
+              { text: promptInstruction }
             ]
           });
         } else if (name) {
           payload.contents.push({
-            parts: [{ text: name }]
+            parts: [{ text: promptInstruction }]
           });
         }
 
