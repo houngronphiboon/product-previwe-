@@ -485,14 +485,17 @@
       showToast("ล้างข้อมูลเรียบร้อยแล้ว", "info");
     };
 
-    function renderVideoPreviewHTML(videoSrc, containerId) {
-      const uniqueId = 'vid_' + Math.random().toString(36).substr(2, 9);
+    // ✅ แก้ไข: เพิ่ม muted, playsinline, preload เพื่อให้แสดงภาพพรีวิววิดีโอ (First Frame) ได้ทันที ไม่ดำ
+    function renderVideoPreviewHTML(videoSrc) {
       return `
-        <div class="video-thumb-container" id="thumb_${uniqueId}" onclick="playVideoInline('${uniqueId}', '${videoSrc}')">
-          <div style="font-size: 40px; color: #9ca3af;">🎥</div>
-          <div class="play-btn-overlay">▶</div>
-        </div>
-        <div id="holder_${uniqueId}" style="display:none; width:100%; height:100%;"></div>
+        <video 
+          src="${videoSrc}" 
+          controls 
+          playsinline 
+          muted 
+          preload="metadata" 
+          style="width: 100%; height: 100%; object-fit: contain;">
+        </video>
       `;
     }
 
@@ -502,7 +505,7 @@
       if (thumb && holder) {
         thumb.style.display = 'none';
         holder.style.display = 'block';
-        holder.innerHTML = `<video src="${videoSrc}" controls autoplay style="width:100%; height:100%; object-fit:contain;"></video>`;
+        holder.innerHTML = `<video src="${videoSrc}" controls autoplay playsinline style="width:100%; height:100%; object-fit:contain;"></video>`;
       }
     };
 
@@ -873,7 +876,8 @@
             <div id="holder_${uniqueId}" style="display:none; width:100%; height:100%;"></div>
           `;
         } else {
-          previewBox.innerHTML = renderVideoPreviewHTML(videoUrl, 'preview-box');
+          // ✅ ปรับแก้ fallback หากเจอดึง Thumbnail จาก canvas ล้มเหลว ให้เรนเดอร์แท็ก Video โดยตรง
+          previewBox.innerHTML = renderVideoPreviewHTML(videoUrl);
         }
       }
       event.target.value = '';
@@ -907,7 +911,8 @@
             <div id="holder_${uniqueId}" style="display:none; width:100%; height:100%;"></div>
           `;
         } else {
-          mediaContainer.innerHTML = renderVideoPreviewHTML(videoUrl, 'modal-media-container');
+          // ✅ ปรับแก้ fallback กรณีพรีวิวในหน้าแก้ไข
+          mediaContainer.innerHTML = renderVideoPreviewHTML(videoUrl);
         }
       }
       event.target.value = '';
@@ -952,7 +957,6 @@
       }
     }
 
-    /* --- คงส่วนเดิมไว้ + ต่อท้ายด้วยคำสั่งหา "รุ่นที่ใช้แทนกันได้" และกฎเหล็กห้ามเดา --- */
     window.generateAIDetails = async function() {
       const nameInput = document.getElementById('product-name');
       const detailInput = document.getElementById('product-detail');
@@ -979,7 +983,6 @@
       try {
         let payload = { contents: [] };
 
-        // ข้อความคำสั่งเดิม + คำสั่งเพิ่มเติมต่อท้ายในส่วนล่างสุด
         const promptInstruction = `วิเคราะห์ภาพเพลต/อะไหล่ หรือชื่อรุ่นต่อไปนี้ (${name || 'ตามภาพ'}) และสรุปสเปกรายละเอียดสินค้าทางเทคนิคอย่างกระชับและชัดเจน
 
 เพิ่มเติมคำสั่งพิเศษ (ต่อท้าย):
@@ -1127,7 +1130,8 @@
         if (product.mediaType === 'image') {
           mediaBox.innerHTML = `<img src="${product.mediaUrl}" alt="Product Image">`;
         } else if (product.mediaType === 'video') {
-          mediaBox.innerHTML = renderVideoPreviewHTML(product.mediaUrl, 'modal-media-container');
+          // ✅ ปรับแก้ Modal ให้รองรับการพรีวิวภาพวิดีโอจาก Cloud แบบไม่ติดจอดำ
+          mediaBox.innerHTML = renderVideoPreviewHTML(product.mediaUrl);
         }
       } else {
         mediaBox.innerHTML = `<span style="color: #6b7280;">ไม่มีรูปภาพ/วิดีโอประกอบ</span>`;
