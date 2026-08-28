@@ -919,43 +919,31 @@
     };
 
     async function uploadMediaFile(file, resourceType) {
-      if (resourceType === 'video') {
-        const ext = file.name ? file.name.split('.').pop() : 'mp4';
-        const filename = `video_${Date.now()}.${ext}`;
+  if (resourceType === 'video') {
+    const formData = new FormData();
+    formData.append('file', file);
 
-        const res = await fetch(`${WORKER_URL}get-presigned-url`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            filename: filename,
-            contentType: file.type || 'video/mp4'
-          })
-        });
+    const res = await fetch(`${WORKER_URL}upload-video`, {
+      method: 'POST',
+      body: formData
+    });
 
-        if (!res.ok) throw new Error('ไม่สามารถขอ Presigned URL จาก Worker ได้');
-        const { uploadUrl, publicUrl, objectKey } = await res.json();
+    if (!res.ok) throw new Error('ไม่สามารถอัปโหลดวิดีโอผ่าน Worker ได้');
+    const { publicUrl, objectKey } = await res.json();
 
-        const uploadRes = await fetch(uploadUrl, {
-          method: 'PUT',
-          headers: { 'Content-Type': file.type || 'video/mp4' },
-          body: file
-        });
+    return { mediaUrl: publicUrl, objectKey: objectKey };
+  } else {
+    const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
 
-        if (!uploadRes.ok) throw new Error('อัปโหลดวิดีโอเข้า Cloudflare R2 ไม่สำเร็จ');
-
-        return { mediaUrl: publicUrl, objectKey: objectKey || filename };
-      } else {
-        const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-
-        const res = await fetch(url, { method: 'POST', body: formData });
-        if (!res.ok) throw new Error('อัปโหลดรูปภาพไป Cloudinary ไม่สำเร็จ');
-        const data = await res.json();
-        return { mediaUrl: data.secure_url, objectKey: null };
-      }
-    }
+    const res = await fetch(url, { method: 'POST', body: formData });
+    if (!res.ok) throw new Error('อัปโหลดรูปภาพไป Cloudinary ไม่สำเร็จ');
+    const data = await res.json();
+    return { mediaUrl: data.secure_url, objectKey: null };
+  }
+}
 
     window.generateAIDetails = async function() {
       const nameInput = document.getElementById('product-name');
