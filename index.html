@@ -106,8 +106,8 @@
 
     .media-preview-box { 
       width: 100%; 
-      height: 250px; 
-      background-color: #0f172a; 
+      height: 220px; 
+      background-color: #1f2937; 
       border-radius: 12px; 
       margin-bottom: 16px; 
       display: flex; 
@@ -187,7 +187,7 @@
     .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; padding: 16px; -webkit-overflow-scrolling: touch; }
     .modal-content { background-color: #fff; padding: 20px; border-radius: 16px; width: 100%; max-width: 480px; position: relative; max-height: 90vh; overflow-y: auto; -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }
     .close-btn { position: absolute; right: 15px; top: 10px; font-size: 24px; cursor: pointer; color: #9ca3af; z-index: 10; }
-    .modal-media-box { width: 100%; height: 250px; background: #0f172a; margin-bottom: 15px; border-radius: 10px; overflow: hidden; display: flex; justify-content: center; align-items: center; position: relative; }
+    .modal-media-box { width: 100%; height: 230px; background: #111827; margin-bottom: 15px; border-radius: 10px; overflow: hidden; display: flex; justify-content: center; align-items: center; position: relative; }
     .modal-media-box img, .modal-media-box video { max-width: 100%; max-height: 100%; object-fit: contain; }
     .modal-actions { display: flex; gap: 10px; margin-top: 15px; }
     .btn-edit { background-color: #f59e0b; color: #ffffff; flex: 1; padding: 10px; }
@@ -427,36 +427,6 @@
         } catch (e) {
           console.warn("Error stopping video:", e);
         }
-      });
-    }
-
-    // ฟังก์ชั่นสกัดภาพเฟรมแรกจากวิดีโอเพื่อนำไปเป็น Thumbnail/Poster
-    function generateVideoThumbnail(file) {
-      return new Promise((resolve) => {
-        const video = document.createElement('video');
-        video.autoplay = true;
-        video.muted = true;
-        video.playsInline = true;
-        video.src = URL.createObjectURL(file);
-
-        video.onloadeddata = () => {
-          video.currentTime = 0.001; // ขยับนิดหน่อยเพื่อให้ได้เฟรมแรก
-        };
-
-        video.onseeked = () => {
-          const canvas = document.createElement('canvas');
-          canvas.width = video.videoWidth || 640;
-          canvas.height = video.videoHeight || 360;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-          URL.revokeObjectURL(video.src);
-          resolve(dataUrl);
-        };
-
-        video.onerror = () => {
-          resolve(null);
-        };
       });
     }
 
@@ -791,7 +761,7 @@
       });
     }
 
-    /* --- ปรับการแสดงภาพพรีวิววิดีโอ (ดึงภาพเฟรมแรกแสดง Thumbnail/Poster ทันที) --- */
+    /* --- ปรับแต่งการแสดงพรีวิวแบบไม่เล่นอัตโนมัติ และดึง Thumbnail ด้วย #t=0.001 --- */
     window.handleFileSelect = async function(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -808,14 +778,9 @@
         const videoUrl = URL.createObjectURL(file);
         processedMedia = { type: 'video', data: videoUrl, file: file };
         
-        // สกัดภาพเฟรมแรกเพื่อนำมาใช้เป็น Poster
-        const posterUrl = await generateVideoThumbnail(file);
-        const posterAttr = posterUrl ? `poster="${posterUrl}"` : '';
-
-        // เพิ่ม #t=0.001 เพื่อบังคับให้เบราว์เซอร์แสดงเฟรมแรกแม้ปิด Auto-play
-        previewBox.innerHTML = `
-          <video src="${videoUrl}#t=0.001" ${posterAttr} controls playsinline preload="metadata" style="width:100%; height:100%; object-fit:contain;"></video>
-        `;
+        // เติม #t=0.001 เพื่อให้แสดงพรีวิวเฟรมแรกโดยอัตโนมัติโดยไม่สั่งเล่น
+        const previewUrl = videoUrl + '#t=0.001';
+        previewBox.innerHTML = `<video src="${previewUrl}" controls playsinline preload="metadata" style="width:100%; height:100%; object-fit:contain;"></video>`;
       }
       event.target.value = '';
     };
@@ -836,12 +801,8 @@
         const videoUrl = URL.createObjectURL(file);
         editProcessedMedia = { type: 'video', data: videoUrl, file: file };
         
-        const posterUrl = await generateVideoThumbnail(file);
-        const posterAttr = posterUrl ? `poster="${posterUrl}"` : '';
-
-        mediaContainer.innerHTML = `
-          <video src="${videoUrl}#t=0.001" ${posterAttr} controls playsinline preload="metadata" style="width:100%; height:100%; object-fit:contain;"></video>
-        `;
+        const previewUrl = videoUrl + '#t=0.001';
+        mediaContainer.innerHTML = `<video src="${previewUrl}" controls playsinline preload="metadata" style="width:100%; height:100%; object-fit:contain;"></video>`;
       }
       event.target.value = '';
     };
@@ -1051,7 +1012,9 @@
         if (product.mediaType === 'image') {
           mediaBox.innerHTML = `<img src="${product.mediaUrl}" alt="Product Image">`;
         } else if (product.mediaType === 'video') {
-          mediaBox.innerHTML = `<video src="${product.mediaUrl}#t=0.001" controls playsinline preload="metadata" style="width:100%; height:100%; object-fit:contain;"></video>`;
+          // ตรวจสอบและดึงภาพพรีวิวด้วย #t=0.001 ในหน้า Modal รายละเอียด
+          const videoSrc = product.mediaUrl.includes('#t=') ? product.mediaUrl : `${product.mediaUrl}#t=0.001`;
+          mediaBox.innerHTML = `<video src="${videoSrc}" controls playsinline preload="metadata" style="width:100%; height:100%; object-fit:contain;"></video>`;
         }
       } else {
         mediaBox.innerHTML = `<span style="color: #6b7280;">ไม่มีรูปภาพ/วิดีโอประกอบ</span>`;
