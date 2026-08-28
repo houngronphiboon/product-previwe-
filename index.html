@@ -35,7 +35,7 @@
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); 
     }
 
-    /* --- ส่วน Header --- */
+    /* --- ส่วนปรับปรุง Header ใหม่ --- */
     .app-header {
       background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
       padding: 14px 18px;
@@ -103,6 +103,7 @@
     .status-dot.green { background-color: #10b981; box-shadow: 0 0 6px #10b981; }
     .status-dot.orange { background-color: #f59e0b; box-shadow: 0 0 6px #f59e0b; }
     .status-dot.red { background-color: #ef4444; box-shadow: 0 0 6px #ef4444; }
+    /* --- สิ้นสุดส่วน Header --- */
 
     .media-preview-box { 
       width: 100%; 
@@ -245,7 +246,7 @@
   <div class="container">
     <div class="card">
       
-      <!-- Header -->
+      <!-- Header ไล่ระดับสีพร้อมโลโก้และสถานะระบบ -->
       <div class="app-header">
         <div class="header-brand">
           <img src="logo.png" alt="Nueng Electronics Logo" class="header-logo" onerror="this.style.display='none'">
@@ -952,7 +953,6 @@
       }
     }
 
-    /* --- คงส่วนเดิมไว้ + ต่อท้ายด้วยคำสั่งหา "รุ่นที่ใช้แทนกันได้" และกฎเหล็กห้ามเดา --- */
     window.generateAIDetails = async function() {
       const nameInput = document.getElementById('product-name');
       const detailInput = document.getElementById('product-detail');
@@ -971,21 +971,13 @@
       }
 
       const originalText = detailInput.value;
-      detailInput.value = "กำลังวิเคราะห์สเปกข้อมูลด้วย AI...";
+      detailInput.value = "กำลังวิเคราะห์สเปกจริงจากเพลตสินค้าและฐานข้อมูล...";
       setFormButtonsDisabled(true, true);
       
       updateStatusUI('ai', 'orange', 'AI: กำลังคิด');
 
       try {
         let payload = { contents: [] };
-
-        // ข้อความคำสั่งเดิม + คำสั่งเพิ่มเติมต่อท้ายในส่วนล่างสุด
-        const promptInstruction = `วิเคราะห์ภาพเพลต/อะไหล่ หรือชื่อรุ่นต่อไปนี้ (${name || 'ตามภาพ'}) และสรุปสเปกรายละเอียดสินค้าทางเทคนิคอย่างกระชับและชัดเจน
-
-เพิ่มเติมคำสั่งพิเศษ (ต่อท้าย):
-- ในบรรทัดสุดท้าย หากตรวจสอบข้อมูลทางเทคนิคได้อย่างแน่ชัดว่าอะไหล่หรืออุปกรณ์ชิ้นนี้ สามารถใช้ร่วมหรือทดแทนรุ่นอื่นๆ ได้ ให้ระบุข้อหัวข้อดังนี้:
-  • รุ่นที่ใช้แทนกันได้ / รองรับเพิ่มเติม: [ระบุชื่อรุ่น]
-- **กฎเหล็กเรื่อง Cross-compatibility:** หากตรวจสอบแล้วหาข้อมูลอ้างอิงตรงกันไม่ได้ หรือไม่แน่ชัดว่าใช้ร่วมกับรุ่นอื่นได้หรือไม่ ให้ข้ามหัวข้อนี้ไปทันที ห้ามสุ่มหรือคาดเดารุ่นขึ้นมาเองเด็ดขาด`;
 
         if (hasImage) {
           const base64Data = processedMedia.data.split(',')[1];
@@ -994,12 +986,12 @@
           payload.contents.push({
             parts: [
               { inline_data: { mime_type: mimeType, data: base64Data } },
-              { text: promptInstruction }
+              { text: name || '' }
             ]
           });
         } else if (name) {
           payload.contents.push({
-            parts: [{ text: promptInstruction }]
+            parts: [{ text: name }]
           });
         }
 
