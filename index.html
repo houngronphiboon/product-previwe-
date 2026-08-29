@@ -449,18 +449,56 @@
       showToast("ล้างข้อมูลเรียบร้อยแล้ว", "info");
     };
 
-    // 🟢 ดึงเฟรมแรก (วินาทีที่ 0.1) แสดงเป็นรูปพรีวิวอัตโนมัติ ไม่เล่นวิดีโอทันที
+    // 🟢 ดึงเฟรมแรกด้วย Canvas แล้วแปลงเป็น poster สำหรับเบราว์เซอร์มือถือ
     function renderVideoPreviewHTML(videoSrc) {
-      const previewUrl = videoSrc.includes('#t=') ? videoSrc : `${videoSrc}#t=0.1`;
+      const videoId = 'vid_' + Math.random().toString(36).substr(2, 9);
+      
+      setTimeout(() => {
+        generateVideoPoster(videoId, videoSrc);
+      }, 50);
+
       return `
         <video 
-          src="${previewUrl}" 
+          id="${videoId}"
+          src="${videoSrc}" 
           controls 
           playsinline 
           preload="metadata" 
           style="width: 100%; height: 100%; object-fit: contain;">
         </video>
       `;
+    }
+
+    function generateVideoPoster(videoId, videoSrc) {
+      const videoElem = document.getElementById(videoId);
+      if (!videoElem) return;
+
+      const tempVideo = document.createElement('video');
+      tempVideo.src = videoSrc;
+      tempVideo.muted = true;
+      tempVideo.playsInline = true;
+      tempVideo.preload = 'metadata';
+
+      tempVideo.onloadeddata = function() {
+        tempVideo.currentTime = 0.1;
+      };
+
+      tempVideo.onseeked = function() {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = tempVideo.videoWidth || 640;
+          canvas.height = tempVideo.videoHeight || 360;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(tempVideo, 0, 0, canvas.width, canvas.height);
+          
+          const posterUrl = canvas.toDataURL('image/jpeg', 0.8);
+          videoElem.setAttribute('poster', posterUrl);
+        } catch (e) {
+          console.warn("Cannot generate poster thumbnail:", e);
+        }
+      };
+
+      tempVideo.load();
     }
 
     window.autoScrollFocus = function(element) {
