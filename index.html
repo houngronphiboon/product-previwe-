@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>ระบบบันทึกข้อมูลสินค้า - Nueng Ron Phibun Electronics</title>
+  <title>ระบบบันทึกข้อมูลสินค้า - หนึ่ง ร่อนพิบูลย์อิเล็กทรอนิกส์</title>
+  
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛠️</text></svg>">
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -25,19 +27,135 @@
     body.modal-open { overflow: hidden; height: 100vh; position: fixed; width: 100%; }
 
     .container { width: 100%; max-width: 500px; margin-bottom: 20px; }
-    .card { background: #ffffff; border-radius: 16px; padding: 20px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); position: relative; }
-    .header-title { font-size: 16px; font-weight: 700; text-align: center; margin-bottom: 16px; color: #111827; padding-right: 90px; }
     
-    /* Status Badges Dynamic Style */
-    .status-container { position: absolute; top: 16px; right: 16px; display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
-    .status-badge { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; color: #4b5563; background: #f3f4f6; padding: 3px 8px; border-radius: 12px; border: 1px solid #e5e7eb; }
-    .status-dot { width: 8px; height: 8px; border-radius: 50%; transition: all 0.3s ease; }
+    .card { 
+      background: #ffffff; 
+      border-radius: 16px; 
+      padding: 20px; 
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); 
+    }
+
+    /* --- ส่วน Header --- */
+    .app-header {
+      background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+      padding: 14px 18px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+      margin-bottom: 16px;
+    }
+
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .header-logo {
+      width: 42px;
+      height: 42px;
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 3px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      object-fit: contain;
+      flex-shrink: 0;
+    }
+
+    .header-title-text {
+      color: #ffffff;
+      font-size: 16px;
+      font-weight: 700;
+      margin: 0;
+      line-height: 1.3;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .status-container { 
+      display: flex; 
+      flex-direction: column; 
+      align-items: flex-end;   
+      gap: 4px; 
+      flex-shrink: 0;
+    }
+
+    .status-badge { 
+      display: inline-flex; 
+      align-items: center; 
+      gap: 5px; 
+      font-size: 11px; 
+      font-weight: 600; 
+      color: #ffffff; 
+      background: rgba(255, 255, 255, 0.2); 
+      padding: 3px 8px; 
+      border-radius: 12px; 
+      backdrop-filter: blur(4px);
+      white-space: nowrap;
+    }
+
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; transition: all 0.3s ease; display: inline-block; }
     .status-dot.green { background-color: #10b981; box-shadow: 0 0 6px #10b981; }
     .status-dot.orange { background-color: #f59e0b; box-shadow: 0 0 6px #f59e0b; }
     .status-dot.red { background-color: #ef4444; box-shadow: 0 0 6px #ef4444; }
 
-    .media-preview-box { width: 100%; height: 200px; background-color: #1f2937; border-radius: 12px; margin-top: 10px; margin-bottom: 16px; display: flex; justify-content: center; align-items: center; color: #9ca3af; border: 2px dashed #d1d5db; overflow: hidden; }
+    .media-preview-box { 
+      width: 100%; 
+      height: 200px; 
+      background-color: #1f2937; 
+      border-radius: 12px; 
+      margin-bottom: 16px; 
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      color: #9ca3af; 
+      border: 2px dashed #374151; 
+      overflow: hidden; 
+      position: relative;
+    }
     .media-preview-box img, .media-preview-box video { max-width: 100%; max-height: 100%; object-fit: contain; }
+    
+    .video-thumb-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      background: #000;
+    }
+    .video-thumb-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      opacity: 0.85;
+    }
+    .play-btn-overlay {
+      position: absolute;
+      width: 54px;
+      height: 54px;
+      background: rgba(0, 0, 0, 0.65);
+      border: 2px solid #ffffff;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #ffffff;
+      font-size: 22px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      transition: transform 0.2s, background 0.2s;
+    }
+    .video-thumb-container:hover .play-btn-overlay {
+      transform: scale(1.1);
+      background: rgba(37, 99, 235, 0.85);
+    }
+
     .media-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
     .btn { border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s; }
     .btn:disabled { opacity: 0.6; cursor: not-allowed; }
@@ -45,22 +163,42 @@
     .btn-camera { background-color: #007bff; color: white; padding: 12px 8px; }
     .form-group { margin-bottom: 16px; }
     .form-group label { display: block; font-size: 15px; font-weight: 700; margin-bottom: 6px; color: #374151; }
+    
+    .label-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .label-header label { margin-bottom: 0; }
+    
+    .btn-clear {
+      background-color: #fee2e2;
+      color: #dc2626;
+      border: 1px solid #fca5a5;
+      padding: 4px 10px;
+      font-size: 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+    .btn-clear:hover {
+      background-color: #fecaca;
+      color: #b91c1c;
+    }
+
     .required { color: #dc2626; }
     .form-control { width: 100%; padding: 12px; font-size: 15px; border: 1px solid #d1d5db; border-radius: 10px; outline: none; background-color: #ffffff; }
     .form-control:focus { border-color: #2563eb; }
     .form-control.input-error { border-color: #dc2626 !important; background-color: #fef2f2; }
     .error-msg { color: #dc2626; font-size: 13px; margin-top: 4px; display: none; }
-    textarea.form-control { resize: vertical; min-height: 110px; }
+    textarea.form-control { resize: vertical; min-height: 120px; }
     .btn-ai { width: 100%; background: #8b5cf6; color: white; padding: 14px; font-size: 15px; margin-bottom: 12px; box-shadow: 0 2px 4px rgba(139, 92, 246, 0.2); }
     .btn-save { width: 100%; background-color: #86efac; color: #166534; padding: 14px; font-size: 16px; }
     .btn-save.active { background-color: #22c55e; color: white; }
     
-    .list-container { 
-      width: 100%; 
-      max-width: 800px; 
-      margin-bottom: 10px; 
-    }
-    
+    .list-container { width: 100%; max-width: 800px; margin-bottom: 10px; }
     .table-container { 
       width: 100%; 
       height: 72vh; 
@@ -85,7 +223,7 @@
     .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; padding: 16px; -webkit-overflow-scrolling: touch; }
     .modal-content { background-color: #fff; padding: 20px; border-radius: 16px; width: 100%; max-width: 480px; position: relative; max-height: 90vh; overflow-y: auto; -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }
     .close-btn { position: absolute; right: 15px; top: 10px; font-size: 24px; cursor: pointer; color: #9ca3af; z-index: 10; }
-    .modal-media-box { width: 100%; height: 230px; background: #111827; margin-bottom: 15px; border-radius: 10px; overflow: hidden; display: flex; justify-content: center; align-items: center; }
+    .modal-media-box { width: 100%; height: 230px; background: #111827; margin-bottom: 15px; border-radius: 10px; overflow: hidden; display: flex; justify-content: center; align-items: center; position: relative; }
     .modal-media-box img, .modal-media-box video { max-width: 100%; max-height: 100%; object-fit: contain; }
     .modal-actions { display: flex; gap: 10px; margin-top: 15px; }
     .btn-edit { background-color: #f59e0b; color: #ffffff; flex: 1; padding: 10px; }
@@ -106,18 +244,24 @@
 
   <div class="container">
     <div class="card">
-      <div class="status-container">
-        <div class="status-badge">
-          <span class="status-dot green" id="db-status-dot"></span>
-          <span id="db-status-text">DB: พร้อม</span>
+      
+      <!-- Header -->
+      <div class="app-header">
+        <div class="header-brand">
+          <img src="logo.png" alt="Nueng Electronics Logo" class="header-logo" onerror="this.style.display='none'">
+          <h1 class="header-title-text">หนึ่ง ร่อนพิบูลย์อิเล็กทรอนิกส์</h1>
         </div>
-        <div class="status-badge">
-          <span class="status-dot green" id="ai-status-dot"></span>
-          <span id="ai-status-text">AI: Vision</span>
+        <div class="status-container">
+          <div class="status-badge">
+            <span class="status-dot green" id="db-status-dot"></span>
+            <span id="db-status-text">DB: พร้อม</span>
+          </div>
+          <div class="status-badge">
+            <span class="status-dot green" id="ai-status-dot"></span>
+            <span id="ai-status-text">AI: Vision</span>
+          </div>
         </div>
       </div>
-
-      <div class="header-title">ระบบบันทึกข้อมูลสินค้า - Nueng Ron Phibun Electronics</div>
 
       <div class="media-preview-box" id="preview-box">
         <span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>
@@ -137,13 +281,16 @@
 
       <div class="form-group">
         <label for="product-name">ชื่อ/รุ่น <span class="required">*</span></label>
-        <input type="text" id="product-name" class="form-control" placeholder="เช่น HR-907C NS, UA32N4003AK, TP.HV320.PB801" oninput="clearValidationError()">
+        <input type="text" id="product-name" class="form-control" placeholder="เช่น C-BZN100L5L, 43HS534AN, RT22FGRADSA" oninput="clearValidationError()">
         <div class="error-msg" id="name-error-msg">กรุณากรอกชื่อหรือรุ่นสินค้า</div>
       </div>
 
       <div class="form-group">
-        <label for="product-detail">รายละเอียด</label>
-        <textarea id="product-detail" class="form-control" placeholder="กรอกรายละเอียดสินค้า หรือแนบรูปเพลต/บอร์ดแล้วกดวิเคราะห์ด้วย AI"></textarea>
+        <div class="label-header">
+          <label for="product-detail">รายละเอียดสินค้า</label>
+          <button type="button" class="btn-clear" onclick="clearFormInput()">🧹 ล้างข้อมูล</button>
+        </div>
+        <textarea id="product-detail" class="form-control" placeholder="ระบุรายละเอียดสินค้า หรือแนบรูปเพลต/สินค้าแล้วกดให้ AI วิเคราะห์สเปก"></textarea>
       </div>
 
       <button class="btn btn-ai" id="btn-ai-search" onclick="generateAIDetails()">
@@ -179,7 +326,6 @@
     </div>
   </div>
 
-  <!-- Modal ดูรายละเอียด -->
   <div class="modal" id="detail-modal">
     <div class="modal-content" id="modal-content-box">
       <span class="close-btn" onclick="closeModal()">&times;</span>
@@ -226,13 +372,12 @@
     </div>
   </div>
 
-  <!-- Modal แจ้งเตือนโควต้า AI -->
   <div class="modal" id="quota-modal">
     <div class="modal-content" style="text-align: center;">
       <div style="font-size: 40px; margin-bottom: 10px;">⚠️</div>
       <h3 style="margin-top: 0; color: #dc2626; font-weight: 700;">สิทธิ์วิเคราะห์ AI หมดแล้ว</h3>
       <p style="color: #4b5563; font-size: 14px; line-height: 1.5;" id="quota-modal-msg">
-        เครดิตหรือสิทธิ์การใช้งาน AI ของคุณหมดแล้ว ต้องการไปยังหน้าจัดการเพื่อเติมสิทธิ์หรือไม่?
+        โควต้าหรือสิทธิ์ใช้ AI ของคุณหมดแล้ว ต้องการไปยังหน้าจัดการเพื่อเติมสิทธิ์หรือไม่?
       </p>
       <button class="btn btn-quota" onclick="goToRecharge()">💳 ไปเติมสิทธิ์ (OpenRouter)</button>
       <button class="btn btn-cancel" onclick="closeQuotaModal()">ยกเลิก / ปิดหน้าต่าง</button>
@@ -245,7 +390,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { 
       getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, 
-      query, orderBy, limit, startAfter, getDocs, where 
+      query, orderBy, limit, startAfter, getDocs, where, serverTimestamp 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const CLOUDINARY_CLOUD_NAME = "qxdbrnyx"; 
@@ -277,7 +422,21 @@
     let isSearchMode = false;
     let searchDebounceTimer = null;
 
-    // --- ฟังก์ชันอัปเดตสถานะไฟเตือน (Status Badge Helper) ---
+    let toastTimeout = null;
+    function showToast(message, type = 'info') {
+      const toast = document.getElementById('toast');
+      if (!toast) return;
+      
+      clearTimeout(toastTimeout);
+      toast.innerText = message;
+      toast.className = `toast show toast-${type}`;
+      
+      toastTimeout = setTimeout(() => {
+        toast.className = toast.className.replace('show', '');
+      }, 3000);
+    }
+    window.showToast = showToast;
+
     function updateStatusUI(target, state, text) {
       const dot = document.getElementById(`${target}-status-dot`);
       const txt = document.getElementById(`${target}-status-text`);
@@ -287,11 +446,94 @@
       }
     }
 
-    // ฟังก์ชันช่วยเคลียร์ Blob URL ป้องกัน Memory Leak
     function revokePreviousMediaUrl(mediaObj) {
       if (mediaObj.type === 'video' && mediaObj.data && mediaObj.data.startsWith('blob:')) {
         URL.revokeObjectURL(mediaObj.data);
       }
+    }
+
+    function stopAllVideoPlayback(containerElement) {
+      if (!containerElement) return;
+      const videos = containerElement.querySelectorAll('video');
+      videos.forEach(video => {
+        try {
+          video.pause();
+          video.src = '';
+          video.load();
+        } catch (e) {
+          console.warn("Error stopping video:", e);
+        }
+      });
+    }
+
+    window.clearFormInput = function() {
+      const nameInput = document.getElementById('product-name');
+      const detailInput = document.getElementById('product-detail');
+      const previewBox = document.getElementById('preview-box');
+      
+      if (nameInput) nameInput.value = '';
+      if (detailInput) detailInput.value = '';
+      
+      if (previewBox) {
+        stopAllVideoPlayback(previewBox);
+        previewBox.innerHTML = '<span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>';
+      }
+      
+      revokePreviousMediaUrl(processedMedia);
+      processedMedia = { type: null, data: null, file: null };
+      clearValidationError();
+      showToast("ล้างข้อมูลเรียบร้อยแล้ว", "info");
+    };
+
+    // ✅ แก้ไข: เพิ่ม muted, playsinline, preload เพื่อให้แสดงภาพพรีวิววิดีโอ (First Frame) ได้ทันที ไม่ดำ
+    function renderVideoPreviewHTML(videoSrc) {
+      return `
+        <video 
+          src="${videoSrc}" 
+          controls 
+          playsinline 
+          muted 
+          preload="metadata" 
+          style="width: 100%; height: 100%; object-fit: contain;">
+        </video>
+      `;
+    }
+
+    window.playVideoInline = function(uniqueId, videoSrc) {
+      const thumb = document.getElementById(`thumb_${uniqueId}`);
+      const holder = document.getElementById(`holder_${uniqueId}`);
+      if (thumb && holder) {
+        thumb.style.display = 'none';
+        holder.style.display = 'block';
+        holder.innerHTML = `<video src="${videoSrc}" controls autoplay playsinline style="width:100%; height:100%; object-fit:contain;"></video>`;
+      }
+    };
+
+    function generateVideoThumbnail(file) {
+      return new Promise((resolve) => {
+        const video = document.createElement('video');
+        video.preload = 'metadata';
+        const blobUrl = URL.createObjectURL(file);
+        video.src = blobUrl;
+        video.muted = true;
+        video.playsInline = true;
+
+        video.onloadeddata = () => { video.currentTime = 0.1; };
+        video.onseeked = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = video.videoWidth || 320;
+          canvas.height = video.videoHeight || 240;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+          URL.revokeObjectURL(blobUrl);
+          resolve(dataUrl);
+        };
+        video.onerror = () => {
+          URL.revokeObjectURL(blobUrl);
+          resolve(null);
+        };
+      });
     }
 
     window.autoScrollFocus = function(element) {
@@ -322,38 +564,34 @@
       }
     }
 
-    async function deleteCloudinaryMedia(mediaUrl, mediaType) {
+    async function deleteCloudMedia(mediaUrl, mediaType, objectKey = null) {
       if (!mediaUrl) return;
-      const publicId = extractPublicIdFromUrl(mediaUrl);
-      if (!publicId) return;
+      let payload = { resourceType: mediaType };
+
+      if (mediaType === 'video') {
+        const key = objectKey || mediaUrl.split('/').pop();
+        payload.objectKey = key;
+      } else {
+        const publicId = extractPublicIdFromUrl(mediaUrl);
+        if (!publicId) return;
+        payload.publicId = publicId;
+      }
 
       try {
         await fetch(`${WORKER_URL}delete-media`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            publicId: publicId,
-            resourceType: mediaType === "video" ? "video" : "image"
-          })
+          body: JSON.stringify(payload)
         });
       } catch (err) {
-        console.error("Failed to delete media from Cloudinary:", err);
+        console.error("Failed to delete media from Cloud:", err);
       }
-    }
-
-    function showToast(message, type = 'info') {
-      const toast = document.getElementById('toast');
-      toast.innerText = message;
-      toast.className = `toast show toast-${type}`;
-      setTimeout(() => {
-        toast.className = toast.className.replace('show', '');
-      }, 4000);
     }
 
     function triggerValidationError(msg) {
       const nameInput = document.getElementById('product-name');
       const errorMsg = document.getElementById('name-error-msg');
-      nameInput.classList.add('input-error');
+      if (nameInput) nameInput.classList.add('input-error');
       if (errorMsg) {
         errorMsg.innerText = msg || "กรุณากรอกข้อมูล";
         errorMsg.style.display = 'block';
@@ -363,26 +601,57 @@
     window.clearValidationError = function() {
       const nameInput = document.getElementById('product-name');
       const errorMsg = document.getElementById('name-error-msg');
-      nameInput.classList.remove('input-error');
+      if (nameInput) nameInput.classList.remove('input-error');
       if (errorMsg) errorMsg.style.display = 'none';
-    }
+    };
 
     window.closeModal = function() {
+      const mediaContainer = document.getElementById('modal-media-container');
+      stopAllVideoPlayback(mediaContainer);
+      if (mediaContainer) mediaContainer.innerHTML = '';
+
       document.getElementById('detail-modal').style.display = 'none';
       document.body.classList.remove('modal-open');
       revokePreviousMediaUrl(editProcessedMedia);
       activeProductId = null;
       editProcessedMedia = { type: null, data: null, file: null };
-    }
+    };
 
     window.closeQuotaModal = function() {
       document.getElementById('quota-modal').style.display = 'none';
       document.body.classList.remove('modal-open');
-    }
+    };
 
     window.goToRecharge = function() {
       window.open('https://openrouter.ai/settings/keys', '_blank');
       closeQuotaModal();
+    };
+
+    function renderTable(dataList) {
+      const tbody = document.getElementById('product-list');
+      tbody.innerHTML = '';
+
+      if (dataList.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #9ca3af; padding: 20px;">ไม่พบรายการสินค้า</td></tr>`;
+        return;
+      }
+
+      dataList.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.className = 'clickable-row';
+        tr.onclick = () => openDetailModal(item.id);
+
+        let mediaBadge = `<span class="badge badge-none">ไม่มี</span>`;
+        if (item.mediaType === 'image') mediaBadge = `<span class="badge badge-image">🖼️ รูปภาพ</span>`;
+        else if (item.mediaType === 'video') mediaBadge = `<span class="badge badge-video">🎥 วิดีโอ</span>`;
+
+        tr.innerHTML = `
+          <td>${mediaBadge}</td>
+          <td style="font-weight: 600; color: #111827;">${item.name || '-'}</td>
+          <td><div class="text-truncate">${item.detail || '-'}</div></td>
+        `;
+        tbody.appendChild(tr);
+      });
     }
 
     async function fetchInitialProducts() {
@@ -469,7 +738,6 @@
 
     function setupScrollListener() {
       const tableContainer = document.getElementById('table-container');
-
       if (tableContainer) {
         tableContainer.addEventListener('scroll', () => {
           if (tableContainer.scrollTop + tableContainer.clientHeight >= tableContainer.scrollHeight - 50) {
@@ -479,12 +747,11 @@
       }
     }
 
-    // --- ปรับปรุงระบบ Search ค้นหาประสิทธิภาพสูง (Optimized Search) ---
     window.handleSearchDebounced = function() {
       clearTimeout(searchDebounceTimer);
       searchDebounceTimer = setTimeout(() => {
         executeOptimizedSearch();
-      }, 400); // หน่วงเวลา 400ms ลดภาระการยิง Database
+      }, 400);
     };
 
     async function executeOptimizedSearch() {
@@ -500,19 +767,16 @@
       isSearchMode = true;
       const lowerQuery = queryStr.toLowerCase();
 
-      // 1. ค้นหาจากข้อมูลที่มีอยู่บนหน้าจอเบื้องต้นก่อน (เพื่อความเร็ว)
       let matchedResults = productsList.filter(item => 
         (item.name || '').toLowerCase().includes(lowerQuery) ||
         (item.detail || '').toLowerCase().includes(lowerQuery)
       );
 
-      // 2. หากรายการในเครื่องมีน้อย และยังมีข้อมูลเหลือบน Cloud ให้ค้นหาแบบ Prefix ค้นตรงผ่าน Firestore
       if (matchedResults.length < 5 && hasMoreData) {
         try {
           updateStatusUI('db', 'orange', 'DB: กำลังค้นหา');
           const firestoreResults = await searchFirestoreDirectly(queryStr);
           
-          // รวมผลลัพธ์แบบไม่ให้มี ID ซ้ำ
           const combined = [...matchedResults];
           firestoreResults.forEach(item => {
             if (!combined.some(p => p.id === item.id)) {
@@ -522,7 +786,7 @@
           matchedResults = combined;
           updateStatusUI('db', 'green', 'DB: พร้อม');
         } catch (err) {
-          console.error("Firestore Prefix Search Error:", err);
+          console.error("Firestore Search Error:", err);
           updateStatusUI('db', 'green', 'DB: พร้อม');
         }
       }
@@ -532,7 +796,6 @@
 
     async function searchFirestoreDirectly(searchTerm) {
       try {
-        // ใช้เทคนิค Prefix Search บน Firestore (ช่วงตัวอักษร)
         const strFrontCode = searchTerm;
         const strEndCode = searchTerm + '\uf8ff';
 
@@ -546,13 +809,10 @@
         const snapshot = await getDocs(q);
         return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       } catch (e) {
-        console.warn("Direct Firestore search skipped/failed:", e);
+        console.warn("Direct Firestore search skipped:", e);
         return [];
       }
     }
-
-    fetchInitialProducts();
-    setupScrollListener();
 
     function setFormButtonsDisabled(disabled, isAnalyzing = false) {
       const aiBtn = document.getElementById('btn-ai-search');
@@ -593,6 +853,7 @@
       if (!file) return;
 
       const previewBox = document.getElementById('preview-box');
+      stopAllVideoPlayback(previewBox);
       revokePreviousMediaUrl(processedMedia);
 
       if (file.type.startsWith('image/')) {
@@ -602,16 +863,32 @@
       } else if (file.type.startsWith('video/')) {
         const videoUrl = URL.createObjectURL(file);
         processedMedia = { type: 'video', data: videoUrl, file: file };
-        previewBox.innerHTML = `<video src="${videoUrl}" controls autoplay muted></video>`;
+        
+        const thumbUrl = await generateVideoThumbnail(file);
+        const uniqueId = 'preview_main';
+
+        if (thumbUrl) {
+          previewBox.innerHTML = `
+            <div class="video-thumb-container" id="thumb_${uniqueId}" onclick="playVideoInline('${uniqueId}', '${videoUrl}')">
+              <img src="${thumbUrl}">
+              <div class="play-btn-overlay">▶</div>
+            </div>
+            <div id="holder_${uniqueId}" style="display:none; width:100%; height:100%;"></div>
+          `;
+        } else {
+          // ✅ ปรับแก้ fallback หากเจอดึง Thumbnail จาก canvas ล้มเหลว ให้เรนเดอร์แท็ก Video โดยตรง
+          previewBox.innerHTML = renderVideoPreviewHTML(videoUrl);
+        }
       }
       event.target.value = '';
-    }
+    };
 
     window.handleEditFileSelect = async function(event) {
       const file = event.target.files[0];
       if (!file) return;
 
       const mediaContainer = document.getElementById('modal-media-container');
+      stopAllVideoPlayback(mediaContainer);
       revokePreviousMediaUrl(editProcessedMedia);
 
       if (file.type.startsWith('image/')) {
@@ -621,70 +898,99 @@
       } else if (file.type.startsWith('video/')) {
         const videoUrl = URL.createObjectURL(file);
         editProcessedMedia = { type: 'video', data: videoUrl, file: file };
-        mediaContainer.innerHTML = `<video src="${videoUrl}" controls autoplay muted></video>`;
+        
+        const thumbUrl = await generateVideoThumbnail(file);
+        const uniqueId = 'preview_edit';
+
+        if (thumbUrl) {
+          mediaContainer.innerHTML = `
+            <div class="video-thumb-container" id="thumb_${uniqueId}" onclick="playVideoInline('${uniqueId}', '${videoUrl}')">
+              <img src="${thumbUrl}">
+              <div class="play-btn-overlay">▶</div>
+            </div>
+            <div id="holder_${uniqueId}" style="display:none; width:100%; height:100%;"></div>
+          `;
+        } else {
+          // ✅ ปรับแก้ fallback กรณีพรีวิวในหน้าแก้ไข
+          mediaContainer.innerHTML = renderVideoPreviewHTML(videoUrl);
+        }
       }
       event.target.value = '';
-    }
+    };
 
-    async function uploadToCloudinary(file, resourceType = 'auto') {
-      const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`;
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+    async function uploadMediaFile(file, resourceType) {
+  if (resourceType === 'video') {
+    const formData = new FormData();
+    formData.append('file', file);
 
-      const res = await fetch(url, { method: 'POST', body: formData });
-      if (!res.ok) throw new Error('อัปโหลดไป Cloudinary ไม่สำเร็จ');
-      const data = await res.json();
-      return data.secure_url;
-    }
+    const res = await fetch(`${WORKER_URL}upload-video`, {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!res.ok) throw new Error('ไม่สามารถอัปโหลดวิดีโอผ่าน Worker ได้');
+    const { publicUrl, objectKey } = await res.json();
+
+    return { mediaUrl: publicUrl, objectKey: objectKey };
+  } else {
+    const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+    const res = await fetch(url, { method: 'POST', body: formData });
+    if (!res.ok) throw new Error('อัปโหลดรูปภาพไป Cloudinary ไม่สำเร็จ');
+    const data = await res.json();
+    return { mediaUrl: data.secure_url, objectKey: null };
+  }
+}
 
     window.generateAIDetails = async function() {
       const nameInput = document.getElementById('product-name');
       const detailInput = document.getElementById('product-detail');
       const name = nameInput.value.trim();
 
+      const hasImage = processedMedia.type === 'image' && processedMedia.data;
+      const isVideo = processedMedia.type === 'video';
+
+      if (!hasImage && !name) {
+        triggerValidationError("กรุณากรอกชื่อ/รุ่น หรืออัปโหลดรูปถ่ายเพลตสินค้า");
+        return;
+      }
+
+      if (isVideo) {
+        showToast("ข้ามการวิเคราะห์ไฟล์วิดีโอ (ระบบรองรับเฉพาะรูปภาพและข้อความ)", "info");
+      }
+
       const originalText = detailInput.value;
-      detailInput.value = "กำลังส่งข้อมูลให้ AI อ่านเพลต/แผงวงจร และวิเคราะห์สเปก...";
+      detailInput.value = "กำลังวิเคราะห์สเปกข้อมูลด้วย AI...";
       setFormButtonsDisabled(true, true);
       
       updateStatusUI('ai', 'orange', 'AI: กำลังคิด');
 
       try {
-        let payload = {
-          temperature: 0.0,
-          contents: []
-        };
+        let payload = { contents: [] };
 
-        if (processedMedia.type === 'image' && processedMedia.data) {
+        const promptInstruction = `วิเคราะห์ภาพเพลต/อะไหล่ หรือชื่อรุ่นต่อไปนี้ (${name || 'ตามภาพ'}) และสรุปสเปกรายละเอียดสินค้าทางเทคนิคอย่างกระชับและชัดเจน
+
+เพิ่มเติมคำสั่งพิเศษ (ต่อท้าย):
+- ในบรรทัดสุดท้าย หากตรวจสอบข้อมูลทางเทคนิคได้อย่างแน่ชัดว่าอะไหล่หรืออุปกรณ์ชิ้นนี้ สามารถใช้ร่วมหรือทดแทนรุ่นอื่นๆ ได้ ให้ระบุข้อหัวข้อดังนี้:
+  • รุ่นที่ใช้แทนกันได้ / รองรับเพิ่มเติม: [ระบุชื่อรุ่น]
+- **กฎเหล็กเรื่อง Cross-compatibility:** หากตรวจสอบแล้วหาข้อมูลอ้างอิงตรงกันไม่ได้ หรือไม่แน่ชัดว่าใช้ร่วมกับรุ่นอื่นได้หรือไม่ ให้ข้ามหัวข้อนี้ไปทันที ห้ามสุ่มหรือคาดเดารุ่นขึ้นมาเองเด็ดขาด`;
+
+        if (hasImage) {
           const base64Data = processedMedia.data.split(',')[1];
           const mimeType = processedMedia.data.split(';')[0].split(':')[1];
 
           payload.contents.push({
             parts: [
-              {
-                inline_data: {
-                  mime_type: mimeType,
-                  data: base64Data
-                }
-              },
-              {
-                text: `โปรดวิเคราะห์เพลต/สติกเกอร์/บอร์ดสินค้าในรูปภาพร่วมกับชื่อ/รุ่น "${name || 'ไม่ระบุ'}"`
-              }
+              { inline_data: { mime_type: mimeType, data: base64Data } },
+              { text: promptInstruction }
             ]
           });
-        } else {
-          if (!name) {
-            triggerValidationError("กรุณากรอกชื่อ/รุ่น หรืออัปโหลดรูปถ่ายเพลตสินค้า");
-            detailInput.value = originalText;
-            setFormButtonsDisabled(false, false);
-            updateStatusUI('ai', 'green', 'AI: Vision');
-            return;
-          }
-
+        } else if (name) {
           payload.contents.push({
-            parts: [{
-              text: `วิเคราะห์รหัสสินค้า "${name}"`
-            }]
+            parts: [{ text: promptInstruction }]
           });
         }
 
@@ -708,260 +1014,235 @@
           throw new Error(errMsg || "ไม่สามารถวิเคราะห์ข้อมูลได้");
         }
 
-        if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
-          detailInput.value = data.candidates[0].content.parts[0].text;
+        const resultText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (resultText) {
+          detailInput.value = resultText.trim();
           showToast("วิเคราะห์ข้อมูลสำเร็จ!", "success");
           updateStatusUI('ai', 'green', 'AI: Vision');
         } else {
-          throw new Error("ไม่ได้รับข้อมูลตอบกลับจาก AI");
+          throw new Error("ไม่สามารถประมวลผลคำตอบจาก AI ได้");
         }
 
-      } catch (error) {
-        console.error("AI Error:", error);
-        detailInput.value = originalText;
+      } catch (err) {
+        console.error("AI Error:", err);
+        updateStatusUI('ai', 'red', 'AI: ขัดข้อง');
 
-        if (error.isQuotaError) {
-          updateStatusUI('ai', 'red', 'AI: โควต้าหมด');
+        if (err.isQuotaError) {
+          document.getElementById('quota-modal-msg').innerText = err.message || "โควต้าหรือสิทธิ์ใช้ AI ของคุณหมดแล้ว ต้องการไปยังหน้าจัดการเพื่อเติมสิทธิ์หรือไม่?";
           document.getElementById('quota-modal').style.display = 'flex';
           document.body.classList.add('modal-open');
-          showToast("สิทธิ์การใช้งาน AI หมดแล้ว", "error");
         } else {
-          updateStatusUI('ai', 'red', 'AI: ขัดข้อง');
-          showToast("เกิดข้อผิดพลาด: " + (error.message || error), "error");
+          showToast(err.message || "เกิดข้อผิดพลาดในการวิเคราะห์ AI", "error");
         }
+        detailInput.value = originalText;
       } finally {
         setFormButtonsDisabled(false, false);
       }
-    }
-
-    function normalizeModelName(str) {
-      return (str || '').replace(/\s+/g, '').toUpperCase();
-    }
-
-    async function checkIsDuplicateModel(name, excludeId = null) {
-      const targetName = normalizeModelName(name);
-      
-      const existsInLocal = productsList.some(item => 
-        item.id !== excludeId && normalizeModelName(item.name) === targetName
-      );
-      if (existsInLocal) return true;
-
-      if (hasMoreData) {
-        const q = query(collection(db, "products"));
-        const snapshot = await getDocs(q);
-        return snapshot.docs.some(doc => 
-          doc.id !== excludeId && normalizeModelName(doc.data().name) === targetName
-        );
-      }
-
-      return false;
-    }
+    };
 
     window.addProduct = async function() {
       const nameInput = document.getElementById('product-name');
       const detailInput = document.getElementById('product-detail');
       const saveBtn = document.getElementById('btn-save');
+
       const name = nameInput.value.trim();
       const detail = detailInput.value.trim();
 
       if (!name) {
-        triggerValidationError("กรุณากรอกชื่อสินค้า");
+        triggerValidationError("กรุณากรอกชื่อหรือรุ่นสินค้าก่อนบันทึก");
         return;
       }
 
-      setFormButtonsDisabled(true, false);
-      saveBtn.innerText = "กำลังตรวจสอบรุ่นซ้ำ...";
-
-      const isDuplicate = await checkIsDuplicateModel(name);
-      if (isDuplicate) {
-        triggerValidationError(`รุ่น "${name}" มีอยู่ในระบบแล้ว`);
-        showToast(`❌ ไม่สามารถบันทึกได้! รุ่น "${name}" มีในระบบแล้ว`, "error");
-        setFormButtonsDisabled(false, false);
-        saveBtn.innerText = "บันทึกสินค้าลงคลาวด์";
-        return;
-      }
-
-      saveBtn.innerText = "กำลังประมวลผลและบันทึก...";
+      saveBtn.disabled = true;
+      saveBtn.innerText = "⏳ กำลังบันทึกลง Cloud...";
+      updateStatusUI('db', 'orange', 'DB: กำลังบันทึก');
 
       try {
-        let mediaUrl = "";
+        let mediaUrl = null;
+        let objectKey = null;
         let mediaType = processedMedia.type;
 
         if (processedMedia.file) {
-          const resourceType = mediaType === 'video' ? 'video' : 'image';
-          mediaUrl = await uploadToCloudinary(processedMedia.file, resourceType);
+          const uploadRes = await uploadMediaFile(processedMedia.file, mediaType);
+          mediaUrl = uploadRes.mediaUrl;
+          objectKey = uploadRes.objectKey;
         }
 
         await addDoc(collection(db, "products"), {
           name: name,
-          detail: detail || "ไม่มีรายละเอียดเพิ่มเติม",
-          mediaType: mediaType,
+          detail: detail,
           mediaUrl: mediaUrl,
-          createdAt: Date.now()
+          objectKey: objectKey,
+          mediaType: mediaType,
+          createdAt: serverTimestamp()
         });
 
-        showToast("บันทึกข้อมูลสำเร็จเรียบร้อย", "success");
-        nameInput.value = ''; detailInput.value = '';
-        document.getElementById('preview-box').innerHTML = '<span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>';
+        showToast("บันทึกข้อมูลเรียบร้อยแล้ว!", "success");
+
+        nameInput.value = '';
+        detailInput.value = '';
+        const previewBox = document.getElementById('preview-box');
+        stopAllVideoPlayback(previewBox);
+        previewBox.innerHTML = '<span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>';
         
         revokePreviousMediaUrl(processedMedia);
         processedMedia = { type: null, data: null, file: null };
-        
         clearValidationError();
-        fetchInitialProducts();
 
-      } catch (e) {
-        console.error(e);
+        await fetchInitialProducts();
+
+      } catch (err) {
+        console.error("Add Product Error:", err);
         showToast("เกิดข้อผิดพลาดในการบันทึกข้อมูล", "error");
+        updateStatusUI('db', 'red', 'DB: ขัดข้อง');
       } finally {
-        setFormButtonsDisabled(false, false);
+        saveBtn.disabled = false;
         saveBtn.innerText = "บันทึกสินค้าลงคลาวด์";
       }
-    }
+    };
 
-    function renderTable(dataList) {
-      const tbody = document.getElementById('product-list');
-      tbody.innerHTML = '';
-      if (dataList.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; padding: 20px; color: #9ca3af;">ไม่พบข้อมูลสินค้า</td></tr>`;
-        return;
-      }
-      dataList.forEach((item) => {
-        const tr = document.createElement('tr');
-        tr.className = 'clickable-row';
-        tr.onclick = () => openModal(item.id, item);
-        const badge = item.mediaType === 'video' ? '<span class="badge badge-video">🎥 วิดีโอ</span>' : (item.mediaType === 'image' ? '<span class="badge badge-image">🖼️ รูปภาพ</span>' : '<span class="badge badge-none">📷 ไม่มีสื่อ</span>');
-        tr.innerHTML = `<td>${badge}</td><td style="font-weight: 700;">${item.name}</td><td class="text-truncate">${item.detail}</td>`;
-        tbody.appendChild(tr);
-      });
-    }
+    function openDetailModal(id) {
+      const product = productsList.find(p => p.id === id);
+      if (!product) return;
 
-    function openModal(id, itemData = null) {
       activeProductId = id;
-      const item = itemData || productsList.find(p => p.id === id);
-      if (!item) return;
+      document.getElementById('modal-title').innerText = product.name || 'ไม่ระบุชื่อ/รุ่น';
+      document.getElementById('modal-detail-text').innerText = product.detail || 'ไม่มีรายละเอียด';
 
-      document.getElementById('modal-title').innerText = item.name;
-      document.getElementById('modal-detail-text').innerText = item.detail;
+      const mediaBox = document.getElementById('modal-media-container');
+      stopAllVideoPlayback(mediaBox);
+      mediaBox.innerHTML = '';
 
-      renderModalMedia(item.mediaType, item.mediaUrl);
+      if (product.mediaUrl) {
+        if (product.mediaType === 'image') {
+          mediaBox.innerHTML = `<img src="${product.mediaUrl}" alt="Product Image">`;
+        } else if (product.mediaType === 'video') {
+          // ✅ ปรับแก้ Modal ให้รองรับการพรีวิวภาพวิดีโอจาก Cloud แบบไม่ติดจอดำ
+          mediaBox.innerHTML = renderVideoPreviewHTML(product.mediaUrl);
+        }
+      } else {
+        mediaBox.innerHTML = `<span style="color: #6b7280;">ไม่มีรูปภาพ/วิดีโอประกอบ</span>`;
+      }
 
-      cancelEditMode();
+      document.getElementById('view-mode').style.display = 'block';
+      document.getElementById('edit-mode').style.display = 'none';
+
       document.getElementById('detail-modal').style.display = 'flex';
       document.body.classList.add('modal-open');
     }
 
-    function renderModalMedia(type, url) {
-      const mediaContainer = document.getElementById('modal-media-container');
-      mediaContainer.innerHTML = '';
-
-      if (type === 'image' && url) {
-        mediaContainer.innerHTML = `<img src="${url}">`;
-      } else if (type === 'video' && url) {
-        mediaContainer.innerHTML = `<video src="${url}" controls autoplay></video>`;
-      } else {
-        mediaContainer.innerHTML = `<span style="color:#9ca3af;">ไม่มีสื่อแนบไว้</span>`;
-      }
-    }
-
     window.enableEditMode = function() {
-      const item = productsList.find(p => p.id === activeProductId);
-      if (!item) return;
-      document.getElementById('edit-name').value = item.name;
-      document.getElementById('edit-detail').value = item.detail;
+      const product = productsList.find(p => p.id === activeProductId);
+      if (!product) return;
+
+      document.getElementById('edit-name').value = product.name || '';
+      document.getElementById('edit-detail').value = product.detail || '';
+      editProcessedMedia = { type: product.mediaType, data: product.mediaUrl, file: null };
+
       document.getElementById('view-mode').style.display = 'none';
       document.getElementById('edit-mode').style.display = 'block';
-      
-      revokePreviousMediaUrl(editProcessedMedia);
-      editProcessedMedia = { type: null, data: null, file: null };
-    }
+    };
 
     window.cancelEditMode = function() {
-      const item = productsList.find(p => p.id === activeProductId);
-      if (item) {
-        renderModalMedia(item.mediaType, item.mediaUrl);
-      }
-      document.getElementById('view-mode').style.display = 'block';
-      document.getElementById('edit-mode').style.display = 'none';
-      
+      const mediaBox = document.getElementById('modal-media-container');
+      stopAllVideoPlayback(mediaBox);
       revokePreviousMediaUrl(editProcessedMedia);
       editProcessedMedia = { type: null, data: null, file: null };
-    }
+      document.getElementById('view-mode').style.display = 'block';
+      document.getElementById('edit-mode').style.display = 'none';
+    };
 
     window.saveEditProduct = async function() {
-      const newName = document.getElementById('edit-name').value.trim();
-      const newDetail = document.getElementById('edit-detail').value.trim();
+      if (!activeProductId) return;
+
+      const editName = document.getElementById('edit-name').value.trim();
+      const editDetail = document.getElementById('edit-detail').value.trim();
       const updateBtn = document.getElementById('btn-update-submit');
 
-      if (!newName) {
-        showToast("ชื่อ/รุ่น สินค้าห้ามเป็นค่าว่าง", "error");
+      if (!editName) {
+        showToast("กรุณากรอกชื่อ/รุ่นสินค้า", "error");
         return;
       }
 
-      const isDuplicate = await checkIsDuplicateModel(newName, activeProductId);
-      if (isDuplicate) {
-        showToast(`❌ ชื่อรุ่น "${newName}" มีอยู่ในระบบแล้ว`, "error");
-        return;
-      }
-
-      const item = productsList.find(p => p.id === activeProductId);
-      if (!item) return;
+      const product = productsList.find(p => p.id === activeProductId);
 
       updateBtn.disabled = true;
-      updateBtn.innerText = "กำลังบันทึก...";
+      updateBtn.innerText = "⏳ กำลังบันทึกการแก้ไข...";
+      updateStatusUI('db', 'orange', 'DB: กำลังอัปเดต');
 
       try {
-        let updateData = {
-          name: newName,
-          detail: newDetail || "ไม่มีรายละเอียดเพิ่มเติม"
-        };
+        let finalMediaUrl = product.mediaUrl;
+        let finalObjectKey = product.objectKey || null;
+        let finalMediaType = product.mediaType;
 
         if (editProcessedMedia.file) {
-          const resourceType = editProcessedMedia.type === 'video' ? 'video' : 'image';
-          const newMediaUrl = await uploadToCloudinary(editProcessedMedia.file, resourceType);
-
-          if (item.mediaUrl) {
-            await deleteCloudinaryMedia(item.mediaUrl, item.mediaType);
+          if (product.mediaUrl) {
+            await deleteCloudMedia(product.mediaUrl, product.mediaType, product.objectKey);
           }
 
-          updateData.mediaUrl = newMediaUrl;
-          updateData.mediaType = editProcessedMedia.type;
+          const uploadRes = await uploadMediaFile(editProcessedMedia.file, editProcessedMedia.type);
+          finalMediaUrl = uploadRes.mediaUrl;
+          finalObjectKey = uploadRes.objectKey;
+          finalMediaType = editProcessedMedia.type;
         }
 
         const docRef = doc(db, "products", activeProductId);
-        await updateDoc(docRef, updateData);
-        
-        cancelEditMode();
+        await updateDoc(docRef, {
+          name: editName,
+          detail: editDetail,
+          mediaUrl: finalMediaUrl,
+          objectKey: finalObjectKey,
+          mediaType: finalMediaType,
+          updatedAt: serverTimestamp()
+        });
+
+        showToast("แก้ไขข้อมูลสำเร็จ!", "success");
         closeModal();
-        showToast("อัปเดตข้อมูลเรียบร้อย", "success");
-        fetchInitialProducts();
-      } catch (e) {
-        console.error(e);
-        showToast("แก้ไขข้อมูลไม่สำเร็จ", "error");
+        await fetchInitialProducts();
+
+      } catch (err) {
+        console.error("Save Edit Error:", err);
+        showToast("เกิดข้อผิดพลาดในการแก้ไขข้อมูล", "error");
+        updateStatusUI('db', 'red', 'DB: ขัดข้อง');
       } finally {
         updateBtn.disabled = false;
         updateBtn.innerText = "💾 บันทึกการแก้ไข";
       }
-    }
+    };
 
     window.deleteProduct = async function() {
-      if (!confirm("คุณต้องการลบรายการนี้ใช่หรือไม่?")) return;
-      
-      const item = productsList.find(p => p.id === activeProductId);
-      
+      if (!activeProductId) return;
+
+      if (!confirm("คุณต้องการลบรายการนี้ใช่หรือไม่? ข้อมูลและสื่อบน Cloud จะถูกลบอย่างถาวร")) {
+        return;
+      }
+
+      const mediaBox = document.getElementById('modal-media-container');
+      stopAllVideoPlayback(mediaBox);
+
+      const product = productsList.find(p => p.id === activeProductId);
+      updateStatusUI('db', 'orange', 'DB: กำลังลบ');
+
       try {
-        if (item && item.mediaUrl) {
-          await deleteCloudinaryMedia(item.mediaUrl, item.mediaType);
+        if (product && product.mediaUrl) {
+          await deleteCloudMedia(product.mediaUrl, product.mediaType, product.objectKey);
         }
 
         await deleteDoc(doc(db, "products", activeProductId));
+        showToast("ลบรายการสำเร็จแล้ว", "success");
         closeModal();
-        showToast("ลบรายการสินค้าเรียบร้อยแล้ว", "success");
-        fetchInitialProducts();
-      } catch (e) {
+        await fetchInitialProducts();
+
+      } catch (err) {
+        console.error("Delete Error:", err);
         showToast("เกิดข้อผิดพลาดในการลบรายการ", "error");
+        updateStatusUI('db', 'red', 'DB: ขัดข้อง');
       }
-    }
+    };
+
+    fetchInitialProducts();
+    setupScrollListener();
   </script>
 </body>
 </html>
