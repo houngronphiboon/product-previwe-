@@ -16,7 +16,7 @@
       background-color: #f3f4f6; 
       margin: 0; 
       padding: 16px; 
-      padding-bottom: max(20px, env(safe-area-inset-bottom)); 
+      padding-bottom: 20px; 
       color: #1f2937; 
       display: flex; 
       flex-direction: column; 
@@ -81,41 +81,19 @@
     /* ===== กรอบแสดงรูปภาพ / วิดีโอ ===== */
     .media-preview-box { 
       width: 100%; 
-      height: 220px; 
+      height: 200px; 
       background-color: #1f2937; 
       border-radius: 12px; 
       margin-bottom: 16px; 
       display: flex; 
-      flex-direction: column;
       justify-content: center; 
       align-items: center; 
       color: #9ca3af; 
       border: 2px dashed #374151; 
       overflow: hidden; 
-      position: relative;
     }
     .media-preview-box img, .media-preview-box video { max-width: 100%; max-height: 100%; object-fit: contain; }
     
-    .video-thumbnail-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      width: 100%;
-      height: 100%;
-    }
-    .thumb-label {
-      position: absolute;
-      top: 8px;
-      left: 8px;
-      background: rgba(0, 0, 0, 0.65);
-      color: #fff;
-      padding: 3px 8px;
-      border-radius: 6px;
-      font-size: 11px;
-      font-weight: 600;
-    }
-
     .media-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
     .btn { border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s; }
     .btn:disabled { opacity: 0.6; cursor: not-allowed; }
@@ -158,7 +136,7 @@
     .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; padding: 16px; -webkit-overflow-scrolling: touch; }
     .modal-content { background-color: #fff; padding: 20px; border-radius: 16px; width: 100%; max-width: 480px; position: relative; max-height: 90vh; overflow-y: auto; -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }
     .close-btn { position: absolute; right: 15px; top: 10px; font-size: 24px; cursor: pointer; color: #9ca3af; z-index: 10; }
-    .modal-media-box { width: 100%; height: 230px; background: #111827; margin-bottom: 15px; border-radius: 10px; overflow: hidden; display: flex; justify-content: center; align-items: center; position: relative; }
+    .modal-media-box { width: 100%; height: 230px; background: #111827; margin-bottom: 15px; border-radius: 10px; overflow: hidden; display: flex; justify-content: center; align-items: center; }
     .modal-media-box img, .modal-media-box video { max-width: 100%; max-height: 100%; object-fit: contain; }
     .modal-actions { display: flex; gap: 10px; margin-top: 15px; }
     .btn-edit { background-color: #f59e0b; color: #ffffff; flex: 1; padding: 10px; }
@@ -343,8 +321,8 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    let processedMedia = { type: null, data: null, file: null, thumbnail: null };
-    let editProcessedMedia = { type: null, data: null, file: null, thumbnail: null };
+    let processedMedia = { type: null, data: null, file: null };
+    let editProcessedMedia = { type: null, data: null, file: null };
     let activeProductId = null;
     let productsList = [];
 
@@ -448,7 +426,7 @@
       document.body.classList.remove('modal-open');
       revokePreviousMediaUrl(editProcessedMedia);
       activeProductId = null;
-      editProcessedMedia = { type: null, data: null, file: null, thumbnail: null };
+      editProcessedMedia = { type: null, data: null, file: null };
     }
 
     window.closeQuotaModal = function() {
@@ -686,39 +664,6 @@
       });
     }
 
-    /* ===== ฟังก์ชันดึงรูปภาพตัวอย่าง (Thumbnail) จากไฟล์วิดีโอ ===== */
-    function generateVideoThumbnail(file, seekTo = 0.5) {
-      return new Promise((resolve) => {
-        const video = document.createElement('video');
-        video.src = URL.createObjectURL(file);
-        video.crossOrigin = 'anonymous';
-        video.muted = true;
-        video.playsInline = true;
-
-        video.addEventListener('loadeddata', () => {
-          video.currentTime = seekTo;
-        });
-
-        video.addEventListener('seeked', () => {
-          const canvas = document.createElement('canvas');
-          canvas.width = video.videoWidth || 640;
-          canvas.height = video.videoHeight || 360;
-          
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-          URL.revokeObjectURL(video.src);
-          resolve(dataUrl);
-        });
-
-        video.addEventListener('error', () => {
-          URL.revokeObjectURL(video.src);
-          resolve(null);
-        });
-      });
-    }
-
     window.handleFileSelect = async function(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -728,22 +673,12 @@
 
       if (file.type.startsWith('image/')) {
         const compressed = await compressImage(file);
-        processedMedia = { type: 'image', data: compressed.dataUrl, file: compressed.blob, thumbnail: null };
+        processedMedia = { type: 'image', data: compressed.dataUrl, file: compressed.blob };
         previewBox.innerHTML = `<img src="${compressed.dataUrl}">`;
       } else if (file.type.startsWith('video/')) {
-        previewBox.innerHTML = `<span style="color: #9ca3af;">⏳ กำลังโหลดวิดีโอและสร้างภาพตัวอย่าง...</span>`;
-        
         const videoUrl = URL.createObjectURL(file);
-        const thumbUrl = await generateVideoThumbnail(file);
-        
-        processedMedia = { type: 'video', data: videoUrl, file: file, thumbnail: thumbUrl };
-        
-        previewBox.innerHTML = `
-          <div class="video-thumbnail-container">
-            <video src="${videoUrl}" controls poster="${thumbUrl || ''}"></video>
-            <span class="thumb-label">📹 พรีวิววิดีโอ + รูปตัวอย่าง</span>
-          </div>
-        `;
+        processedMedia = { type: 'video', data: videoUrl, file: file };
+        previewBox.innerHTML = `<video src="${videoUrl}" controls autoplay muted></video>`;
       }
       event.target.value = '';
     }
@@ -757,22 +692,12 @@
 
       if (file.type.startsWith('image/')) {
         const compressed = await compressImage(file);
-        editProcessedMedia = { type: 'image', data: compressed.dataUrl, file: compressed.blob, thumbnail: null };
+        editProcessedMedia = { type: 'image', data: compressed.dataUrl, file: compressed.blob };
         mediaContainer.innerHTML = `<img src="${compressed.dataUrl}">`;
       } else if (file.type.startsWith('video/')) {
-        mediaContainer.innerHTML = `<span style="color: #9ca3af;">⏳ กำลังสร้างรูปตัวอย่างวิดีโอ...</span>`;
-        
         const videoUrl = URL.createObjectURL(file);
-        const thumbUrl = await generateVideoThumbnail(file);
-        
-        editProcessedMedia = { type: 'video', data: videoUrl, file: file, thumbnail: thumbUrl };
-        
-        mediaContainer.innerHTML = `
-          <div class="video-thumbnail-container">
-            <video src="${videoUrl}" controls poster="${thumbUrl || ''}"></video>
-            <span class="thumb-label">📹 พรีวิววิดีโอ</span>
-          </div>
-        `;
+        editProcessedMedia = { type: 'video', data: videoUrl, file: file };
+        mediaContainer.innerHTML = `<video src="${videoUrl}" controls autoplay muted></video>`;
       }
       event.target.value = '';
     }
@@ -804,18 +729,9 @@
       try {
         let payload = { contents: [] };
 
-        // หากสื่อเป็นรูปภาพ ให้ส่งรูปภาพ Base64 ไปวิเคราะห์
-        // หากสื่อเป็นวิดีโอและมีรูปภาพ thumbnail ให้ส่งรูปภาพ thumbnail ไปวิเคราะห์แทน
-        let aiImageData = null;
         if (processedMedia.type === 'image' && processedMedia.data) {
-          aiImageData = processedMedia.data;
-        } else if (processedMedia.type === 'video' && processedMedia.thumbnail) {
-          aiImageData = processedMedia.thumbnail;
-        }
-
-        if (aiImageData) {
-          const base64Data = aiImageData.split(',')[1];
-          const mimeType = aiImageData.split(';')[0].split(':')[1] || 'image/jpeg';
+          const base64Data = processedMedia.data.split(',')[1];
+          const mimeType = processedMedia.data.split(';')[0].split(':')[1];
 
           payload.contents.push({
             parts: [
@@ -926,7 +842,7 @@
         detailInput.value = '';
         document.getElementById('preview-box').innerHTML = '<span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>';
         revokePreviousMediaUrl(processedMedia);
-        processedMedia = { type: null, data: null, file: null, thumbnail: null };
+        processedMedia = { type: null, data: null, file: null };
         clearValidationError();
 
         await fetchInitialProducts();
@@ -976,7 +892,7 @@
 
       document.getElementById('edit-name').value = product.name || '';
       document.getElementById('edit-detail').value = product.detail || '';
-      editProcessedMedia = { type: product.mediaType, data: product.mediaUrl, file: null, thumbnail: null };
+      editProcessedMedia = { type: product.mediaType, data: product.mediaUrl, file: null };
 
       document.getElementById('view-mode').style.display = 'none';
       document.getElementById('edit-mode').style.display = 'block';
@@ -984,7 +900,7 @@
 
     window.cancelEditMode = function() {
       revokePreviousMediaUrl(editProcessedMedia);
-      editProcessedMedia = { type: null, data: null, file: null, thumbnail: null };
+      editProcessedMedia = { type: null, data: null, file: null };
       document.getElementById('view-mode').style.display = 'block';
       document.getElementById('edit-mode').style.display = 'none';
     };
