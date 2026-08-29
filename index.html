@@ -449,11 +449,12 @@
       showToast("ล้างข้อมูลเรียบร้อยแล้ว", "info");
     };
 
-    // 🔴 เอา autoplay ออก เหลือเฉพาะปุ่มเล่น (Play) ตามผู้ใช้ต้องการ
+    // 🟢 ดึงเฟรมแรก (วินาทีที่ 0.1) แสดงเป็นรูปพรีวิวอัตโนมัติ ไม่เล่นวิดีโอทันที
     function renderVideoPreviewHTML(videoSrc) {
+      const previewUrl = videoSrc.includes('#t=') ? videoSrc : `${videoSrc}#t=0.1`;
       return `
         <video 
-          src="${videoSrc}" 
+          src="${previewUrl}" 
           controls 
           playsinline 
           preload="metadata" 
