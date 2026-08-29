@@ -880,7 +880,7 @@
       }
     }
 
-    window.generateAIDetails = async function() {
+window.generateAIDetails = async function() {
       const nameInput = document.getElementById('product-name');
       const detailInput = document.getElementById('product-detail');
       const name = nameInput.value.trim();
@@ -906,13 +906,7 @@
       try {
         let payload = { contents: [] };
 
-        const promptInstruction = `วิเคราะห์ภาพเพลต/อะไหล่ หรือชื่อรุ่นต่อไปนี้ (${name || 'ตามภาพ'}) และสรุปสเปกรายละเอียดสินค้าทางเทคนิคอย่างกระชับและชัดเจน
-
-เพิ่มเติมคำสั่งพิเศษ (ต่อท้าย):
-- ในบรรทัดสุดท้าย หากตรวจสอบข้อมูลทางเทคนิคได้อย่างแน่ชัดว่าอะไหล่หรืออุปกรณ์ชิ้นนี้ สามารถใช้ร่วมหรือทดแทนรุ่นอื่นๆ ได้ ให้ระบุข้อหัวข้อดังนี้:
-  • รุ่นที่ใช้แทนกันได้ / รองรับเพิ่มเติม: [ระบุชื่อรุ่น]
-- **กฎเหล็กเรื่อง Cross-compatibility:** หากตรวจสอบแล้วหาข้อมูลอ้างอิงตรงกันไม่ได้ หรือไม่แน่ชัดว่าใช้ร่วมกับรุ่นอื่นได้หรือไม่ ให้ข้ามหัวข้อนี้ไปทันที ห้ามสุ่มหรือคาดเดารุ่นขึ้นมาเองเด็ดขาด`;
-
+        // ฝั่ง Frontend เหลือแค่การแนบข้อมูลดิบ (รูปภาพ/ชื่อรุ่น) ไม่ต้องเก็บ Prompt อีกต่อไป
         if (hasImage) {
           const base64Data = processedMedia.data.split(',')[1];
           const mimeType = processedMedia.data.split(';')[0].split(':')[1];
@@ -920,12 +914,12 @@
           payload.contents.push({
             parts: [
               { inline_data: { mime_type: mimeType, data: base64Data } },
-              { text: promptInstruction }
+              { text: name || '' }
             ]
           });
         } else if (name) {
           payload.contents.push({
-            parts: [{ text: promptInstruction }]
+            parts: [{ text: name }]
           });
         }
 
