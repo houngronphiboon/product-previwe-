@@ -119,42 +119,6 @@
       position: relative;
     }
     .media-preview-box img, .media-preview-box video { width: 100%; height: 100%; object-fit: contain; }
-    
-    .video-thumb-container {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      cursor: pointer;
-      background: #000;
-    }
-    .video-thumb-container img {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      opacity: 0.85;
-    }
-    .play-btn-overlay {
-      position: absolute;
-      width: 54px;
-      height: 54px;
-      background: rgba(0, 0, 0, 0.65);
-      border: 2px solid #ffffff;
-      border-radius: 50%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      color: #ffffff;
-      font-size: 22px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-      transition: transform 0.2s, background 0.2s;
-    }
-    .video-thumb-container:hover .play-btn-overlay {
-      transform: scale(1.1);
-      background: rgba(37, 99, 235, 0.85);
-    }
 
     .media-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
     .btn { border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s; }
@@ -446,7 +410,6 @@
       }
     }
 
-    // ฟังก์ชันล้าง Blob URL ออกจาก Memory
     function revokePreviousMediaUrl(mediaObj) {
       if (mediaObj.type === 'video' && mediaObj.data && mediaObj.data.startsWith('blob:')) {
         URL.revokeObjectURL(mediaObj.data);
@@ -486,13 +449,12 @@
       showToast("ล้างข้อมูลเรียบร้อยแล้ว", "info");
     };
 
-    function renderVideoPreviewHTML(videoSrc, autoPlay = true) {
+    // 🔴 เอา autoplay ออก เหลือเฉพาะปุ่มเล่น (Play) ตามผู้ใช้ต้องการ
+    function renderVideoPreviewHTML(videoSrc) {
       return `
         <video 
           src="${videoSrc}" 
           controls 
-          ${autoPlay ? 'autoplay' : ''} 
-          muted 
           playsinline 
           preload="metadata" 
           style="width: 100%; height: 100%; object-fit: contain;">
@@ -812,7 +774,6 @@
       });
     }
 
-    // ✅ จัดการเลือกไฟล์จากเครื่อง (รองรับทั้งรูปภาพและวิดีโอ)
     window.handleFileSelect = async function(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -828,12 +789,11 @@
       } else if (file.type.startsWith('video/')) {
         const videoUrl = URL.createObjectURL(file);
         processedMedia = { type: 'video', data: videoUrl, file: file };
-        previewBox.innerHTML = renderVideoPreviewHTML(videoUrl, true);
+        previewBox.innerHTML = renderVideoPreviewHTML(videoUrl);
       }
       event.target.value = '';
     };
 
-    // ✅ จัดการเลือกไฟล์ใน Modal Edit (รองรับทั้งรูปภาพและวิดีโอ)
     window.handleEditFileSelect = async function(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -849,7 +809,7 @@
       } else if (file.type.startsWith('video/')) {
         const videoUrl = URL.createObjectURL(file);
         editProcessedMedia = { type: 'video', data: videoUrl, file: file };
-        mediaContainer.innerHTML = renderVideoPreviewHTML(videoUrl, true);
+        mediaContainer.innerHTML = renderVideoPreviewHTML(videoUrl);
       }
       event.target.value = '';
     };
@@ -1054,7 +1014,7 @@
         if (product.mediaType === 'image') {
           mediaBox.innerHTML = `<img src="${product.mediaUrl}" alt="Product Image">`;
         } else if (product.mediaType === 'video') {
-          mediaBox.innerHTML = renderVideoPreviewHTML(product.mediaUrl, false);
+          mediaBox.innerHTML = renderVideoPreviewHTML(product.mediaUrl);
         }
       } else {
         mediaBox.innerHTML = `<span style="color: #6b7280;">ไม่มีรูปภาพ/วิดีโอประกอบ</span>`;
