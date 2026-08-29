@@ -118,7 +118,7 @@
       overflow: hidden; 
       position: relative;
     }
-    .media-preview-box img, .media-preview-box video { max-width: 100%; max-height: 100%; object-fit: contain; }
+    .media-preview-box img, .media-preview-box video { width: 100%; height: 100%; object-fit: contain; }
     
     .video-thumb-container {
       position: relative;
@@ -224,7 +224,7 @@
     .modal-content { background-color: #fff; padding: 20px; border-radius: 16px; width: 100%; max-width: 480px; position: relative; max-height: 90vh; overflow-y: auto; -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }
     .close-btn { position: absolute; right: 15px; top: 10px; font-size: 24px; cursor: pointer; color: #9ca3af; z-index: 10; }
     .modal-media-box { width: 100%; height: 230px; background: #111827; margin-bottom: 15px; border-radius: 10px; overflow: hidden; display: flex; justify-content: center; align-items: center; position: relative; }
-    .modal-media-box img, .modal-media-box video { max-width: 100%; max-height: 100%; object-fit: contain; }
+    .modal-media-box img, .modal-media-box video { width: 100%; height: 100%; object-fit: contain; }
     .modal-actions { display: flex; gap: 10px; margin-top: 15px; }
     .btn-edit { background-color: #f59e0b; color: #ffffff; flex: 1; padding: 10px; }
     .btn-delete { background-color: #ef4444; color: #ffffff; flex: 1; padding: 10px; }
@@ -268,10 +268,10 @@
       </div>
 
       <div class="media-buttons">
-        <button class="btn btn-media" id="btn-file-select" onclick="document.getElementById('media-input').click()">
+        <button type="button" class="btn btn-media" id="btn-file-select" onclick="document.getElementById('media-input').click()">
           📁 เลือกรูป / วิดีโอ
         </button>
-        <button class="btn btn-camera" id="btn-camera" onclick="document.getElementById('camera-input').click()">
+        <button type="button" class="btn btn-camera" id="btn-camera" onclick="document.getElementById('camera-input').click()">
           📷 ถ่ายรูป
         </button>
       </div>
@@ -347,10 +347,10 @@
         <h3 style="margin-top: 0; color: #d97706; font-weight: 700;">แก้ไขข้อมูลสินค้า</h3>
 
         <div class="media-buttons">
-          <button class="btn btn-media" onclick="document.getElementById('edit-media-input').click()">
+          <button type="button" class="btn btn-media" onclick="document.getElementById('edit-media-input').click()">
             📁 เปลี่ยนรูป / วิดีโอ
           </button>
-          <button class="btn btn-camera" onclick="document.getElementById('edit-camera-input').click()">
+          <button type="button" class="btn btn-camera" onclick="document.getElementById('edit-camera-input').click()">
             📷 ถ่ายรูปใหม่
           </button>
         </div>
@@ -446,6 +446,7 @@
       }
     }
 
+    // ฟังก์ชันล้าง Blob URL ออกจาก Memory
     function revokePreviousMediaUrl(mediaObj) {
       if (mediaObj.type === 'video' && mediaObj.data && mediaObj.data.startsWith('blob:')) {
         URL.revokeObjectURL(mediaObj.data);
@@ -485,55 +486,18 @@
       showToast("ล้างข้อมูลเรียบร้อยแล้ว", "info");
     };
 
-    function renderVideoPreviewHTML(videoSrc) {
+    function renderVideoPreviewHTML(videoSrc, autoPlay = true) {
       return `
         <video 
           src="${videoSrc}" 
           controls 
-          playsinline 
+          ${autoPlay ? 'autoplay' : ''} 
           muted 
+          playsinline 
           preload="metadata" 
-          style="width: 100%; height: 100%; object-fit: contain;"
-          onloadedmetadata="this.currentTime = 0.1;">
+          style="width: 100%; height: 100%; object-fit: contain;">
         </video>
       `;
-    }
-
-    window.playVideoInline = function(uniqueId, videoSrc) {
-      const thumb = document.getElementById(`thumb_${uniqueId}`);
-      const holder = document.getElementById(`holder_${uniqueId}`);
-      if (thumb && holder) {
-        thumb.style.display = 'none';
-        holder.style.display = 'block';
-        holder.innerHTML = `<video src="${videoSrc}" controls autoplay playsinline style="width:100%; height:100%; object-fit:contain;"></video>`;
-      }
-    };
-
-    function generateVideoThumbnail(file) {
-      return new Promise((resolve) => {
-        const video = document.createElement('video');
-        video.preload = 'metadata';
-        const blobUrl = URL.createObjectURL(file);
-        video.src = blobUrl;
-        video.muted = true;
-        video.playsInline = true;
-
-        video.onloadeddata = () => { video.currentTime = 0.1; };
-        video.onseeked = () => {
-          const canvas = document.createElement('canvas');
-          canvas.width = video.videoWidth || 320;
-          canvas.height = video.videoHeight || 240;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-          URL.revokeObjectURL(blobUrl);
-          resolve(dataUrl);
-        };
-        video.onerror = () => {
-          URL.revokeObjectURL(blobUrl);
-          resolve(null);
-        };
-      });
     }
 
     window.autoScrollFocus = function(element) {
@@ -848,6 +812,7 @@
       });
     }
 
+    // ✅ จัดการเลือกไฟล์จากเครื่อง (รองรับทั้งรูปภาพและวิดีโอ)
     window.handleFileSelect = async function(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -859,29 +824,16 @@
       if (file.type.startsWith('image/')) {
         const compressed = await compressImage(file);
         processedMedia = { type: 'image', data: compressed.dataUrl, file: compressed.blob };
-        previewBox.innerHTML = `<img src="${compressed.dataUrl}">`;
+        previewBox.innerHTML = `<img src="${compressed.dataUrl}" alt="Preview Image">`;
       } else if (file.type.startsWith('video/')) {
         const videoUrl = URL.createObjectURL(file);
         processedMedia = { type: 'video', data: videoUrl, file: file };
-        
-        const thumbUrl = await generateVideoThumbnail(file);
-        const uniqueId = 'preview_main';
-
-        if (thumbUrl) {
-          previewBox.innerHTML = `
-            <div class="video-thumb-container" id="thumb_${uniqueId}" onclick="playVideoInline('${uniqueId}', '${videoUrl}')">
-              <img src="${thumbUrl}">
-              <div class="play-btn-overlay">▶</div>
-            </div>
-            <div id="holder_${uniqueId}" style="display:none; width:100%; height:100%;"></div>
-          `;
-        } else {
-          previewBox.innerHTML = renderVideoPreviewHTML(videoUrl);
-        }
+        previewBox.innerHTML = renderVideoPreviewHTML(videoUrl, true);
       }
       event.target.value = '';
     };
 
+    // ✅ จัดการเลือกไฟล์ใน Modal Edit (รองรับทั้งรูปภาพและวิดีโอ)
     window.handleEditFileSelect = async function(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -893,25 +845,11 @@
       if (file.type.startsWith('image/')) {
         const compressed = await compressImage(file);
         editProcessedMedia = { type: 'image', data: compressed.dataUrl, file: compressed.blob };
-        mediaContainer.innerHTML = `<img src="${compressed.dataUrl}">`;
+        mediaContainer.innerHTML = `<img src="${compressed.dataUrl}" alt="Preview Image">`;
       } else if (file.type.startsWith('video/')) {
         const videoUrl = URL.createObjectURL(file);
         editProcessedMedia = { type: 'video', data: videoUrl, file: file };
-        
-        const thumbUrl = await generateVideoThumbnail(file);
-        const uniqueId = 'preview_edit';
-
-        if (thumbUrl) {
-          mediaContainer.innerHTML = `
-            <div class="video-thumb-container" id="thumb_${uniqueId}" onclick="playVideoInline('${uniqueId}', '${videoUrl}')">
-              <img src="${thumbUrl}">
-              <div class="play-btn-overlay">▶</div>
-            </div>
-            <div id="holder_${uniqueId}" style="display:none; width:100%; height:100%;"></div>
-          `;
-        } else {
-          mediaContainer.innerHTML = renderVideoPreviewHTML(videoUrl);
-        }
+        mediaContainer.innerHTML = renderVideoPreviewHTML(videoUrl, true);
       }
       event.target.value = '';
     };
@@ -1116,7 +1054,7 @@
         if (product.mediaType === 'image') {
           mediaBox.innerHTML = `<img src="${product.mediaUrl}" alt="Product Image">`;
         } else if (product.mediaType === 'video') {
-          mediaBox.innerHTML = renderVideoPreviewHTML(product.mediaUrl);
+          mediaBox.innerHTML = renderVideoPreviewHTML(product.mediaUrl, false);
         }
       } else {
         mediaBox.innerHTML = `<span style="color: #6b7280;">ไม่มีรูปภาพ/วิดีโอประกอบ</span>`;
