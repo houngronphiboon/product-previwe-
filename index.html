@@ -485,7 +485,6 @@
       showToast("ล้างข้อมูลเรียบร้อยแล้ว", "info");
     };
 
-    // ✅ แก้ไข: เพิ่ม muted, playsinline, preload เพื่อให้แสดงภาพพรีวิววิดีโอ (First Frame) ได้ทันที ไม่ดำ
     function renderVideoPreviewHTML(videoSrc) {
       return `
         <video 
@@ -494,7 +493,8 @@
           playsinline 
           muted 
           preload="metadata" 
-          style="width: 100%; height: 100%; object-fit: contain;">
+          style="width: 100%; height: 100%; object-fit: contain;"
+          onloadedmetadata="this.currentTime = 0.1;">
         </video>
       `;
     }
@@ -876,7 +876,6 @@
             <div id="holder_${uniqueId}" style="display:none; width:100%; height:100%;"></div>
           `;
         } else {
-          // ✅ ปรับแก้ fallback หากเจอดึง Thumbnail จาก canvas ล้มเหลว ให้เรนเดอร์แท็ก Video โดยตรง
           previewBox.innerHTML = renderVideoPreviewHTML(videoUrl);
         }
       }
@@ -911,7 +910,6 @@
             <div id="holder_${uniqueId}" style="display:none; width:100%; height:100%;"></div>
           `;
         } else {
-          // ✅ ปรับแก้ fallback กรณีพรีวิวในหน้าแก้ไข
           mediaContainer.innerHTML = renderVideoPreviewHTML(videoUrl);
         }
       }
@@ -919,31 +917,31 @@
     };
 
     async function uploadMediaFile(file, resourceType) {
-  if (resourceType === 'video') {
-    const formData = new FormData();
-    formData.append('file', file);
+      if (resourceType === 'video') {
+        const formData = new FormData();
+        formData.append('file', file);
 
-    const res = await fetch(`${WORKER_URL}upload-video`, {
-      method: 'POST',
-      body: formData
-    });
+        const res = await fetch(`${WORKER_URL}upload-video`, {
+          method: 'POST',
+          body: formData
+        });
 
-    if (!res.ok) throw new Error('ไม่สามารถอัปโหลดวิดีโอผ่าน Worker ได้');
-    const { publicUrl, objectKey } = await res.json();
+        if (!res.ok) throw new Error('ไม่สามารถอัปโหลดวิดีโอผ่าน Worker ได้');
+        const { publicUrl, objectKey } = await res.json();
 
-    return { mediaUrl: publicUrl, objectKey: objectKey };
-  } else {
-    const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+        return { mediaUrl: publicUrl, objectKey: objectKey };
+      } else {
+        const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
 
-    const res = await fetch(url, { method: 'POST', body: formData });
-    if (!res.ok) throw new Error('อัปโหลดรูปภาพไป Cloudinary ไม่สำเร็จ');
-    const data = await res.json();
-    return { mediaUrl: data.secure_url, objectKey: null };
-  }
-}
+        const res = await fetch(url, { method: 'POST', body: formData });
+        if (!res.ok) throw new Error('อัปโหลดรูปภาพไป Cloudinary ไม่สำเร็จ');
+        const data = await res.json();
+        return { mediaUrl: data.secure_url, objectKey: null };
+      }
+    }
 
     window.generateAIDetails = async function() {
       const nameInput = document.getElementById('product-name');
@@ -1118,7 +1116,6 @@
         if (product.mediaType === 'image') {
           mediaBox.innerHTML = `<img src="${product.mediaUrl}" alt="Product Image">`;
         } else if (product.mediaType === 'video') {
-          // ✅ ปรับแก้ Modal ให้รองรับการพรีวิวภาพวิดีโอจาก Cloud แบบไม่ติดจอดำ
           mediaBox.innerHTML = renderVideoPreviewHTML(product.mediaUrl);
         }
       } else {
