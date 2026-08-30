@@ -795,8 +795,20 @@
       const detailInput = document.getElementById('product-detail');
       const name = nameInput.value.trim();
 
+      const hasImage = processedMedia.type === 'image' && processedMedia.data;
+      const isVideo = processedMedia.type === 'video';
+
+      if (!hasImage && !name) {
+        triggerValidationError("กรุณากรอกชื่อ/รุ่น หรืออัปโหลดรูปถ่ายเพลตสินค้า");
+        return;
+      }
+
+      if (isVideo) {
+        showToast("ข้ามการวิเคราะห์ไฟล์วิดีโอ (ระบบรองรับเฉพาะรูปภาพและข้อความ)", "info");
+      }
+
       const originalText = detailInput.value;
-      detailInput.value = "กำลังวิเคราะห์สเปกจริงจากเพลตสินค้าและฐานข้อมูล...";
+      detailInput.value = "กำลังวิเคราะห์สเปกข้อมูลด้วย AI...";
       setFormButtonsDisabled(true, true);
       
       updateStatusUI('ai', 'orange', 'AI: กำลังคิด');
@@ -804,18 +816,10 @@
       try {
         let payload = { contents: [] };
 
-        // หากสื่อเป็นรูปภาพ ให้ส่งรูปภาพ Base64 ไปวิเคราะห์
-        // หากสื่อเป็นวิดีโอและมีรูปภาพ thumbnail ให้ส่งรูปภาพ thumbnail ไปวิเคราะห์แทน
-        let aiImageData = null;
-        if (processedMedia.type === 'image' && processedMedia.data) {
-          aiImageData = processedMedia.data;
-        } else if (processedMedia.type === 'video' && processedMedia.thumbnail) {
-          aiImageData = processedMedia.thumbnail;
-        }
-
-        if (aiImageData) {
-          const base64Data = aiImageData.split(',')[1];
-          const mimeType = aiImageData.split(';')[0].split(':')[1] || 'image/jpeg';
+        // ฝั่ง Frontend เหลือแค่การแนบข้อมูลดิบ (รูปภาพ/ชื่อรุ่น) ไม่ต้องเก็บ Prompt อีกต่อไป
+        if (hasImage) {
+          const base64Data = processedMedia.data.split(',')[1];
+          const mimeType = processedMedia.data.split(';')[0].split(':')[1];
 
           payload.contents.push({
             parts: [
@@ -823,15 +827,7 @@
               { text: name || '' }
             ]
           });
-        } else {
-          if (!name) {
-            triggerValidationError("กรุณากรอกชื่อ/รุ่น หรืออัปโหลดรูปถ่ายเพลตสินค้า");
-            detailInput.value = originalText;
-            setFormButtonsDisabled(false, false);
-            updateStatusUI('ai', 'green', 'AI: Vision');
-            return;
-          }
-
+        } else if (name) {
           payload.contents.push({
             parts: [{ text: name }]
           });
