@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>ระบบบันทึกข้อมูลสินค้า - หนึ่ง ร่อนพิบูลย์ อิเล็กทรอนิกส์</title>
+  <title>ระบบบันทึกข้อมูลสินค้า - หนึ่ง ร่อนพิบูลย์อิเล็กทรอนิกส์</title>
+  
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛠️</text></svg>">
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,7 +18,7 @@
       background-color: #f3f4f6; 
       margin: 0; 
       padding: 16px; 
-      padding-bottom: max(20px, env(safe-area-inset-bottom)); 
+      padding-bottom: 20px; 
       color: #1f2937; 
       display: flex; 
       flex-direction: column; 
@@ -33,29 +35,53 @@
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); 
     }
 
-    /* ===== ส่วนหัว ชื่อร้าน + ปุ่มสถานะ ===== */
-    .header-container {
+    /* --- ส่วน Header --- */
+    .app-header {
+      background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+      padding: 14px 18px;
+      border-radius: 12px;
       display: flex;
+      align-items: center;
       justify-content: space-between;
-      align-items: flex-start;
-      gap: 12px;
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
       margin-bottom: 16px;
     }
 
-    .header-title { 
-      font-size: 16px; 
-      font-weight: 700; 
-      color: #111827; 
-      margin: 0; 
-      line-height: 1.4;
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
       flex: 1;
+      min-width: 0;
     }
-    
+
+    .header-logo {
+      width: 42px;
+      height: 42px;
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 3px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      object-fit: contain;
+      flex-shrink: 0;
+    }
+
+    .header-title-text {
+      color: #ffffff;
+      font-size: 16px;
+      font-weight: 700;
+      margin: 0;
+      line-height: 1.3;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
     .status-container { 
       display: flex; 
       flex-direction: column; 
       align-items: flex-end;   
-      gap: 6px; 
+      gap: 4px; 
       flex-shrink: 0;
     }
 
@@ -65,11 +91,11 @@
       gap: 5px; 
       font-size: 11px; 
       font-weight: 600; 
-      color: #4b5563; 
-      background: #f8fafc; 
+      color: #ffffff; 
+      background: rgba(255, 255, 255, 0.2); 
       padding: 3px 8px; 
       border-radius: 12px; 
-      border: 1px solid #e2e8f0; 
+      backdrop-filter: blur(4px);
       white-space: nowrap;
     }
 
@@ -78,15 +104,13 @@
     .status-dot.orange { background-color: #f59e0b; box-shadow: 0 0 6px #f59e0b; }
     .status-dot.red { background-color: #ef4444; box-shadow: 0 0 6px #ef4444; }
 
-    /* ===== กรอบแสดงรูปภาพ / วิดีโอ ===== */
     .media-preview-box { 
       width: 100%; 
-      height: 220px; 
+      height: 200px; 
       background-color: #1f2937; 
       border-radius: 12px; 
       margin-bottom: 16px; 
       display: flex; 
-      flex-direction: column;
       justify-content: center; 
       align-items: center; 
       color: #9ca3af; 
@@ -94,27 +118,7 @@
       overflow: hidden; 
       position: relative;
     }
-    .media-preview-box img, .media-preview-box video { max-width: 100%; max-height: 100%; object-fit: contain; }
-    
-    .video-thumbnail-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      width: 100%;
-      height: 100%;
-    }
-    .thumb-label {
-      position: absolute;
-      top: 8px;
-      left: 8px;
-      background: rgba(0, 0, 0, 0.65);
-      color: #fff;
-      padding: 3px 8px;
-      border-radius: 6px;
-      font-size: 11px;
-      font-weight: 600;
-    }
+    .media-preview-box img, .media-preview-box video { width: 100%; height: 100%; object-fit: contain; }
 
     .media-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
     .btn { border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s; }
@@ -123,6 +127,31 @@
     .btn-camera { background-color: #007bff; color: white; padding: 12px 8px; }
     .form-group { margin-bottom: 16px; }
     .form-group label { display: block; font-size: 15px; font-weight: 700; margin-bottom: 6px; color: #374151; }
+    
+    .label-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .label-header label { margin-bottom: 0; }
+    
+    .btn-clear {
+      background-color: #fee2e2;
+      color: #dc2626;
+      border: 1px solid #fca5a5;
+      padding: 4px 10px;
+      font-size: 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+    .btn-clear:hover {
+      background-color: #fecaca;
+      color: #b91c1c;
+    }
+
     .required { color: #dc2626; }
     .form-control { width: 100%; padding: 12px; font-size: 15px; border: 1px solid #d1d5db; border-radius: 10px; outline: none; background-color: #ffffff; }
     .form-control:focus { border-color: #2563eb; }
@@ -159,7 +188,7 @@
     .modal-content { background-color: #fff; padding: 20px; border-radius: 16px; width: 100%; max-width: 480px; position: relative; max-height: 90vh; overflow-y: auto; -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }
     .close-btn { position: absolute; right: 15px; top: 10px; font-size: 24px; cursor: pointer; color: #9ca3af; z-index: 10; }
     .modal-media-box { width: 100%; height: 230px; background: #111827; margin-bottom: 15px; border-radius: 10px; overflow: hidden; display: flex; justify-content: center; align-items: center; position: relative; }
-    .modal-media-box img, .modal-media-box video { max-width: 100%; max-height: 100%; object-fit: contain; }
+    .modal-media-box img, .modal-media-box video { width: 100%; height: 100%; object-fit: contain; }
     .modal-actions { display: flex; gap: 10px; margin-top: 15px; }
     .btn-edit { background-color: #f59e0b; color: #ffffff; flex: 1; padding: 10px; }
     .btn-delete { background-color: #ef4444; color: #ffffff; flex: 1; padding: 10px; }
@@ -180,10 +209,12 @@
   <div class="container">
     <div class="card">
       
-      <!-- ส่วนหัว -->
-      <div class="header-container">
-        <h1 class="header-title">หนึ่ง ร่อนพิบูลย์ อิเล็กทรอนิกส์</h1>
-        
+      <!-- Header -->
+      <div class="app-header">
+        <div class="header-brand">
+          <img src="logo.png" alt="Nueng Electronics Logo" class="header-logo" onerror="this.style.display='none'">
+          <h1 class="header-title-text">หนึ่ง ร่อนพิบูลย์อิเล็กทรอนิกส์</h1>
+        </div>
         <div class="status-container">
           <div class="status-badge">
             <span class="status-dot green" id="db-status-dot"></span>
@@ -196,16 +227,15 @@
         </div>
       </div>
 
-      <!-- กรอบแสดงรูปภาพ / วิดีโอ -->
       <div class="media-preview-box" id="preview-box">
         <span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>
       </div>
 
       <div class="media-buttons">
-        <button class="btn btn-media" id="btn-file-select" onclick="document.getElementById('media-input').click()">
+        <button type="button" class="btn btn-media" id="btn-file-select" onclick="document.getElementById('media-input').click()">
           📁 เลือกรูป / วิดีโอ
         </button>
-        <button class="btn btn-camera" id="btn-camera" onclick="document.getElementById('camera-input').click()">
+        <button type="button" class="btn btn-camera" id="btn-camera" onclick="document.getElementById('camera-input').click()">
           📷 ถ่ายรูป
         </button>
       </div>
@@ -220,7 +250,10 @@
       </div>
 
       <div class="form-group">
-        <label for="product-detail">รายละเอียดสินค้า</label>
+        <div class="label-header">
+          <label for="product-detail">รายละเอียดสินค้า</label>
+          <button type="button" class="btn-clear" onclick="clearFormInput()">🧹 ล้างข้อมูล</button>
+        </div>
         <textarea id="product-detail" class="form-control" placeholder="ระบุรายละเอียดสินค้า หรือแนบรูปเพลต/สินค้าแล้วกดให้ AI วิเคราะห์สเปก"></textarea>
       </div>
 
@@ -257,7 +290,6 @@
     </div>
   </div>
 
-  <!-- Modal ดูรายละเอียด -->
   <div class="modal" id="detail-modal">
     <div class="modal-content" id="modal-content-box">
       <span class="close-btn" onclick="closeModal()">&times;</span>
@@ -279,10 +311,10 @@
         <h3 style="margin-top: 0; color: #d97706; font-weight: 700;">แก้ไขข้อมูลสินค้า</h3>
 
         <div class="media-buttons">
-          <button class="btn btn-media" onclick="document.getElementById('edit-media-input').click()">
+          <button type="button" class="btn btn-media" onclick="document.getElementById('edit-media-input').click()">
             📁 เปลี่ยนรูป / วิดีโอ
           </button>
-          <button class="btn btn-camera" onclick="document.getElementById('edit-camera-input').click()">
+          <button type="button" class="btn btn-camera" onclick="document.getElementById('edit-camera-input').click()">
             📷 ถ่ายรูปใหม่
           </button>
         </div>
@@ -304,7 +336,6 @@
     </div>
   </div>
 
-  <!-- Modal แจ้งเตือนโควต้า AI -->
   <div class="modal" id="quota-modal">
     <div class="modal-content" style="text-align: center;">
       <div style="font-size: 40px; margin-bottom: 10px;">⚠️</div>
@@ -343,8 +374,8 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    let processedMedia = { type: null, data: null, file: null, thumbnail: null };
-    let editProcessedMedia = { type: null, data: null, file: null, thumbnail: null };
+    let processedMedia = { type: null, data: null, file: null };
+    let editProcessedMedia = { type: null, data: null, file: null };
     let activeProductId = null;
     let productsList = [];
 
@@ -354,6 +385,21 @@
     let hasMoreData = true;
     let isSearchMode = false;
     let searchDebounceTimer = null;
+
+    let toastTimeout = null;
+    function showToast(message, type = 'info') {
+      const toast = document.getElementById('toast');
+      if (!toast) return;
+      
+      clearTimeout(toastTimeout);
+      toast.innerText = message;
+      toast.className = `toast show toast-${type}`;
+      
+      toastTimeout = setTimeout(() => {
+        toast.className = toast.className.replace('show', '');
+      }, 3000);
+    }
+    window.showToast = showToast;
 
     function updateStatusUI(target, state, text) {
       const dot = document.getElementById(`${target}-status-dot`);
@@ -368,6 +414,91 @@
       if (mediaObj.type === 'video' && mediaObj.data && mediaObj.data.startsWith('blob:')) {
         URL.revokeObjectURL(mediaObj.data);
       }
+    }
+
+    function stopAllVideoPlayback(containerElement) {
+      if (!containerElement) return;
+      const videos = containerElement.querySelectorAll('video');
+      videos.forEach(video => {
+        try {
+          video.pause();
+          video.src = '';
+          video.load();
+        } catch (e) {
+          console.warn("Error stopping video:", e);
+        }
+      });
+    }
+
+    window.clearFormInput = function() {
+      const nameInput = document.getElementById('product-name');
+      const detailInput = document.getElementById('product-detail');
+      const previewBox = document.getElementById('preview-box');
+      
+      if (nameInput) nameInput.value = '';
+      if (detailInput) detailInput.value = '';
+      
+      if (previewBox) {
+        stopAllVideoPlayback(previewBox);
+        previewBox.innerHTML = '<span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>';
+      }
+      
+      revokePreviousMediaUrl(processedMedia);
+      processedMedia = { type: null, data: null, file: null };
+      clearValidationError();
+      showToast("ล้างข้อมูลเรียบร้อยแล้ว", "info");
+    };
+
+    // 🟢 ดึงเฟรมแรกด้วย Canvas แล้วแปลงเป็น poster สำหรับเบราว์เซอร์มือถือ
+    function renderVideoPreviewHTML(videoSrc) {
+      const videoId = 'vid_' + Math.random().toString(36).substr(2, 9);
+      
+      setTimeout(() => {
+        generateVideoPoster(videoId, videoSrc);
+      }, 50);
+
+      return `
+        <video 
+          id="${videoId}"
+          src="${videoSrc}" 
+          controls 
+          playsinline 
+          preload="metadata" 
+          style="width: 100%; height: 100%; object-fit: contain;">
+        </video>
+      `;
+    }
+
+    function generateVideoPoster(videoId, videoSrc) {
+      const videoElem = document.getElementById(videoId);
+      if (!videoElem) return;
+
+      const tempVideo = document.createElement('video');
+      tempVideo.src = videoSrc;
+      tempVideo.muted = true;
+      tempVideo.playsInline = true;
+      tempVideo.preload = 'metadata';
+
+      tempVideo.onloadeddata = function() {
+        tempVideo.currentTime = 0.1;
+      };
+
+      tempVideo.onseeked = function() {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = tempVideo.videoWidth || 640;
+          canvas.height = tempVideo.videoHeight || 360;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(tempVideo, 0, 0, canvas.width, canvas.height);
+          
+          const posterUrl = canvas.toDataURL('image/jpeg', 0.8);
+          videoElem.setAttribute('poster', posterUrl);
+        } catch (e) {
+          console.warn("Cannot generate poster thumbnail:", e);
+        }
+      };
+
+      tempVideo.load();
     }
 
     window.autoScrollFocus = function(element) {
@@ -398,38 +529,34 @@
       }
     }
 
-    async function deleteCloudinaryMedia(mediaUrl, mediaType) {
+    async function deleteCloudMedia(mediaUrl, mediaType, objectKey = null) {
       if (!mediaUrl) return;
-      const publicId = extractPublicIdFromUrl(mediaUrl);
-      if (!publicId) return;
+      let payload = { resourceType: mediaType };
+
+      if (mediaType === 'video') {
+        const key = objectKey || mediaUrl.split('/').pop();
+        payload.objectKey = key;
+      } else {
+        const publicId = extractPublicIdFromUrl(mediaUrl);
+        if (!publicId) return;
+        payload.publicId = publicId;
+      }
 
       try {
         await fetch(`${WORKER_URL}delete-media`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            publicId: publicId,
-            resourceType: mediaType === "video" ? "video" : "image"
-          })
+          body: JSON.stringify(payload)
         });
       } catch (err) {
-        console.error("Failed to delete media from Cloudinary:", err);
+        console.error("Failed to delete media from Cloud:", err);
       }
-    }
-
-    function showToast(message, type = 'info') {
-      const toast = document.getElementById('toast');
-      toast.innerText = message;
-      toast.className = `toast show toast-${type}`;
-      setTimeout(() => {
-        toast.className = toast.className.replace('show', '');
-      }, 4000);
     }
 
     function triggerValidationError(msg) {
       const nameInput = document.getElementById('product-name');
       const errorMsg = document.getElementById('name-error-msg');
-      nameInput.classList.add('input-error');
+      if (nameInput) nameInput.classList.add('input-error');
       if (errorMsg) {
         errorMsg.innerText = msg || "กรุณากรอกข้อมูล";
         errorMsg.style.display = 'block';
@@ -439,27 +566,31 @@
     window.clearValidationError = function() {
       const nameInput = document.getElementById('product-name');
       const errorMsg = document.getElementById('name-error-msg');
-      nameInput.classList.remove('input-error');
+      if (nameInput) nameInput.classList.remove('input-error');
       if (errorMsg) errorMsg.style.display = 'none';
-    }
+    };
 
     window.closeModal = function() {
+      const mediaContainer = document.getElementById('modal-media-container');
+      stopAllVideoPlayback(mediaContainer);
+      if (mediaContainer) mediaContainer.innerHTML = '';
+
       document.getElementById('detail-modal').style.display = 'none';
       document.body.classList.remove('modal-open');
       revokePreviousMediaUrl(editProcessedMedia);
       activeProductId = null;
-      editProcessedMedia = { type: null, data: null, file: null, thumbnail: null };
-    }
+      editProcessedMedia = { type: null, data: null, file: null };
+    };
 
     window.closeQuotaModal = function() {
       document.getElementById('quota-modal').style.display = 'none';
       document.body.classList.remove('modal-open');
-    }
+    };
 
     window.goToRecharge = function() {
       window.open('https://openrouter.ai/settings/keys', '_blank');
       closeQuotaModal();
-    }
+    };
 
     function renderTable(dataList) {
       const tbody = document.getElementById('product-list');
@@ -572,7 +703,6 @@
 
     function setupScrollListener() {
       const tableContainer = document.getElementById('table-container');
-
       if (tableContainer) {
         tableContainer.addEventListener('scroll', () => {
           if (tableContainer.scrollTop + tableContainer.clientHeight >= tableContainer.scrollHeight - 50) {
@@ -621,7 +751,7 @@
           matchedResults = combined;
           updateStatusUI('db', 'green', 'DB: พร้อม');
         } catch (err) {
-          console.error("Firestore Prefix Search Error:", err);
+          console.error("Firestore Search Error:", err);
           updateStatusUI('db', 'green', 'DB: พร้อม');
         }
       }
@@ -648,9 +778,6 @@
         return [];
       }
     }
-
-    fetchInitialProducts();
-    setupScrollListener();
 
     function setFormButtonsDisabled(disabled, isAnalyzing = false) {
       const aiBtn = document.getElementById('btn-ai-search');
@@ -686,111 +813,74 @@
       });
     }
 
-    /* ===== ฟังก์ชันดึงรูปภาพตัวอย่าง (Thumbnail) จากไฟล์วิดีโอ ===== */
-    function generateVideoThumbnail(file, seekTo = 0.5) {
-      return new Promise((resolve) => {
-        const video = document.createElement('video');
-        video.src = URL.createObjectURL(file);
-        video.crossOrigin = 'anonymous';
-        video.muted = true;
-        video.playsInline = true;
-
-        video.addEventListener('loadeddata', () => {
-          video.currentTime = seekTo;
-        });
-
-        video.addEventListener('seeked', () => {
-          const canvas = document.createElement('canvas');
-          canvas.width = video.videoWidth || 640;
-          canvas.height = video.videoHeight || 360;
-          
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-          URL.revokeObjectURL(video.src);
-          resolve(dataUrl);
-        });
-
-        video.addEventListener('error', () => {
-          URL.revokeObjectURL(video.src);
-          resolve(null);
-        });
-      });
-    }
-
     window.handleFileSelect = async function(event) {
       const file = event.target.files[0];
       if (!file) return;
 
       const previewBox = document.getElementById('preview-box');
+      stopAllVideoPlayback(previewBox);
       revokePreviousMediaUrl(processedMedia);
 
       if (file.type.startsWith('image/')) {
         const compressed = await compressImage(file);
-        processedMedia = { type: 'image', data: compressed.dataUrl, file: compressed.blob, thumbnail: null };
-        previewBox.innerHTML = `<img src="${compressed.dataUrl}">`;
+        processedMedia = { type: 'image', data: compressed.dataUrl, file: compressed.blob };
+        previewBox.innerHTML = `<img src="${compressed.dataUrl}" alt="Preview Image">`;
       } else if (file.type.startsWith('video/')) {
-        previewBox.innerHTML = `<span style="color: #9ca3af;">⏳ กำลังโหลดวิดีโอและสร้างภาพตัวอย่าง...</span>`;
-        
         const videoUrl = URL.createObjectURL(file);
-        const thumbUrl = await generateVideoThumbnail(file);
-        
-        processedMedia = { type: 'video', data: videoUrl, file: file, thumbnail: thumbUrl };
-        
-        previewBox.innerHTML = `
-          <div class="video-thumbnail-container">
-            <video src="${videoUrl}" controls poster="${thumbUrl || ''}"></video>
-            <span class="thumb-label">📹 พรีวิววิดีโอ + รูปตัวอย่าง</span>
-          </div>
-        `;
+        processedMedia = { type: 'video', data: videoUrl, file: file };
+        previewBox.innerHTML = renderVideoPreviewHTML(videoUrl);
       }
       event.target.value = '';
-    }
+    };
 
     window.handleEditFileSelect = async function(event) {
       const file = event.target.files[0];
       if (!file) return;
 
       const mediaContainer = document.getElementById('modal-media-container');
+      stopAllVideoPlayback(mediaContainer);
       revokePreviousMediaUrl(editProcessedMedia);
 
       if (file.type.startsWith('image/')) {
         const compressed = await compressImage(file);
-        editProcessedMedia = { type: 'image', data: compressed.dataUrl, file: compressed.blob, thumbnail: null };
-        mediaContainer.innerHTML = `<img src="${compressed.dataUrl}">`;
+        editProcessedMedia = { type: 'image', data: compressed.dataUrl, file: compressed.blob };
+        mediaContainer.innerHTML = `<img src="${compressed.dataUrl}" alt="Preview Image">`;
       } else if (file.type.startsWith('video/')) {
-        mediaContainer.innerHTML = `<span style="color: #9ca3af;">⏳ กำลังสร้างรูปตัวอย่างวิดีโอ...</span>`;
-        
         const videoUrl = URL.createObjectURL(file);
-        const thumbUrl = await generateVideoThumbnail(file);
-        
-        editProcessedMedia = { type: 'video', data: videoUrl, file: file, thumbnail: thumbUrl };
-        
-        mediaContainer.innerHTML = `
-          <div class="video-thumbnail-container">
-            <video src="${videoUrl}" controls poster="${thumbUrl || ''}"></video>
-            <span class="thumb-label">📹 พรีวิววิดีโอ</span>
-          </div>
-        `;
+        editProcessedMedia = { type: 'video', data: videoUrl, file: file };
+        mediaContainer.innerHTML = renderVideoPreviewHTML(videoUrl);
       }
       event.target.value = '';
+    };
+
+    async function uploadMediaFile(file, resourceType) {
+      if (resourceType === 'video') {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const res = await fetch(`${WORKER_URL}upload-video`, {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!res.ok) throw new Error('ไม่สามารถอัปโหลดวิดีโอผ่าน Worker ได้');
+        const { publicUrl, objectKey } = await res.json();
+
+        return { mediaUrl: publicUrl, objectKey: objectKey };
+      } else {
+        const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+        const res = await fetch(url, { method: 'POST', body: formData });
+        if (!res.ok) throw new Error('อัปโหลดรูปภาพไป Cloudinary ไม่สำเร็จ');
+        const data = await res.json();
+        return { mediaUrl: data.secure_url, objectKey: null };
+      }
     }
 
-    async function uploadToCloudinary(file, resourceType = 'auto') {
-      const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`;
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-
-      const res = await fetch(url, { method: 'POST', body: formData });
-      if (!res.ok) throw new Error('อัปโหลดไป Cloudinary ไม่สำเร็จ');
-      const data = await res.json();
-      return data.secure_url;
-    }
-
-    /* ===== PROMPT AI: วิเคราะห์ชื่อรุ่น + ภาพ ส่งไปยัง Worker Backend ===== */
-    window.generateAIDetails = async function() {
+window.generateAIDetails = async function() {
       const nameInput = document.getElementById('product-name');
       const detailInput = document.getElementById('product-detail');
       const name = nameInput.value.trim();
@@ -880,7 +970,6 @@
       }
     };
 
-    /* ===== ฟังก์ชันเพิ่มสินค้าบันทึกคลาวด์ ===== */
     window.addProduct = async function() {
       const nameInput = document.getElementById('product-name');
       const detailInput = document.getElementById('product-detail');
@@ -900,29 +989,34 @@
 
       try {
         let mediaUrl = null;
+        let objectKey = null;
         let mediaType = processedMedia.type;
 
         if (processedMedia.file) {
-          showToast("กำลังอัปโหลดไฟล์สื่อ...", "info");
-          mediaUrl = await uploadToCloudinary(processedMedia.file, mediaType === 'video' ? 'video' : 'image');
+          const uploadRes = await uploadMediaFile(processedMedia.file, mediaType);
+          mediaUrl = uploadRes.mediaUrl;
+          objectKey = uploadRes.objectKey;
         }
 
         await addDoc(collection(db, "products"), {
           name: name,
           detail: detail,
           mediaUrl: mediaUrl,
+          objectKey: objectKey,
           mediaType: mediaType,
           createdAt: serverTimestamp()
         });
 
         showToast("บันทึกข้อมูลเรียบร้อยแล้ว!", "success");
 
-        // รีเซ็ตฟอร์ม
         nameInput.value = '';
         detailInput.value = '';
-        document.getElementById('preview-box').innerHTML = '<span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>';
+        const previewBox = document.getElementById('preview-box');
+        stopAllVideoPlayback(previewBox);
+        previewBox.innerHTML = '<span>[กรอบแสดงรูปภาพ / วิดีโอ]</span>';
+        
         revokePreviousMediaUrl(processedMedia);
-        processedMedia = { type: null, data: null, file: null, thumbnail: null };
+        processedMedia = { type: null, data: null, file: null };
         clearValidationError();
 
         await fetchInitialProducts();
@@ -937,7 +1031,6 @@
       }
     };
 
-    /* ===== ฟังก์ชันเปิด Modal สื่อสารข้อมูล และ แก้ไข/ลบ ===== */
     function openDetailModal(id) {
       const product = productsList.find(p => p.id === id);
       if (!product) return;
@@ -947,13 +1040,14 @@
       document.getElementById('modal-detail-text').innerText = product.detail || 'ไม่มีรายละเอียด';
 
       const mediaBox = document.getElementById('modal-media-container');
+      stopAllVideoPlayback(mediaBox);
       mediaBox.innerHTML = '';
 
       if (product.mediaUrl) {
         if (product.mediaType === 'image') {
           mediaBox.innerHTML = `<img src="${product.mediaUrl}" alt="Product Image">`;
         } else if (product.mediaType === 'video') {
-          mediaBox.innerHTML = `<video src="${product.mediaUrl}" controls></video>`;
+          mediaBox.innerHTML = renderVideoPreviewHTML(product.mediaUrl);
         }
       } else {
         mediaBox.innerHTML = `<span style="color: #6b7280;">ไม่มีรูปภาพ/วิดีโอประกอบ</span>`;
@@ -972,15 +1066,17 @@
 
       document.getElementById('edit-name').value = product.name || '';
       document.getElementById('edit-detail').value = product.detail || '';
-      editProcessedMedia = { type: product.mediaType, data: product.mediaUrl, file: null, thumbnail: null };
+      editProcessedMedia = { type: product.mediaType, data: product.mediaUrl, file: null };
 
       document.getElementById('view-mode').style.display = 'none';
       document.getElementById('edit-mode').style.display = 'block';
     };
 
     window.cancelEditMode = function() {
+      const mediaBox = document.getElementById('modal-media-container');
+      stopAllVideoPlayback(mediaBox);
       revokePreviousMediaUrl(editProcessedMedia);
-      editProcessedMedia = { type: null, data: null, file: null, thumbnail: null };
+      editProcessedMedia = { type: null, data: null, file: null };
       document.getElementById('view-mode').style.display = 'block';
       document.getElementById('edit-mode').style.display = 'none';
     };
@@ -1005,16 +1101,17 @@
 
       try {
         let finalMediaUrl = product.mediaUrl;
+        let finalObjectKey = product.objectKey || null;
         let finalMediaType = product.mediaType;
 
         if (editProcessedMedia.file) {
-          showToast("กำลังอัปโหลดสื่อใหม่...", "info");
-          
           if (product.mediaUrl) {
-            await deleteCloudinaryMedia(product.mediaUrl, product.mediaType);
+            await deleteCloudMedia(product.mediaUrl, product.mediaType, product.objectKey);
           }
 
-          finalMediaUrl = await uploadToCloudinary(editProcessedMedia.file, editProcessedMedia.type === 'video' ? 'video' : 'image');
+          const uploadRes = await uploadMediaFile(editProcessedMedia.file, editProcessedMedia.type);
+          finalMediaUrl = uploadRes.mediaUrl;
+          finalObjectKey = uploadRes.objectKey;
           finalMediaType = editProcessedMedia.type;
         }
 
@@ -1023,6 +1120,7 @@
           name: editName,
           detail: editDetail,
           mediaUrl: finalMediaUrl,
+          objectKey: finalObjectKey,
           mediaType: finalMediaType,
           updatedAt: serverTimestamp()
         });
@@ -1048,12 +1146,15 @@
         return;
       }
 
+      const mediaBox = document.getElementById('modal-media-container');
+      stopAllVideoPlayback(mediaBox);
+
       const product = productsList.find(p => p.id === activeProductId);
       updateStatusUI('db', 'orange', 'DB: กำลังลบ');
 
       try {
         if (product && product.mediaUrl) {
-          await deleteCloudinaryMedia(product.mediaUrl, product.mediaType);
+          await deleteCloudMedia(product.mediaUrl, product.mediaType, product.objectKey);
         }
 
         await deleteDoc(doc(db, "products", activeProductId));
@@ -1067,6 +1168,9 @@
         updateStatusUI('db', 'red', 'DB: ขัดข้อง');
       }
     };
+
+    fetchInitialProducts();
+    setupScrollListener();
   </script>
 </body>
 </html>
